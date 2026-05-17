@@ -519,9 +519,48 @@ export default function Home() {
     },
   ] as const;
 
+  const categoryItems = [
+    { label: "우리 가게 정보", targetId: "store-info" },
+    { label: "문의 답변", targetId: "cs-reply" },
+    { label: "자동 리뷰 답변", targetId: "review-reply" },
+    { label: "리뷰 히스토리", targetId: "review-history" },
+    { label: "최근 CS 문의", targetId: "cs-history" },
+    { label: "AI 운영 분석", targetId: "ai-insights" },
+  ] as const;
+
+  function scrollToSection(targetId: string) {
+    document.getElementById(targetId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <div className="mx-auto w-full max-w-5xl space-y-6">
+        <section className="sticky top-0 z-20 -mx-4 border-b border-zinc-200/70 bg-zinc-50/90 px-4 py-3 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/90 sm:top-2 sm:mx-0 sm:rounded-2xl sm:border sm:shadow-sm">
+          <div className="mb-3">
+            <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              카테고리 / 빠른 이동
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              필요한 작업으로 바로 이동합니다.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {categoryItems.map((item) => (
+              <button
+                key={item.targetId}
+                type="button"
+                onClick={() => scrollToSection(item.targetId)}
+                className="min-h-12 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-left text-sm font-medium text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section>
           <div className="mb-4">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -556,7 +595,8 @@ export default function Home() {
         </section>
 
         <section
-          className={`${cardClass} border-indigo-200/60 dark:border-indigo-900/50`}
+          id="ai-insights"
+          className={`${cardClass} scroll-mt-32 border-indigo-200/60 dark:border-indigo-900/50`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex gap-3">
@@ -609,7 +649,7 @@ export default function Home() {
           )}
         </section>
 
-        <section className={cardClass}>
+        <section id="store-info" className={`${cardClass} scroll-mt-32`}>
           <div className="mb-6">
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
               가게 정보
@@ -691,7 +731,8 @@ export default function Home() {
         </section>
 
         <section
-          className={`${cardClass} border-sky-200/70 dark:border-sky-900/50`}
+          id="cs-reply"
+          className={`${cardClass} scroll-mt-32 border-sky-200/70 dark:border-sky-900/50`}
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -778,7 +819,7 @@ export default function Home() {
           </form>
         </section>
 
-        <section className={cardClass}>
+        <section id="cs-history" className={`${cardClass} scroll-mt-32`}>
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -852,7 +893,7 @@ export default function Home() {
           )}
         </section>
 
-        <section className={cardClass}>
+        <section id="review-reply" className={`${cardClass} scroll-mt-32`}>
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               AI 리뷰 답글 생성기
@@ -915,7 +956,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={cardClass}>
+        <section id="review-history" className={`${cardClass} scroll-mt-32`}>
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
