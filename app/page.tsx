@@ -197,6 +197,24 @@ async function getAuthenticatedRequestHeaders(
   };
 }
 
+async function fetchHasStore() {
+  const response = await fetch("/api/store/latest", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
+
+  if (response.status === 404) {
+    return false;
+  }
+
+  const data = (await response.json()) as StoreApiResponse;
+
+  if (!response.ok) {
+    throw new Error(data.error ?? "가게 정보를 확인하지 못했습니다.");
+  }
+
+  return Boolean(data.store);
+}
+
 const kpiCardClass =
   "rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition dark:border-zinc-800 dark:bg-zinc-900";
 
@@ -233,6 +251,8 @@ export default function Home() {
   const [refundPolicy, setRefundPolicy] = useState("");
   const [storeError, setStoreError] = useState("");
   const [storeSaving, setStoreSaving] = useState(false);
+  const [hasStore, setHasStore] = useState(false);
+  const [storeStatusLoading, setStoreStatusLoading] = useState(true);
 
   const [history, setHistory] = useState<ReviewHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -392,6 +412,8 @@ export default function Home() {
         setHistory([]);
         setHistoryError("");
         setHistoryLoading(false);
+        setHasStore(false);
+        setStoreStatusLoading(false);
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -404,6 +426,11 @@ export default function Home() {
         isActive = false;
       };
     }
+
+    void Promise.resolve().then(() => {
+      if (!isActive) return;
+      setStoreStatusLoading(true);
+    });
 
     void fetchReviewHistory()
       .then((reviews) => {
@@ -422,6 +449,25 @@ export default function Home() {
       .finally(() => {
         if (!isActive) return;
         setHistoryLoading(false);
+      });
+
+    void fetchHasStore()
+      .then((nextHasStore) => {
+        if (!isActive) return;
+        setHasStore(nextHasStore);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setHasStore(false);
+        setStoreError(
+          error instanceof Error
+            ? error.message
+            : "가게 정보를 확인하지 못했습니다.",
+        );
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setStoreStatusLoading(false);
       });
 
     void fetchCsMessageHistory()
@@ -608,6 +654,7 @@ export default function Home() {
         return;
       }
 
+      setHasStore(true);
       alert("저장되었습니다.");
     } catch {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -765,6 +812,48 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {authUser && !storeStatusLoading && !hasStore ? (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  Onboarding
+                </p>
+                <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  먼저 우리 가게 정보를 등록해주세요
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  AI 답변이 가게 정책과 말투를 반영할 수 있도록 기본 정보를 먼저 저장해주세요.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollToSection("store-info")}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              >
+                가게 정보 등록하기
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {["가게명 입력", "말투 입력", "배송정책 입력", "환불정책 입력"].map(
+                (step, index) => (
+                  <div
+                    key={step}
+                    className="rounded-xl border border-emerald-100 bg-white px-4 py-3 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-zinc-900"
+                  >
+                    <span className="mb-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                      {index + 1}
+                    </span>
+                    <p className="font-medium text-zinc-800 dark:text-zinc-100">
+                      {step}
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <section className="sticky top-0 z-20 -mx-4 border-b border-zinc-200/70 bg-zinc-50/90 px-4 py-3 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/90 sm:top-2 sm:mx-0 sm:rounded-2xl sm:border sm:shadow-sm">
           <div className="mb-3">
