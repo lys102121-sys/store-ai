@@ -514,6 +514,10 @@ export default function Home() {
   }, [authLoading, authUser]);
 
   const stats = useMemo(() => computeReviewStats(history), [history]);
+  const needsStoreInfo = Boolean(authUser && !storeStatusLoading && !hasStore);
+  const aiGenerationBlocked = Boolean(
+    authUser && (storeStatusLoading || !hasStore),
+  );
 
   async function handleReviewSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -529,6 +533,12 @@ export default function Home() {
 
     if (!authUser) {
       setError("로그인이 필요합니다");
+      setReply("");
+      return;
+    }
+
+    if (!hasStore) {
+      setError("가게 정보를 먼저 등록해야 AI가 정확히 답변할 수 있습니다.");
       setReply("");
       return;
     }
@@ -580,6 +590,12 @@ export default function Home() {
 
     if (!authUser) {
       setCsError("로그인이 필요합니다");
+      setCsReply("");
+      return;
+    }
+
+    if (!hasStore) {
+      setCsError("가게 정보를 먼저 등록해야 AI가 정확히 답변할 수 있습니다.");
       setCsReply("");
       return;
     }
@@ -1102,11 +1118,17 @@ export default function Home() {
 
               <button
                 type="submit"
-                disabled={csLoading}
+                disabled={csLoading || aiGenerationBlocked}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-sky-700 px-5 text-sm font-medium text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
               >
                 {csLoading ? "생성 중..." : "CS 답변 생성"}
               </button>
+
+              {needsStoreInfo ? (
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  먼저 우리 가게 정보를 등록해주세요
+                </p>
+              ) : null}
 
               {csError ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
@@ -1250,11 +1272,16 @@ export default function Home() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || aiGenerationBlocked}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
               {isLoading ? "생성 중..." : "AI 답글 생성"}
             </button>
+            {needsStoreInfo ? (
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                먼저 우리 가게 정보를 등록해주세요
+              </p>
+            ) : null}
           </form>
 
           {error ? (
