@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { getSupabase } from "@/app/lib/supabase";
+import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -20,7 +20,13 @@ function formatReviewsForPrompt(reviews: ReviewRow[]): string {
     .join("\n");
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
+
+  if ("response" in auth) {
+    return auth.response;
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return Response.json(
       { error: "OPENAI_API_KEY is not configured." },
@@ -28,22 +34,10 @@ export async function GET() {
     );
   }
 
-  let supabase: ReturnType<typeof getSupabase>;
-
-  try {
-    supabase = getSupabase();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Supabase configuration error.";
-    return Response.json(
-      { error: "Supabase is not configured.", detail: message },
-      { status: 500 },
-    );
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("reviews")
     .select("review, sentiment")
+    .eq("user_id", auth.userId)
     .order("created_at", { ascending: false })
     .limit(20);
 

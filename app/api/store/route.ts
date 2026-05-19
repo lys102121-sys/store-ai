@@ -1,4 +1,4 @@
-import { getSupabase } from "@/app/lib/supabase";
+import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 type RequestBody = {
   store_name?: unknown;
@@ -8,6 +8,12 @@ type RequestBody = {
 };
 
 export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
+
+  if ("response" in auth) {
+    return auth.response;
+  }
+
   let body: RequestBody;
 
   try {
@@ -46,22 +52,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let supabase: ReturnType<typeof getSupabase>;
-
-  try {
-    supabase = getSupabase();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Supabase configuration error.";
-    return Response.json(
-      { error: "Supabase is not configured.", detail: message },
-      { status: 500 },
-    );
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("stores")
     .insert({
+      user_id: auth.userId,
       store_name,
       tone,
       shipping_policy,

@@ -1,22 +1,16 @@
-import { getSupabase } from "@/app/lib/supabase";
+import { requireAuthenticatedUser } from "@/app/lib/auth";
 
-export async function GET() {
-  let supabase: ReturnType<typeof getSupabase>;
+export async function GET(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
 
-  try {
-    supabase = getSupabase();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Supabase configuration error.";
-    return Response.json(
-      { error: "Supabase is not configured.", detail: message },
-      { status: 500 },
-    );
+  if ("response" in auth) {
+    return auth.response;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("stores")
     .select("*")
+    .eq("user_id", auth.userId)
     .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();

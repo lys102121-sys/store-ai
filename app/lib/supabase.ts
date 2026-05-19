@@ -32,4 +32,16 @@ export function getSupabase(): SupabaseClient {
   return browserClient;
 }
 
+export function getSupabaseWithAuth(accessToken: string): SupabaseClient {
+  const { url, anonKey } = assertEnv();
+
+  return createClient(url, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}
+
 export const supabase = getSupabase();

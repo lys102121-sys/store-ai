@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { getSupabase } from "@/app/lib/supabase";
+import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -43,6 +43,12 @@ function buildSystemPrompt(store: StoreRow): string {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
+
+  if ("response" in auth) {
+    return auth.response;
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return Response.json(
       { error: "OPENAI_API_KEY is not configured." },
@@ -77,22 +83,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let supabase: ReturnType<typeof getSupabase>;
-
-  try {
-    supabase = getSupabase();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Supabase configuration error.";
-    return Response.json(
-      { error: "Supabase is not configured.", detail: message },
-      { status: 500 },
-    );
-  }
-
-  const { data: store, error: storeError } = await supabase
+  const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select("store_name, tone, shipping_policy, refund_policy")
+    .eq("user_id", auth.userId)
     .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -145,9 +139,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: csMessageSaveError } = await supabase
+    const { error: csMessageSaveError } = await auth.supabase
       .from("cs_messages")
       .insert({
+        user_id: auth.userId,
         customer_message: customerMessage,
         reply,
       });

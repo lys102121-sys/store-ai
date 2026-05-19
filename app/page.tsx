@@ -1,6 +1,9 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+
+import { getSupabase } from "@/app/lib/supabase";
 
 type Sentiment = "positive" | "neutral" | "negative";
 
@@ -138,7 +141,9 @@ function computeReviewStats(reviews: ReviewHistoryItem[]) {
 }
 
 async function fetchInsightsData() {
-  const response = await fetch("/api/insights");
+  const response = await fetch("/api/insights", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
   const data = (await response.json()) as InsightsApiResponse;
 
   if (!response.ok || !data.insights) {
@@ -149,7 +154,9 @@ async function fetchInsightsData() {
 }
 
 async function fetchReviewHistory() {
-  const response = await fetch("/api/reviews");
+  const response = await fetch("/api/reviews", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
   const data = (await response.json()) as ReviewsListResponse;
 
   if (!response.ok) {
@@ -160,7 +167,9 @@ async function fetchReviewHistory() {
 }
 
 async function fetchCsMessageHistory() {
-  const response = await fetch("/api/cs-messages");
+  const response = await fetch("/api/cs-messages", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
   const data = (await response.json()) as CsMessagesListResponse;
 
   if (!response.ok) {
@@ -170,6 +179,22 @@ async function fetchCsMessageHistory() {
   }
 
   return data.csMessages ?? [];
+}
+
+async function getAuthenticatedRequestHeaders(
+  headers: HeadersInit = {},
+): Promise<HeadersInit> {
+  const { data, error } = await getSupabase().auth.getSession();
+  const token = data.session?.access_token;
+
+  if (error || !token) {
+    throw new Error("로그인이 필요합니다");
+  }
+
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 const kpiCardClass =
@@ -185,6 +210,11 @@ const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
 
 export default function Home() {
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authActionLoading, setAuthActionLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
   const [review, setReview] = useState("");
   const [tone, setTone] = useState("");
   const [reply, setReply] = useState("");
@@ -216,12 +246,63 @@ export default function Home() {
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState("");
 
+  useEffect(() => {
+    let isActive = true;
+    let unsubscribe: (() => void) | undefined;
+
+    void Promise.resolve()
+      .then(() => {
+        const supabaseClient = getSupabase();
+        const {
+          data: { subscription },
+        } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+          if (!isActive) return;
+          setAuthUser(session?.user ?? null);
+          setAuthError("");
+          setAuthLoading(false);
+        });
+
+        unsubscribe = () => subscription.unsubscribe();
+
+        return supabaseClient.auth.getSession();
+      })
+      .then(({ data, error }) => {
+        if (!isActive) return;
+
+        if (error) {
+          setAuthError(error.message);
+        }
+
+        setAuthUser(data.session?.user ?? null);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setAuthError(
+          error instanceof Error
+            ? error.message
+            : "로그인 상태를 확인하지 못했습니다.",
+        );
+        setAuthUser(null);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setAuthLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+      unsubscribe?.();
+    };
+  }, []);
+
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true);
     setInsightsError("");
 
     try {
-      const response = await fetch("/api/insights");
+      const response = await fetch("/api/insights", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
       const data = (await response.json()) as InsightsApiResponse;
 
       if (!response.ok || !data.insights) {
@@ -246,7 +327,9 @@ export default function Home() {
     setHistoryError("");
 
     try {
-      const response = await fetch("/api/reviews");
+      const response = await fetch("/api/reviews", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
       const data = (await response.json()) as ReviewsListResponse;
 
       if (!response.ok) {
@@ -269,7 +352,9 @@ export default function Home() {
     setCsMessagesError("");
 
     try {
-      const response = await fetch("/api/cs-messages");
+      const response = await fetch("/api/cs-messages", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
       const data = (await response.json()) as CsMessagesListResponse;
 
       if (!response.ok) {
@@ -293,6 +378,32 @@ export default function Home() {
 
   useEffect(() => {
     let isActive = true;
+
+    if (authLoading) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (!authUser) {
+      void Promise.resolve().then(() => {
+        if (!isActive) return;
+
+        setHistory([]);
+        setHistoryError("");
+        setHistoryLoading(false);
+        setCsMessages([]);
+        setCsMessagesError("");
+        setCsMessagesLoading(false);
+        setInsights("");
+        setInsightsError("");
+        setInsightsLoading(false);
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }
 
     void fetchReviewHistory()
       .then((reviews) => {
@@ -354,7 +465,7 @@ export default function Home() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [authLoading, authUser]);
 
   const stats = useMemo(() => computeReviewStats(history), [history]);
 
@@ -370,6 +481,12 @@ export default function Home() {
       return;
     }
 
+    if (!authUser) {
+      setError("로그인이 필요합니다");
+      setReply("");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
     setReply("");
@@ -377,9 +494,9 @@ export default function Home() {
     try {
       const response = await fetch("/api/review-reply", {
         method: "POST",
-        headers: {
+        headers: await getAuthenticatedRequestHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           review: trimmedReview,
           tone: trimmedTone,
@@ -415,6 +532,12 @@ export default function Home() {
       return;
     }
 
+    if (!authUser) {
+      setCsError("로그인이 필요합니다");
+      setCsReply("");
+      return;
+    }
+
     setCsLoading(true);
     setCsError("");
     setCsReply("");
@@ -422,9 +545,9 @@ export default function Home() {
     try {
       const response = await fetch("/api/cs-reply", {
         method: "POST",
-        headers: {
+        headers: await getAuthenticatedRequestHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           customerMessage: trimmedCustomerMessage,
           tone: trimmedTone,
@@ -456,15 +579,20 @@ export default function Home() {
       return;
     }
 
+    if (!authUser) {
+      setStoreError("로그인이 필요합니다");
+      return;
+    }
+
     setStoreSaving(true);
     setStoreError("");
 
     try {
       const response = await fetch("/api/store", {
         method: "POST",
-        headers: {
+        headers: await getAuthenticatedRequestHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           store_name: name,
           tone: storeTone,
@@ -535,9 +663,109 @@ export default function Home() {
     });
   }
 
+  async function handleKakaoLogin() {
+    setAuthActionLoading(true);
+    setAuthError("");
+
+    try {
+      const { error } = await getSupabase().auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        setAuthError(error.message);
+      }
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : "카카오 로그인을 시작하지 못했습니다.",
+      );
+    } finally {
+      setAuthActionLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    setAuthActionLoading(true);
+    setAuthError("");
+
+    try {
+      const { error } = await getSupabase().auth.signOut();
+
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
+
+      setAuthUser(null);
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : "로그아웃하지 못했습니다.",
+      );
+    } finally {
+      setAuthActionLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <div className="mx-auto w-full max-w-5xl space-y-6">
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+              Supabase Auth
+            </p>
+            {authUser ? (
+              <div className="mt-2">
+                <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  로그인됨
+                </h2>
+                <p className="mt-1 break-all text-sm text-zinc-600 dark:text-zinc-300">
+                  {authUser.email ?? authUser.id}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  로그인
+                </h2>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                  로그인하면 내 가게 데이터로 분리됩니다
+                </p>
+              </div>
+            )}
+            {authError ? (
+              <p className="mt-3 text-sm text-red-700 dark:text-red-300">
+                {authError}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-4 sm:mt-0">
+            {authUser ? (
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={authLoading || authActionLoading}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                {authActionLoading ? "처리 중..." : "로그아웃"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleKakaoLogin()}
+                disabled={authLoading || authActionLoading}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-yellow-400 px-5 text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {authActionLoading ? "연결 중..." : "카카오로 로그인"}
+              </button>
+            )}
+          </div>
+        </section>
+
         <section className="sticky top-0 z-20 -mx-4 border-b border-zinc-200/70 bg-zinc-50/90 px-4 py-3 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/90 sm:top-2 sm:mx-0 sm:rounded-2xl sm:border sm:shadow-sm">
           <div className="mb-3">
             <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
