@@ -46,8 +46,15 @@ type CsMessagesListResponse = {
   detail?: string;
 };
 
+type StoreSettings = {
+  store_name: string | null;
+  tone: string | null;
+  shipping_policy: string | null;
+  refund_policy: string | null;
+};
+
 type StoreApiResponse = {
-  store?: unknown;
+  store?: StoreSettings;
   error?: string;
   detail?: string;
 };
@@ -197,13 +204,13 @@ async function getAuthenticatedRequestHeaders(
   };
 }
 
-async function fetchHasStore() {
+async function fetchLatestStore() {
   const response = await fetch("/api/store/latest", {
     headers: await getAuthenticatedRequestHeaders(),
   });
 
   if (response.status === 404) {
-    return false;
+    return null;
   }
 
   const data = (await response.json()) as StoreApiResponse;
@@ -212,7 +219,7 @@ async function fetchHasStore() {
     throw new Error(data.error ?? "가게 정보를 확인하지 못했습니다.");
   }
 
-  return Boolean(data.store);
+  return data.store ?? null;
 }
 
 const kpiCardClass =
@@ -414,6 +421,10 @@ export default function Home() {
         setHistoryLoading(false);
         setHasStore(false);
         setStoreStatusLoading(false);
+        setStoreName("");
+        setStoreTone("");
+        setShippingPolicy("");
+        setRefundPolicy("");
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -451,10 +462,17 @@ export default function Home() {
         setHistoryLoading(false);
       });
 
-    void fetchHasStore()
-      .then((nextHasStore) => {
+    void fetchLatestStore()
+      .then((store) => {
         if (!isActive) return;
-        setHasStore(nextHasStore);
+        setHasStore(Boolean(store));
+
+        if (store) {
+          setStoreName(store.store_name ?? "");
+          setStoreTone(store.tone ?? "");
+          setShippingPolicy(store.shipping_policy ?? "");
+          setRefundPolicy(store.refund_policy ?? "");
+        }
       })
       .catch((error) => {
         if (!isActive) return;
@@ -991,6 +1009,12 @@ export default function Home() {
               가게명·말투·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
             </p>
           </div>
+
+          {hasStore ? (
+            <p className="-mt-4 mb-6 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              현재 등록된 가게 정보를 수정할 수 있습니다
+            </p>
+          ) : null}
 
           <form onSubmit={handleStoreSubmit} className="space-y-5">
             <div className="space-y-2">
