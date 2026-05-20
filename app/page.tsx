@@ -256,6 +256,13 @@ export default function Home() {
   const [storeTone, setStoreTone] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
+  const [shippingCutoffTime, setShippingCutoffTime] = useState("");
+  const [sameDayShipping, setSameDayShipping] = useState("가능");
+  const [courierName, setCourierName] = useState("");
+  const [remoteAreaFee, setRemoteAreaFee] = useState("");
+  const [changeOfMindRefund, setChangeOfMindRefund] = useState("불가능");
+  const [defectContactDeadline, setDefectContactDeadline] = useState("");
+  const [returnShippingFee, setReturnShippingFee] = useState("");
   const [storeError, setStoreError] = useState("");
   const [storeSaving, setStoreSaving] = useState(false);
   const [hasStore, setHasStore] = useState(false);
@@ -745,6 +752,9 @@ export default function Home() {
     "고급스럽고 차분하게",
   ] as const;
 
+  const policyOptionButtonClass =
+    "rounded-lg border px-3 py-2 text-xs font-medium transition";
+
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
       behavior: "smooth",
@@ -796,6 +806,33 @@ export default function Home() {
     } finally {
       setAuthActionLoading(false);
     }
+  }
+
+  function handleBuildShippingPolicy() {
+    const cutoff = shippingCutoffTime.trim() || "출고 마감 시간";
+    const courier = courierName.trim() || "택배사";
+    const remoteFee = remoteAreaFee.trim() || "추가 배송비";
+    const shippingSentence =
+      sameDayShipping === "가능"
+        ? `${cutoff} 이전 주문은 당일 출고되며, ${courier}을 통해 발송됩니다.`
+        : `${cutoff} 이전 주문도 당일 출고가 어려울 수 있으며, ${courier}을 통해 순차 발송됩니다.`;
+
+    setShippingPolicy(
+      `${shippingSentence} 제주/도서산간 지역은 추가 배송비 ${remoteFee}이 발생합니다.`,
+    );
+  }
+
+  function handleBuildRefundPolicy() {
+    const deadline = defectContactDeadline.trim() || "문의 기한";
+    const returnFee = returnShippingFee.trim() || "반품 배송비";
+    const changeOfMindSentence =
+      changeOfMindRefund === "가능"
+        ? "단순 변심으로 인한 환불은 가능합니다."
+        : "단순 변심으로 인한 환불은 불가합니다.";
+
+    setRefundPolicy(
+      `${changeOfMindSentence} 상품 하자가 있는 경우 ${deadline} 문의해 주세요. 반품 배송비는 ${returnFee}입니다.`,
+    );
   }
 
   return (
@@ -1078,6 +1115,103 @@ export default function Home() {
               <label htmlFor="shipping_policy" className="text-sm font-medium">
                 배송정책
               </label>
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      배송정책 작성 도우미
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      자주 묻는 배송 정보를 문장으로 정리합니다.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleBuildShippingPolicy}
+                    className="mt-2 inline-flex h-9 w-fit items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 sm:mt-0"
+                  >
+                    배송정책 문장 만들기
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="shipping_cutoff"
+                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      출고 마감 시간
+                    </label>
+                    <input
+                      id="shipping_cutoff"
+                      type="text"
+                      value={shippingCutoffTime}
+                      onChange={(event) =>
+                        setShippingCutoffTime(event.target.value)
+                      }
+                      placeholder="예: 오후 2시"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                      당일 출고 여부
+                    </p>
+                    <div className="flex gap-2">
+                      {["가능", "불가능"].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setSameDayShipping(option)}
+                          className={`${policyOptionButtonClass} ${
+                            sameDayShipping === option
+                              ? "border-sky-600 bg-sky-600 text-white"
+                              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                          }`}
+                          aria-pressed={sameDayShipping === option}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="courier_name"
+                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      택배사
+                    </label>
+                    <input
+                      id="courier_name"
+                      type="text"
+                      value={courierName}
+                      onChange={(event) => setCourierName(event.target.value)}
+                      placeholder="예: CJ대한통운"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="remote_area_fee"
+                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      제주/도서산간 추가 배송비
+                    </label>
+                    <input
+                      id="remote_area_fee"
+                      type="text"
+                      value={remoteAreaFee}
+                      onChange={(event) => setRemoteAreaFee(event.target.value)}
+                      placeholder="예: 3,000원"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
               <textarea
                 id="shipping_policy"
                 value={shippingPolicy}
@@ -1091,6 +1225,88 @@ export default function Home() {
               <label htmlFor="refund_policy" className="text-sm font-medium">
                 환불정책
               </label>
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      환불정책 작성 도우미
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      환불 가능 여부와 문의 기준을 문장으로 정리합니다.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleBuildRefundPolicy}
+                    className="mt-2 inline-flex h-9 w-fit items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 sm:mt-0"
+                  >
+                    환불정책 문장 만들기
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                      단순 변심 환불 가능 여부
+                    </p>
+                    <div className="flex gap-2">
+                      {["가능", "불가능"].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setChangeOfMindRefund(option)}
+                          className={`${policyOptionButtonClass} ${
+                            changeOfMindRefund === option
+                              ? "border-emerald-600 bg-emerald-600 text-white"
+                              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                          }`}
+                          aria-pressed={changeOfMindRefund === option}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="defect_deadline"
+                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      상품 하자 문의 기한
+                    </label>
+                    <input
+                      id="defect_deadline"
+                      type="text"
+                      value={defectContactDeadline}
+                      onChange={(event) =>
+                        setDefectContactDeadline(event.target.value)
+                      }
+                      placeholder="예: 수령 후 24시간 이내"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="return_shipping_fee"
+                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    >
+                      반품 배송비
+                    </label>
+                    <input
+                      id="return_shipping_fee"
+                      type="text"
+                      value={returnShippingFee}
+                      onChange={(event) =>
+                        setReturnShippingFee(event.target.value)
+                      }
+                      placeholder="예: 고객 부담 3,000원"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </div>
               <textarea
                 id="refund_policy"
                 value={refundPolicy}
