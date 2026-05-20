@@ -730,11 +730,19 @@ export default function Home() {
 
   const categoryItems = [
     { label: "우리 가게 정보", targetId: "store-info" },
-    { label: "문의 답변", targetId: "cs-reply" },
-    { label: "자동 리뷰 답변", targetId: "review-reply" },
+    { label: "문의에 답변하기", targetId: "cs-reply" },
+    { label: "리뷰에 답글 달기", targetId: "review-reply" },
     { label: "리뷰 히스토리", targetId: "review-history" },
     { label: "최근 CS 문의", targetId: "cs-history" },
     { label: "AI 운영 분석", targetId: "ai-insights" },
+  ] as const;
+
+  const tonePresets = [
+    "친절하고 정중하게",
+    "따뜻하고 다정하게",
+    "짧고 깔끔하게",
+    "센스 있고 밝게",
+    "고급스럽고 차분하게",
   ] as const;
 
   function scrollToSection(targetId: string) {
@@ -1043,6 +1051,27 @@ export default function Home() {
                 placeholder="예) 친근하고 짧게"
                 className={inputClass}
               />
+              <div className="flex flex-wrap gap-2 pt-1">
+                {tonePresets.map((preset) => {
+                  const isSelected = storeTone === preset;
+
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setStoreTone(preset)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        isSelected
+                          ? "border-emerald-600 bg-emerald-600 text-white shadow-sm dark:border-emerald-500 dark:bg-emerald-500"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/40"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      {preset}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1093,14 +1122,14 @@ export default function Home() {
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                Customer Support
+              <p className="mb-2 inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-300 dark:ring-sky-900">
+                정책 기반 CS
               </p>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                CS 문의 답변 생성
+                문의에 답변하기
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                고객 문의와 원하는 답변 톤을 입력하면 가게 정책을 반영한 CS 답변을 생성합니다.
+                배송, 환불, 교환, 상품 관련 고객 문의에 답변합니다. 등록된 배송정책과 환불정책을 기준으로 답변하며, 모르는 내용은 추측하지 않습니다.
               </p>
             </div>
             <span className="inline-flex w-fit rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-300 dark:ring-sky-900">
@@ -1121,7 +1150,7 @@ export default function Home() {
                   id="customer_message"
                   value={customerMessage}
                   onChange={(event) => setCustomerMessage(event.target.value)}
-                  placeholder="예) 주문한 상품이 아직 도착하지 않았어요. 배송 현황을 확인해 주세요."
+                  placeholder="예: 제주도 배송비 얼마예요? / 환불 가능한가요? / 오늘 출고되나요?"
                   className="min-h-36 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-sky-500 dark:border-zinc-700 dark:bg-zinc-950"
                 />
               </div>
@@ -1145,7 +1174,7 @@ export default function Home() {
                 disabled={csLoading || aiGenerationBlocked}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-sky-700 px-5 text-sm font-medium text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
               >
-                {csLoading ? "생성 중..." : "CS 답변 생성"}
+                {csLoading ? "생성 중..." : "문의 답변 작성하기"}
               </button>
 
               {needsStoreInfo ? (
@@ -1258,11 +1287,14 @@ export default function Home() {
 
         <section id="review-reply" className={`${cardClass} scroll-mt-32`}>
           <div className="mb-6">
+            <p className="mb-2 inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
+              리뷰 답글
+            </p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              AI 리뷰 답글 생성기
+              리뷰에 답글 달기
             </h1>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              리뷰와 원하는 말투를 입력하면 한국어 답글을 생성합니다.
+              고객이 남긴 리뷰에 감사 답글을 작성합니다. 맛, 서비스, 배송에 대한 리뷰를 입력하면 우리 가게 말투에 맞춰 답글을 만들어드려요.
             </p>
           </div>
 
@@ -1275,7 +1307,7 @@ export default function Home() {
                 id="review"
                 value={review}
                 onChange={(event) => setReview(event.target.value)}
-                placeholder="예) 음식이 맛있고 사장님이 친절했어요."
+                placeholder="예: 족발이 정말 부드럽고 맛있었어요! 다음에도 주문할게요."
                 className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
               />
             </div>
@@ -1299,7 +1331,7 @@ export default function Home() {
               disabled={isLoading || aiGenerationBlocked}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
-              {isLoading ? "생성 중..." : "AI 답글 생성"}
+              {isLoading ? "생성 중..." : "리뷰 답글 작성하기"}
             </button>
             {needsStoreInfo ? (
               <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
