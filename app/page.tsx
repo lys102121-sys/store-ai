@@ -22,6 +22,15 @@ type CsMessageHistoryItem = {
   created_at: string;
 };
 
+type MissingInfoItem = {
+  id: string;
+  question: string;
+  reason: string;
+  source_message: string;
+  status: string;
+  created_at: string;
+};
+
 type ReviewApiResponse = {
   reply?: string;
   error?: string;
@@ -42,6 +51,12 @@ type ReviewsListResponse = {
 
 type CsMessagesListResponse = {
   csMessages?: CsMessageHistoryItem[];
+  error?: string;
+  detail?: string;
+};
+
+type MissingInfosListResponse = {
+  missingInfos?: MissingInfoItem[];
   error?: string;
   detail?: string;
 };
@@ -206,6 +221,21 @@ async function fetchCsMessageHistory() {
   return data.csMessages ?? [];
 }
 
+async function fetchMissingInfoList() {
+  const response = await fetch("/api/missing-infos", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
+  const data = (await response.json()) as MissingInfosListResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ?? "확인이 필요한 정보를 불러오지 못했습니다.",
+    );
+  }
+
+  return data.missingInfos ?? [];
+}
+
 async function getAuthenticatedRequestHeaders(
   headers: HeadersInit = {},
 ): Promise<HeadersInit> {
@@ -358,6 +388,10 @@ export default function Home() {
   const [csMessages, setCsMessages] = useState<CsMessageHistoryItem[]>([]);
   const [csMessagesLoading, setCsMessagesLoading] = useState(true);
   const [csMessagesError, setCsMessagesError] = useState("");
+
+  const [missingInfos, setMissingInfos] = useState<MissingInfoItem[]>([]);
+  const [missingInfosLoading, setMissingInfosLoading] = useState(true);
+  const [missingInfosError, setMissingInfosError] = useState("");
 
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -516,6 +550,25 @@ export default function Home() {
     }
   }, []);
 
+  const loadMissingInfos = useCallback(async () => {
+    setMissingInfosLoading(true);
+    setMissingInfosError("");
+
+    try {
+      const infos = await fetchMissingInfoList();
+      setMissingInfos(infos);
+    } catch (error) {
+      setMissingInfosError(
+        error instanceof Error
+          ? error.message
+          : "확인이 필요한 정보를 불러오지 못했습니다.",
+      );
+      setMissingInfos([]);
+    } finally {
+      setMissingInfosLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isActive = true;
 
@@ -546,6 +599,9 @@ export default function Home() {
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
+        setMissingInfos([]);
+        setMissingInfosError("");
+        setMissingInfosLoading(false);
         setInsights("");
         setInsightsError("");
         setInsightsLoading(false);
@@ -559,6 +615,7 @@ export default function Home() {
     void Promise.resolve().then(() => {
       if (!isActive) return;
       setStoreStatusLoading(true);
+      setMissingInfosLoading(true);
       setStoreDraftReady(false);
 
       const draft = readStoreDraft(authUser.id);
@@ -654,6 +711,25 @@ export default function Home() {
       .finally(() => {
         if (!isActive) return;
         setCsMessagesLoading(false);
+      });
+
+    void fetchMissingInfoList()
+      .then((infos) => {
+        if (!isActive) return;
+        setMissingInfos(infos);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setMissingInfosError(
+          error instanceof Error
+            ? error.message
+            : "확인이 필요한 정보를 불러오지 못했습니다.",
+        );
+        setMissingInfos([]);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setMissingInfosLoading(false);
       });
 
     void fetchInsightsData()
@@ -803,6 +879,7 @@ export default function Home() {
 
       setCsReply(data.reply);
       void loadCsMessages();
+      void loadMissingInfos();
     } catch {
       setCsError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -899,6 +976,7 @@ export default function Home() {
     { label: "리뷰에 답글 달기", targetId: "review-reply" },
     { label: "리뷰 히스토리", targetId: "review-history" },
     { label: "최근 CS 문의", targetId: "cs-history" },
+    { label: "확인 필요 정보", targetId: "missing-infos" },
     { label: "AI 운영 분석", targetId: "ai-insights" },
   ] as const;
 
@@ -1101,7 +1179,7 @@ export default function Home() {
               필요한 작업으로 바로 이동합니다.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
             {categoryItems.map((item) => (
               <button
                 key={item.targetId}
@@ -1730,6 +1808,91 @@ export default function Home() {
                       </p>
                       <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
                         {item.reply}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section id="missing-infos" className={`${cardClass} scroll-mt-32`}>
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                AI가 추가로 확인이 필요한 정보
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                등록된 가게, 상품, 정책 정보만으로 답하기 어려웠던 문의를 모아둡니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadMissingInfos()}
+              disabled={missingInfosLoading}
+              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              새로고침
+            </button>
+          </div>
+
+          {missingInfosError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {missingInfosError}
+            </div>
+          ) : null}
+
+          {missingInfosLoading ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              확인이 필요한 정보를 불러오는 중...
+            </p>
+          ) : missingInfos.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              아직 추가 확인이 필요한 정보가 없습니다.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {missingInfos.map((item) => (
+                <li
+                  key={item.id}
+                  className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800">
+                      {item.status}
+                    </span>
+                    <time
+                      dateTime={item.created_at}
+                      className="text-xs text-zinc-500 dark:text-zinc-400"
+                    >
+                      {formatDate(item.created_at)}
+                    </time>
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="rounded-lg border border-amber-200 bg-white p-3 dark:border-amber-900/50 dark:bg-zinc-900">
+                      <p className="mb-1 font-medium text-amber-800 dark:text-amber-200">
+                        사장님에게 필요한 질문
+                      </p>
+                      <p className="whitespace-pre-wrap leading-6 text-zinc-800 dark:text-zinc-200">
+                        {item.question}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <p className="mb-1 font-medium text-sky-700 dark:text-sky-300">
+                        원래 고객 문의
+                      </p>
+                      <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                        {item.source_message}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <p className="mb-1 font-medium text-zinc-700 dark:text-zinc-200">
+                        필요한 이유
+                      </p>
+                      <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                        {item.reason}
                       </p>
                     </div>
                   </div>
