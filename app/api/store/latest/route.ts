@@ -9,9 +9,12 @@ export async function GET(request: Request) {
 
   const { data, error } = await auth.supabase
     .from("stores")
-    .select("*")
+    .select(
+      "user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, created_at, updated_at",
+    )
     .eq("user_id", auth.userId)
-    .order("id", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 

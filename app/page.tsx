@@ -47,16 +47,34 @@ type CsMessagesListResponse = {
 };
 
 type StoreSettings = {
+  user_id: string | null;
   store_name: string | null;
   tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
+  product_name: string | null;
+  product_description: string | null;
+  product_details: string | null;
+  product_caution: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type StoreApiResponse = {
   store?: StoreSettings;
   error?: string;
   detail?: string;
+};
+
+type StoreDraft = {
+  storeName: string;
+  storeTone: string;
+  shippingPolicy: string;
+  refundPolicy: string;
+  productName: string;
+  productDescription: string;
+  productDetails: string;
+  productCaution: string;
 };
 
 type InsightsApiResponse = {
@@ -222,6 +240,66 @@ async function fetchLatestStore() {
   return data.store ?? null;
 }
 
+const STORE_DRAFT_STORAGE_KEY_PREFIX = "store-info-draft";
+
+function getStoreDraftStorageKey(userId: string) {
+  return `${STORE_DRAFT_STORAGE_KEY_PREFIX}:${userId}`;
+}
+
+function isStoreDraft(value: unknown): value is StoreDraft {
+  if (!value || typeof value !== "object") return false;
+
+  const draft = value as Partial<Record<keyof StoreDraft, unknown>>;
+
+  return (
+    typeof draft.storeName === "string" &&
+    typeof draft.storeTone === "string" &&
+    typeof draft.shippingPolicy === "string" &&
+    typeof draft.refundPolicy === "string" &&
+    typeof draft.productName === "string" &&
+    typeof draft.productDescription === "string" &&
+    typeof draft.productDetails === "string" &&
+    typeof draft.productCaution === "string"
+  );
+}
+
+function readStoreDraft(userId: string): StoreDraft | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const rawDraft = window.localStorage.getItem(
+      getStoreDraftStorageKey(userId),
+    );
+
+    if (!rawDraft) return null;
+
+    const parsedDraft: unknown = JSON.parse(rawDraft);
+
+    return isStoreDraft(parsedDraft) ? parsedDraft : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoreDraft(userId: string, draft: StoreDraft) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(
+    getStoreDraftStorageKey(userId),
+    JSON.stringify(draft),
+  );
+}
+
+function removeStoreDraft(userId: string) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.removeItem(getStoreDraftStorageKey(userId));
+}
+
+function hasStoreDraftContent(draft: StoreDraft) {
+  return Object.values(draft).some((value) => value.trim().length > 0);
+}
+
 const kpiCardClass =
   "rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition dark:border-zinc-800 dark:bg-zinc-900";
 
@@ -256,6 +334,10 @@ export default function Home() {
   const [storeTone, setStoreTone] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [productDetails, setProductDetails] = useState("");
+  const [productCaution, setProductCaution] = useState("");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -267,6 +349,7 @@ export default function Home() {
   const [storeSaving, setStoreSaving] = useState(false);
   const [hasStore, setHasStore] = useState(false);
   const [storeStatusLoading, setStoreStatusLoading] = useState(true);
+  const [storeDraftReady, setStoreDraftReady] = useState(false);
 
   const [history, setHistory] = useState<ReviewHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -279,6 +362,29 @@ export default function Home() {
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState("");
+
+  const storeDraft = useMemo<StoreDraft>(
+    () => ({
+      storeName,
+      storeTone,
+      shippingPolicy,
+      refundPolicy,
+      productName,
+      productDescription,
+      productDetails,
+      productCaution,
+    }),
+    [
+      storeName,
+      storeTone,
+      shippingPolicy,
+      refundPolicy,
+      productName,
+      productDescription,
+      productDetails,
+      productCaution,
+    ],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -428,10 +534,15 @@ export default function Home() {
         setHistoryLoading(false);
         setHasStore(false);
         setStoreStatusLoading(false);
+        setStoreDraftReady(false);
         setStoreName("");
         setStoreTone("");
         setShippingPolicy("");
         setRefundPolicy("");
+        setProductName("");
+        setProductDescription("");
+        setProductDetails("");
+        setProductCaution("");
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -448,6 +559,22 @@ export default function Home() {
     void Promise.resolve().then(() => {
       if (!isActive) return;
       setStoreStatusLoading(true);
+      setStoreDraftReady(false);
+
+      const draft = readStoreDraft(authUser.id);
+
+      if (draft) {
+        setStoreName(draft.storeName);
+        setStoreTone(draft.storeTone);
+        setShippingPolicy(draft.shippingPolicy);
+        setRefundPolicy(draft.refundPolicy);
+        setProductName(draft.productName);
+        setProductDescription(draft.productDescription);
+        setProductDetails(draft.productDetails);
+        setProductCaution(draft.productCaution);
+      }
+
+      setStoreDraftReady(true);
     });
 
     void fetchReviewHistory()
@@ -474,11 +601,26 @@ export default function Home() {
         if (!isActive) return;
         setHasStore(Boolean(store));
 
-        if (store) {
+        const draft = readStoreDraft(authUser.id);
+
+        if (store && !draft) {
           setStoreName(store.store_name ?? "");
           setStoreTone(store.tone ?? "");
           setShippingPolicy(store.shipping_policy ?? "");
           setRefundPolicy(store.refund_policy ?? "");
+          setProductName(store.product_name ?? "");
+          setProductDescription(store.product_description ?? "");
+          setProductDetails(store.product_details ?? "");
+          setProductCaution(store.product_caution ?? "");
+        } else if (!store && !draft) {
+          setStoreName("");
+          setStoreTone("");
+          setShippingPolicy("");
+          setRefundPolicy("");
+          setProductName("");
+          setProductDescription("");
+          setProductDetails("");
+          setProductCaution("");
         }
       })
       .catch((error) => {
@@ -537,6 +679,17 @@ export default function Home() {
       isActive = false;
     };
   }, [authLoading, authUser]);
+
+  useEffect(() => {
+    if (!authUser || !storeDraftReady) return;
+
+    if (hasStoreDraftContent(storeDraft)) {
+      saveStoreDraft(authUser.id, storeDraft);
+      return;
+    }
+
+    removeStoreDraft(authUser.id);
+  }, [authUser, storeDraft, storeDraftReady]);
 
   const stats = useMemo(() => computeReviewStats(history), [history]);
   const needsStoreInfo = Boolean(authUser && !storeStatusLoading && !hasStore);
@@ -685,6 +838,10 @@ export default function Home() {
           tone: storeTone,
           shipping_policy: shippingPolicy,
           refund_policy: refundPolicy,
+          product_name: productName,
+          product_description: productDescription,
+          product_details: productDetails,
+          product_caution: productCaution,
         }),
       });
 
@@ -696,6 +853,7 @@ export default function Home() {
       }
 
       setHasStore(true);
+      removeStoreDraft(authUser.id);
       alert("저장되었습니다.");
     } catch {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -1108,6 +1266,86 @@ export default function Home() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  대표 상품 정보
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  상품 관련 문의에 더 정확히 답할 수 있도록 대표 상품 정보를 입력해 주세요.
+                </p>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="product_name"
+                    className="text-sm font-medium"
+                  >
+                    대표 상품명
+                  </label>
+                  <input
+                    id="product_name"
+                    type="text"
+                    value={productName}
+                    onChange={(event) => setProductName(event.target.value)}
+                    placeholder="예: 수제 견과 강정 세트"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="product_description"
+                    className="text-sm font-medium"
+                  >
+                    상품 설명
+                  </label>
+                  <textarea
+                    id="product_description"
+                    value={productDescription}
+                    onChange={(event) =>
+                      setProductDescription(event.target.value)
+                    }
+                    placeholder="대표 상품의 특징, 맛, 용도 등을 적어주세요."
+                    className={textareaClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="product_details"
+                    className="text-sm font-medium"
+                  >
+                    구성/용량/재질/사이즈 등
+                  </label>
+                  <textarea
+                    id="product_details"
+                    value={productDetails}
+                    onChange={(event) => setProductDetails(event.target.value)}
+                    placeholder="예: 8개입, 240g, 국내산 견과류 사용"
+                    className={textareaClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="product_caution"
+                    className="text-sm font-medium"
+                  >
+                    보관방법/주의사항/알레르기/사용법 등
+                  </label>
+                  <textarea
+                    id="product_caution"
+                    value={productCaution}
+                    onChange={(event) => setProductCaution(event.target.value)}
+                    placeholder="예: 직사광선을 피해 서늘한 곳에 보관, 견과류 알레르기 주의"
+                    className={textareaClass}
+                  />
+                </div>
               </div>
             </div>
 

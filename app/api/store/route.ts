@@ -5,7 +5,14 @@ type RequestBody = {
   tone?: unknown;
   shipping_policy?: unknown;
   refund_policy?: unknown;
+  product_name?: unknown;
+  product_description?: unknown;
+  product_details?: unknown;
+  product_caution?: unknown;
 };
+
+const storeSelectColumns =
+  "id, user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, created_at, updated_at";
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -29,12 +36,16 @@ export async function POST(request: Request) {
     typeof body.store_name !== "string" ||
     typeof body.tone !== "string" ||
     typeof body.shipping_policy !== "string" ||
-    typeof body.refund_policy !== "string"
+    typeof body.refund_policy !== "string" ||
+    typeof body.product_name !== "string" ||
+    typeof body.product_description !== "string" ||
+    typeof body.product_details !== "string" ||
+    typeof body.product_caution !== "string"
   ) {
     return Response.json(
       {
         error:
-          "store_name, tone, shipping_policy, and refund_policy must all be strings.",
+          "store_name, tone, shipping_policy, refund_policy, and product fields must all be strings.",
       },
       { status: 400 },
     );
@@ -44,6 +55,10 @@ export async function POST(request: Request) {
   const tone = body.tone.trim();
   const shipping_policy = body.shipping_policy.trim();
   const refund_policy = body.refund_policy.trim();
+  const product_name = body.product_name.trim();
+  const product_description = body.product_description.trim();
+  const product_details = body.product_details.trim();
+  const product_caution = body.product_caution.trim();
 
   if (!store_name) {
     return Response.json(
@@ -52,17 +67,57 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await auth.supabase
+  const savedAt = new Date().toISOString();
+  const storePayload = {
+    store_name,
+    tone,
+    shipping_policy,
+    refund_policy,
+    product_name,
+    product_description,
+    product_details,
+    product_caution,
+    updated_at: savedAt,
+  };
+
+  const { data: existingStore, error: existingStoreError } = await auth.supabase
     .from("stores")
-    .insert({
-      user_id: auth.userId,
-      store_name,
-      tone,
-      shipping_policy,
-      refund_policy,
-    })
-    .select()
-    .single();
+    .select("id")
+    .eq("user_id", auth.userId)
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingStoreError) {
+    return Response.json(
+      {
+        error: "Failed to load existing store.",
+        detail: existingStoreError.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  const query = existingStore
+    ? auth.supabase
+        .from("stores")
+        .update(storePayload)
+        .eq("id", existingStore.id)
+        .eq("user_id", auth.userId)
+        .select(storeSelectColumns)
+        .single()
+    : auth.supabase
+        .from("stores")
+        .insert({
+          user_id: auth.userId,
+          ...storePayload,
+          created_at: savedAt,
+        })
+        .select(storeSelectColumns)
+        .single();
+
+  const { data, error } = await query;
 
   if (error) {
     return Response.json(
@@ -71,5 +126,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return Response.json({ store: data }, { status: 201 });
+  return Response.json({ store: data }, { status: existingStore ? 200 : 201 });
 }

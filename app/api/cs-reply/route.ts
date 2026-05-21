@@ -12,10 +12,17 @@ type RequestBody = {
 };
 
 type StoreRow = {
+  user_id: string | null;
   store_name: string | null;
   tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
+  product_name: string | null;
+  product_description: string | null;
+  product_details: string | null;
+  product_caution: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 function buildSystemPrompt(store: StoreRow): string {
@@ -24,7 +31,33 @@ function buildSystemPrompt(store: StoreRow): string {
   const shipping = store.shipping_policy?.trim() || "(배송 정책 없음)";
   const refund = store.refund_policy?.trim() || "(환불 정책 없음)";
 
+  const productName = store.product_name?.trim() || "(대표 상품명 없음)";
+  const productDescription =
+    store.product_description?.trim() || "(상품 설명 없음)";
+  const productDetails =
+    store.product_details?.trim() || "(구성/용량/재질/사이즈 정보 없음)";
+  const productCaution =
+    store.product_caution?.trim() ||
+    "(보관방법/주의사항/알레르기/사용법 정보 없음)";
+
   return [
+    "[대표 상품 정보 - 상품 문의에서 반드시 우선 참고]",
+    `대표 상품명: ${productName}`,
+    `상품 설명: ${productDescription}`,
+    `구성/용량/재질/사이즈 등: ${productDetails}`,
+    `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
+    "",
+    "상품 관련 질문은 배송정책이나 환불정책보다 대표 상품 정보를 먼저 확인하세요.",
+    "사이즈, 사이즈 조절, 길이, 폭, 구성, 용량, 재질, 색상, 사용법, 보관방법, 주의사항, 알레르기 질문은 product_details와 product_caution을 최우선으로 참고하세요.",
+    'product_details에 "오픈링 형태로 약간의 사이즈 조절이 가능합니다"라는 정보가 있으면, 고객에게 사이즈 조절이 가능하다고 답변하세요.',
+    '예: 고객이 "이 반지 사이즈 조절 되나요?"라고 묻고 product_details에 "오픈링 형태로 약간의 사이즈 조절이 가능합니다"가 있으면 "오픈링 형태라 약간의 사이즈 조절이 가능합니다."라고 답변하세요.',
+    "대표 상품 정보에 있는 내용을 '명시되어 있지 않습니다'라고 답하지 마세요.",
+    '등록된 대표 상품 정보와 정책 어디에도 없는 내용에만 "해당 상품 정보는 사장님 확인이 필요합니다."라고 안내하세요.',
+    "",
+    "상품 관련 문의라면 product_name, product_description, product_details, product_caution 정보를 우선 참고하세요.",
+    "등록된 상품 정보에 없는 내용은 추측하지 말고 반드시 \"해당 상품 정보는 사장님 확인이 필요합니다.\"라고 안내하세요.",
+    "상품 정보와 정책 정보가 모두 관련된 문의라면 문의에 직접 필요한 내용만 간결하게 반영하세요.",
+    "",
     "CS 답변 품질 규칙입니다.",
     "반드시 한국어만 사용하세요.",
     "고객에게 보여줄 최종 답변만 작성하세요.",
@@ -73,6 +106,12 @@ function buildSystemPrompt(store: StoreRow): string {
     `브랜드 말투(기본 톤): ${brandTone}`,
     `배송 정책: ${shipping}`,
     `환불 정책: ${refund}`,
+    "",
+    "[대표 상품 정보]",
+    `대표 상품명: ${productName}`,
+    `상품 설명: ${productDescription}`,
+    `구성/용량/재질/사이즈 등: ${productDetails}`,
+    `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
   ].join("\n");
 }
 
@@ -119,9 +158,12 @@ export async function POST(request: Request) {
 
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
-    .select("store_name, tone, shipping_policy, refund_policy")
+    .select(
+      "user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, created_at, updated_at",
+    )
     .eq("user_id", auth.userId)
-    .order("id", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
