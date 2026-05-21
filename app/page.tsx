@@ -27,6 +27,8 @@ type MissingInfoItem = {
   question: string;
   reason: string;
   source_message: string;
+  source_messages?: string[] | null;
+  inquiry_count?: number | null;
   status: string;
   topic?: string | null;
   created_at: string;
@@ -2001,6 +2003,11 @@ export default function Home() {
                     <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800">
                       {item.status}
                     </span>
+                    {(item.inquiry_count ?? 1) >= 2 ? (
+                      <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-800 ring-1 ring-orange-200 dark:bg-orange-900/50 dark:text-orange-200 dark:ring-orange-800">
+                        관련 문의 총 {item.inquiry_count}건
+                      </span>
+                    ) : null}
                     <time
                       dateTime={item.created_at}
                       className="text-xs text-zinc-500 dark:text-zinc-400"
@@ -2026,6 +2033,23 @@ export default function Home() {
                         {item.source_message}
                       </p>
                     </div>
+                    {item.source_messages && item.source_messages.length > 0 ? (
+                      <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <p className="mb-2 font-medium text-zinc-700 dark:text-zinc-200">
+                          유사 문의 예시
+                        </p>
+                        <ul className="space-y-1.5 text-zinc-700 dark:text-zinc-300">
+                          {item.source_messages.slice(0, 3).map((message) => (
+                            <li key={message} className="flex gap-2">
+                              <span aria-hidden> - </span>
+                              <span className="whitespace-pre-wrap leading-6">
+                                {message}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <p className="mb-1 font-medium text-zinc-700 dark:text-zinc-200">
                         필요한 이유

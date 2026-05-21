@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const { data, error } = await auth.supabase
     .from("missing_infos")
     .select(
-      "id, user_id, question, reason, source_message, status, topic, created_at",
+      "id, user_id, question, reason, source_message, source_messages, inquiry_count, status, topic, created_at",
     )
     .eq("user_id", auth.userId)
     .eq("status", "pending")
