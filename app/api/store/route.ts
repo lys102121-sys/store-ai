@@ -9,10 +9,11 @@ type RequestBody = {
   product_description?: unknown;
   product_details?: unknown;
   product_caution?: unknown;
+  extra_faq?: unknown;
 };
 
 const storeSelectColumns =
-  "id, user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, created_at, updated_at";
+  "id, user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at";
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -40,7 +41,8 @@ export async function POST(request: Request) {
     typeof body.product_name !== "string" ||
     typeof body.product_description !== "string" ||
     typeof body.product_details !== "string" ||
-    typeof body.product_caution !== "string"
+    typeof body.product_caution !== "string" ||
+    typeof body.extra_faq !== "string"
   ) {
     return Response.json(
       {
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
   const product_description = body.product_description.trim();
   const product_details = body.product_details.trim();
   const product_caution = body.product_caution.trim();
+  const extra_faq = body.extra_faq.trim();
 
   if (!store_name) {
     return Response.json(
@@ -77,6 +80,7 @@ export async function POST(request: Request) {
     product_description,
     product_details,
     product_caution,
+    extra_faq,
     updated_at: savedAt,
   };
 

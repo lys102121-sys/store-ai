@@ -21,9 +21,62 @@ type StoreRow = {
   product_description: string | null;
   product_details: string | null;
   product_caution: string | null;
+  extra_faq: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
+
+type MissingInfoTopic =
+  | "gift_wrapping"
+  | "allergy"
+  | "size_adjustment"
+  | "care_instruction"
+  | "material"
+  | "product_composition"
+  | "shipping_fee"
+  | "shipping_schedule"
+  | "refund_exchange"
+  | "general";
+
+function classifyMissingInfoTopic(text: string): MissingInfoTopic {
+  if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
+    return "gift_wrapping";
+  }
+
+  if (/알레르기|알러지|피부|금속 알레르기/.test(text)) {
+    return "allergy";
+  }
+
+  if (/사이즈|조절|크기|호수/.test(text)) {
+    return "size_adjustment";
+  }
+
+  if (/물|땀|향수|변색|보관|세척/.test(text)) {
+    return "care_instruction";
+  }
+
+  if (/재질|소재|실버|은|금속/.test(text)) {
+    return "material";
+  }
+
+  if (/구성|용량|몇 인분|수량/.test(text)) {
+    return "product_composition";
+  }
+
+  if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
+    return "shipping_fee";
+  }
+
+  if (/출고|배송일|언제 배송|발송/.test(text)) {
+    return "shipping_schedule";
+  }
+
+  if (/환불|반품|교환/.test(text)) {
+    return "refund_exchange";
+  }
+
+  return "general";
+}
 
 function hasMissingInfoSignal(reply: string) {
   return [
@@ -76,6 +129,7 @@ function getRegisteredStoreText(store: StoreRow) {
     store.product_description,
     store.product_details,
     store.product_caution,
+    store.extra_faq,
   ]
     .filter((value): value is string => Boolean(value?.trim()))
     .join("\n");
@@ -183,6 +237,7 @@ function buildSystemPrompt(store: StoreRow): string {
   const productCaution =
     store.product_caution?.trim() ||
     "(보관방법/주의사항/알레르기/사용법 정보 없음)";
+  const extraFaq = store.extra_faq?.trim() || "(기타 FAQ/포장·옵션 정보 없음)";
 
   return [
     "[정보 부족 시 절대 단정 금지]",
@@ -198,11 +253,20 @@ function buildSystemPrompt(store: StoreRow): string {
     "CS 답변은 고객에게 보여줄 최종 답변만 작성하세요.",
     "반드시 한국어만 사용하세요.",
     "답변은 2~4문장으로 간결하게 작성하세요.",
+    '답변 마지막에 "궁금한 점이 있으면 언제든지 문의해 주세요" 같은 일반적인 문장을 반복하지 마세요.',
+    "가능하면 고객이 실제로 할 수 있는 다음 행동을 안내하세요.",
+    "단, 등록된 가게 정보, 상품 정보, 배송정책, 환불정책에 근거가 있을 때만 행동 안내를 하세요.",
+    "행동 안내는 자연스럽고 짧게 작성하세요.",
     "",
     "[정보 부족 답변 예시]",
     '나쁜 예시 - 고객 문의: "선물 포장 가능한가요?" / 등록 정보: 선물 포장 관련 정보 없음 / 답변: "현재 선물 포장은 제공되지 않습니다."',
     "문제: 정보가 없는데 불가능하다고 단정했습니다.",
     '좋은 예시 - 고객 문의: "선물 포장 가능한가요?" / 등록 정보: 선물 포장 관련 정보 없음 / 답변: "안녕하세요, 윤서네 공방입니다. 선물 포장 가능 여부는 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다."',
+    "",
+    "[근거가 있을 때 다음 행동 안내 예시]",
+    '예시 1 - 고객 문의: "선물 포장 가능한가요?" / 등록 정보: "선물 포장 가능합니다. 추가 비용은 1,000원입니다." / 좋은 답변: "안녕하세요, 윤서네 공방입니다. 선물 포장 가능하며, 추가 비용은 1,000원입니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다."',
+    '예시 2 - 고객 문의: "제주도 배송비 얼마예요?" / 등록 정보: "제주/도서산간 지역은 추가 배송비 3,000원이 발생합니다." / 좋은 답변: "안녕하세요, 윤서네 공방입니다. 제주/도서산간 지역은 추가 배송비 3,000원이 발생합니다. 주문 전 참고 부탁드립니다."',
+    '예시 3 - 고객 문의: "단순 변심 환불 가능한가요?" / 등록 정보: "단순 변심으로 인한 환불은 불가합니다. 상품 하자가 있는 경우 수령 후 24시간 이내 문의해 주세요." / 좋은 답변: "안녕하세요, 윤서네 공방입니다. 단순 변심으로 인한 환불은 어려운 점 양해 부탁드립니다. 상품 하자가 있는 경우에는 수령 후 24시간 이내 문의해 주시면 확인 후 안내드리겠습니다."',
     "",
     "[대표 상품 정보 - 상품 문의에서 반드시 우선 참고]",
     `대표 상품명: ${productName}`,
@@ -210,7 +274,11 @@ function buildSystemPrompt(store: StoreRow): string {
     `구성/용량/재질/사이즈 등: ${productDetails}`,
     `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
     "",
+    "[기타 FAQ/포장·옵션]",
+    extraFaq,
+    "",
     "상품 관련 질문은 배송정책이나 환불정책보다 대표 상품 정보를 먼저 확인하세요.",
+    "선물 포장, 옵션, 기타 자주 묻는 질문은 extra_faq도 반드시 참고하세요.",
     "사이즈, 사이즈 조절, 길이, 폭, 구성, 용량, 재질, 색상, 사용법, 보관방법, 주의사항, 알레르기 질문은 product_details와 product_caution을 최우선으로 참고하세요.",
     'product_details에 "오픈링 형태로 약간의 사이즈 조절이 가능합니다"라는 정보가 있으면, 고객에게 사이즈 조절이 가능하다고 답변하세요.',
     '예: 고객이 "이 반지 사이즈 조절 되나요?"라고 묻고 product_details에 "오픈링 형태로 약간의 사이즈 조절이 가능합니다"가 있으면 "오픈링 형태라 약간의 사이즈 조절이 가능합니다."라고 답변하세요.',
@@ -229,6 +297,8 @@ function buildSystemPrompt(store: StoreRow): string {
     "고객 문의 내용과 직접 관련 있는 가게 정책을 반드시 반영하세요.",
     "환불 문의라면 refund_policy의 핵심 내용을 함께 반영하세요.",
     "배송 문의라면 shipping_policy의 핵심 내용을 함께 반영하세요.",
+    "정책이나 상품 정보에 근거가 있으면 고객의 다음 행동을 짧게 안내하세요.",
+    '예: 선물 포장이 가능하면 "주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.", 제주 추가 배송비가 있으면 "주문 전 참고 부탁드립니다.", 하자 문의 기한이 있으면 "해당 기한 내 문의해 주시면 확인 후 안내드리겠습니다."처럼 작성하세요.',
     "답변은 2~4문장 정도로 간결하게 작성하세요.",
     "가게명이 있으면 첫 문장에 자연스럽게 포함하세요.",
     "이모지는 브랜드 말투나 추가 요청이 밝고 친절한 경우에만 최대 1개 사용하세요.",
@@ -275,6 +345,9 @@ function buildSystemPrompt(store: StoreRow): string {
     `상품 설명: ${productDescription}`,
     `구성/용량/재질/사이즈 등: ${productDetails}`,
     `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
+    "",
+    "[기타 FAQ/포장·옵션]",
+    extraFaq,
   ].join("\n");
 }
 
@@ -322,7 +395,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, created_at, updated_at",
+      "user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
@@ -394,6 +467,9 @@ export async function POST(request: Request) {
 
     if (shouldSaveMissingInfo(reply, customerMessage, storeRow)) {
       const missingInfo = buildMissingInfo(customerMessage);
+      const topic = classifyMissingInfoTopic(
+        `${customerMessage}\n${missingInfo.question}`,
+      );
       const { error: missingInfoSaveError } = await auth.supabase
         .from("missing_infos")
         .insert({
@@ -402,6 +478,7 @@ export async function POST(request: Request) {
           reason: missingInfo.reason,
           source_message: customerMessage,
           status: "pending",
+          topic,
         });
 
       if (missingInfoSaveError) {

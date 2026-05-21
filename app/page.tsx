@@ -28,6 +28,7 @@ type MissingInfoItem = {
   reason: string;
   source_message: string;
   status: string;
+  topic?: string | null;
   created_at: string;
 };
 
@@ -61,6 +62,12 @@ type MissingInfosListResponse = {
   detail?: string;
 };
 
+type ResolveMissingInfoResponse = {
+  success?: boolean;
+  error?: string;
+  detail?: string;
+};
+
 type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
@@ -71,6 +78,7 @@ type StoreSettings = {
   product_description: string | null;
   product_details: string | null;
   product_caution: string | null;
+  extra_faq: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -90,6 +98,7 @@ type StoreDraft = {
   productDescription: string;
   productDetails: string;
   productCaution: string;
+  extraFaq: string;
 };
 
 type InsightsApiResponse = {
@@ -289,7 +298,8 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     typeof draft.productName === "string" &&
     typeof draft.productDescription === "string" &&
     typeof draft.productDetails === "string" &&
-    typeof draft.productCaution === "string"
+    typeof draft.productCaution === "string" &&
+    typeof draft.extraFaq === "string"
   );
 }
 
@@ -368,6 +378,7 @@ export default function Home() {
   const [productDescription, setProductDescription] = useState("");
   const [productDetails, setProductDetails] = useState("");
   const [productCaution, setProductCaution] = useState("");
+  const [extraFaq, setExtraFaq] = useState("");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -392,6 +403,17 @@ export default function Home() {
   const [missingInfos, setMissingInfos] = useState<MissingInfoItem[]>([]);
   const [missingInfosLoading, setMissingInfosLoading] = useState(true);
   const [missingInfosError, setMissingInfosError] = useState("");
+  const [missingInfoAnswers, setMissingInfoAnswers] = useState<
+    Record<string, string>
+  >({});
+  const [missingInfoTargetFields, setMissingInfoTargetFields] = useState<
+    Record<string, string>
+  >({});
+  const [missingInfoResolvingId, setMissingInfoResolvingId] = useState<
+    string | null
+  >(null);
+  const [missingInfoResolveMessage, setMissingInfoResolveMessage] =
+    useState("");
 
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -407,6 +429,7 @@ export default function Home() {
       productDescription,
       productDetails,
       productCaution,
+      extraFaq,
     }),
     [
       storeName,
@@ -417,8 +440,36 @@ export default function Home() {
       productDescription,
       productDetails,
       productCaution,
+      extraFaq,
     ],
   );
+
+  const applyStoreToForm = useCallback((store: StoreSettings | null) => {
+    setHasStore(Boolean(store));
+
+    if (store) {
+      setStoreName(store.store_name ?? "");
+      setStoreTone(store.tone ?? "");
+      setShippingPolicy(store.shipping_policy ?? "");
+      setRefundPolicy(store.refund_policy ?? "");
+      setProductName(store.product_name ?? "");
+      setProductDescription(store.product_description ?? "");
+      setProductDetails(store.product_details ?? "");
+      setProductCaution(store.product_caution ?? "");
+      setExtraFaq(store.extra_faq ?? "");
+      return;
+    }
+
+    setStoreName("");
+    setStoreTone("");
+    setShippingPolicy("");
+    setRefundPolicy("");
+    setProductName("");
+    setProductDescription("");
+    setProductDetails("");
+    setProductCaution("");
+    setExtraFaq("");
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -596,12 +647,17 @@ export default function Home() {
         setProductDescription("");
         setProductDetails("");
         setProductCaution("");
+        setExtraFaq("");
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
         setMissingInfos([]);
         setMissingInfosError("");
         setMissingInfosLoading(false);
+        setMissingInfoAnswers({});
+        setMissingInfoTargetFields({});
+        setMissingInfoResolvingId(null);
+        setMissingInfoResolveMessage("");
         setInsights("");
         setInsightsError("");
         setInsightsLoading(false);
@@ -629,6 +685,7 @@ export default function Home() {
         setProductDescription(draft.productDescription);
         setProductDetails(draft.productDetails);
         setProductCaution(draft.productCaution);
+        setExtraFaq(draft.extraFaq);
       }
 
       setStoreDraftReady(true);
@@ -661,23 +718,11 @@ export default function Home() {
         const draft = readStoreDraft(authUser.id);
 
         if (store && !draft) {
-          setStoreName(store.store_name ?? "");
-          setStoreTone(store.tone ?? "");
-          setShippingPolicy(store.shipping_policy ?? "");
-          setRefundPolicy(store.refund_policy ?? "");
-          setProductName(store.product_name ?? "");
-          setProductDescription(store.product_description ?? "");
-          setProductDetails(store.product_details ?? "");
-          setProductCaution(store.product_caution ?? "");
+          applyStoreToForm(store);
         } else if (!store && !draft) {
-          setStoreName("");
-          setStoreTone("");
-          setShippingPolicy("");
-          setRefundPolicy("");
-          setProductName("");
-          setProductDescription("");
-          setProductDetails("");
-          setProductCaution("");
+          applyStoreToForm(null);
+        } else {
+          setHasStore(Boolean(store));
         }
       })
       .catch((error) => {
@@ -754,7 +799,7 @@ export default function Home() {
     return () => {
       isActive = false;
     };
-  }, [authLoading, authUser]);
+  }, [applyStoreToForm, authLoading, authUser]);
 
   useEffect(() => {
     if (!authUser || !storeDraftReady) return;
@@ -919,6 +964,7 @@ export default function Home() {
           product_description: productDescription,
           product_details: productDetails,
           product_caution: productCaution,
+          extra_faq: extraFaq,
         }),
       });
 
@@ -936,6 +982,74 @@ export default function Home() {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setStoreSaving(false);
+    }
+  }
+
+  async function handleResolveMissingInfo(missingInfoId: string) {
+    const answer = (missingInfoAnswers[missingInfoId] ?? "").trim();
+    const targetField = missingInfoTargetFields[missingInfoId] ?? "extra_faq";
+
+    if (!answer) {
+      setMissingInfosError("반영할 답변을 입력해 주세요.");
+      setMissingInfoResolveMessage("");
+      return;
+    }
+
+    setMissingInfoResolvingId(missingInfoId);
+    setMissingInfosError("");
+    setMissingInfoResolveMessage("");
+
+    try {
+      const response = await fetch("/api/missing-infos/resolve", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          missingInfoId,
+          answer,
+          targetField,
+        }),
+      });
+
+      const data = (await response.json()) as ResolveMissingInfoResponse;
+
+      if (!response.ok || !data.success) {
+        setMissingInfosError(
+          data.error ?? "가게 정보에 반영하지 못했습니다.",
+        );
+        return;
+      }
+
+      setMissingInfos((currentInfos) =>
+        currentInfos.filter((item) => item.id !== missingInfoId),
+      );
+      setMissingInfoAnswers((currentAnswers) => {
+        const nextAnswers = { ...currentAnswers };
+        delete nextAnswers[missingInfoId];
+        return nextAnswers;
+      });
+      setMissingInfoTargetFields((currentFields) => {
+        const nextFields = { ...currentFields };
+        delete nextFields[missingInfoId];
+        return nextFields;
+      });
+
+      const latestStore = await fetchLatestStore();
+      applyStoreToForm(latestStore);
+
+      if (authUser) {
+        removeStoreDraft(authUser.id);
+      }
+
+      setMissingInfoResolveMessage("가게 정보에 반영되었습니다");
+      void loadMissingInfos();
+    } catch {
+      setMissingInfosError(
+        "네트워크 오류로 가게 정보에 반영하지 못했습니다.",
+      );
+    } finally {
+      setMissingInfoResolvingId(null);
     }
   }
 
@@ -1424,6 +1538,25 @@ export default function Home() {
                     className={textareaClass}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="extra_faq"
+                    className="text-sm font-medium"
+                  >
+                    기타 FAQ/포장·옵션
+                  </label>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    선물 포장, 옵션, 자주 묻는 질문처럼 별도로 기억해야 할 내용을 입력하세요.
+                  </p>
+                  <textarea
+                    id="extra_faq"
+                    value={extraFaq}
+                    onChange={(event) => setExtraFaq(event.target.value)}
+                    placeholder="예: 선물 포장 가능합니다. 각인 옵션은 주문 요청사항에 남겨주세요."
+                    className={textareaClass}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1843,6 +1976,12 @@ export default function Home() {
             </div>
           ) : null}
 
+          {missingInfoResolveMessage ? (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {missingInfoResolveMessage}
+            </div>
+          ) : null}
+
           {missingInfosLoading ? (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               확인이 필요한 정보를 불러오는 중...
@@ -1894,6 +2033,63 @@ export default function Home() {
                       <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
                         {item.reason}
                       </p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <label
+                        htmlFor={`missing_info_answer_${item.id}`}
+                        className="mb-2 block font-medium text-zinc-700 dark:text-zinc-200"
+                      >
+                        답변 입력
+                      </label>
+                      <textarea
+                        id={`missing_info_answer_${item.id}`}
+                        value={missingInfoAnswers[item.id] ?? ""}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setMissingInfoAnswers((currentAnswers) => ({
+                            ...currentAnswers,
+                            [item.id]: nextValue,
+                          }));
+                        }}
+                        placeholder="예: 선물 포장 가능합니다. 추가 비용은 1,000원입니다."
+                        className="min-h-24 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 dark:border-zinc-700 dark:bg-zinc-950"
+                      />
+                      <label
+                        htmlFor={`missing_info_target_${item.id}`}
+                        className="mb-2 mt-3 block font-medium text-zinc-700 dark:text-zinc-200"
+                      >
+                        저장 위치
+                      </label>
+                      <select
+                        id={`missing_info_target_${item.id}`}
+                        value={missingInfoTargetFields[item.id] ?? "extra_faq"}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setMissingInfoTargetFields((currentFields) => ({
+                            ...currentFields,
+                            [item.id]: nextValue,
+                          }));
+                        }}
+                        className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-amber-500 dark:border-zinc-700 dark:bg-zinc-950"
+                      >
+                        <option value="extra_faq">기타 FAQ/포장·옵션</option>
+                        <option value="product_details">상품 정보</option>
+                        <option value="product_caution">
+                          주의사항/사용법
+                        </option>
+                        <option value="shipping_policy">배송 정책</option>
+                        <option value="refund_policy">환불 정책</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleResolveMissingInfo(item.id)}
+                        disabled={missingInfoResolvingId === item.id}
+                        className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-amber-700 px-4 text-sm font-medium text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                      >
+                        {missingInfoResolvingId === item.id
+                          ? "반영 중..."
+                          : "가게 정보에 반영"}
+                      </button>
                     </div>
                   </div>
                 </li>
