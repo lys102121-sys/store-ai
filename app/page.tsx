@@ -1642,6 +1642,83 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <p className="mb-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+                AI 운영 도우미
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-3xl">
+                소상공인을 위한 AI 리뷰·문의 응대 도우미
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
+                가게 정보와 운영 정책을 등록하면, AI가 리뷰 답글과 고객
+                문의 답변을 우리 가게 말투에 맞춰 작성해드립니다. 부족한
+                정보는 AI가 사장님에게 질문하고, 답변을 학습해 다음 응대에
+                반영합니다.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("store-info")}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                >
+                  가게 정보 등록하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("cs-reply")}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  문의 답변 써보기
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {[
+                {
+                  step: "1단계",
+                  title: "가게 정보 등록",
+                  description:
+                    "업종, 말투, 배송·환불 정책, 상품 정보를 입력합니다.",
+                },
+                {
+                  step: "2단계",
+                  title: "리뷰·문의 답변 생성",
+                  description:
+                    "고객 리뷰와 문의를 입력하면 AI가 우리 가게에 맞는 답변을 작성합니다.",
+                },
+                {
+                  step: "3단계",
+                  title: "부족한 정보 학습",
+                  description:
+                    "AI가 모르는 질문을 발견하면 사장님에게 확인하고, 답변을 지식에 반영합니다.",
+                },
+              ].map((item) => (
+                <article
+                  key={item.step}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/60"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 px-2.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                      {item.step}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {authUser && !storeStatusLoading && !hasStore ? (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
