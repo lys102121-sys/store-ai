@@ -1339,6 +1339,11 @@ export default function Home() {
   const pendingMissingInfoCount = missingInfos.filter(
     (item) => item.status === "pending",
   ).length;
+  const negativeReviews = history
+    .filter((item) => item.sentiment === "negative")
+    .slice(0, 3);
+  const recentCsMessages = csMessages.slice(0, 5);
+  const recentReviews = history.slice(0, 5);
 
   const operationSummaryItems = [
     {
@@ -1839,8 +1844,12 @@ export default function Home() {
           </section>
         ) : null}
 
-        {activeTab === "start" && authUser ? (
-          <section className="order-[30] rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+        {(activeTab === "start" || activeTab === "manage") && authUser ? (
+          <section
+            className={`rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${
+              activeTab === "manage" ? "order-[40]" : "order-[30]"
+            }`}
+          >
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
@@ -1910,7 +1919,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={activeTab === "manage" ? "order-[44]" : "hidden"}>
+        <section className="hidden">
           <div className="mb-4">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               리뷰 통계
@@ -2814,7 +2823,7 @@ export default function Home() {
         <section
           id="cs-history"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "manage" ? "order-[42]" : "hidden"
+            activeTab === "manage" ? "order-[43]" : "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -2854,8 +2863,9 @@ export default function Home() {
               onAction={() => goToTabSection("answer", "cs-reply")}
             />
           ) : (
-            <ul className="space-y-4">
-              {csMessages.map((item) => (
+            <>
+              <ul className="space-y-4">
+              {recentCsMessages.map((item) => (
                 <li
                   key={item.id}
                   className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25"
@@ -2897,7 +2907,11 @@ export default function Home() {
                   </div>
                 </li>
               ))}
-            </ul>
+              </ul>
+              <p className="pt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                최근 5개만 표시 중입니다
+              </p>
+            </>
           )}
         </section>
 
@@ -3080,6 +3094,97 @@ export default function Home() {
         </section>
 
         <section
+          className={`${cardClass} scroll-mt-32 border-red-200/70 dark:border-red-900/50 ${
+            activeTab === "manage" ? "order-[42]" : "hidden"
+          }`}
+        >
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                주의 필요한 리뷰
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                부정 리뷰 중 우선 확인이 필요한 최신 항목입니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadHistory()}
+              disabled={historyLoading}
+              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              새로고침
+            </button>
+          </div>
+
+          {historyError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {historyError}
+            </div>
+          ) : null}
+
+          {historyLoading ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              주의 필요한 리뷰를 불러오는 중...
+            </p>
+          ) : negativeReviews.length === 0 ? (
+            <EmptyStateCard
+              title="현재 주의가 필요한 부정 리뷰가 없습니다"
+              description="부정 리뷰가 생기면 이곳에서 먼저 확인할 수 있습니다."
+              actionLabel="리뷰 답글 작성하기"
+              onAction={() => goToTabSection("answer", "review-reply")}
+            />
+          ) : (
+            <ul className="space-y-4">
+              {negativeReviews.map((item) => (
+                <li
+                  key={item.id}
+                  className={`rounded-xl border p-4 ${sentimentCardClass(item.sentiment)}`}
+                >
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <span className={urgentBadgeClass}>우선 확인</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteReview(item.id)}
+                        disabled={deletingReviewId === item.id}
+                        className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                      >
+                        {deletingReviewId === item.id ? "삭제 중..." : "삭제"}
+                      </button>
+                      <time
+                        dateTime={item.created_at}
+                        className="text-xs text-zinc-600 dark:text-zinc-400"
+                      >
+                        {formatDate(item.created_at)}
+                      </time>
+                    </div>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
+                        리뷰
+                      </p>
+                      <p className="leading-6 text-zinc-700 dark:text-zinc-300">
+                        {item.review}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
+                        답글
+                      </p>
+                      <p className="leading-6 text-zinc-700 dark:text-zinc-300">
+                        {item.reply}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
           id="review-reply"
           className={`${cardClass} scroll-mt-32 ${
             activeTab === "answer" ? "order-[31]" : "hidden"
@@ -3158,7 +3263,7 @@ export default function Home() {
         <section
           id="review-history"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "manage" ? "order-[43]" : "hidden"
+            activeTab === "manage" ? "order-[44]" : "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -3218,8 +3323,9 @@ export default function Home() {
               onAction={() => goToTabSection("answer", "review-reply")}
             />
           ) : (
-            <ul className="space-y-4">
-              {history.map((item) => (
+            <>
+              <ul className="space-y-4">
+                {recentReviews.map((item) => (
                 <li
                   key={item.id}
                   className={`rounded-xl border p-4 ${sentimentCardClass(item.sentiment)}`}
@@ -3275,7 +3381,11 @@ export default function Home() {
                   </div>
                 </li>
               ))}
-            </ul>
+              </ul>
+              <p className="pt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                최근 5개만 표시 중입니다
+              </p>
+            </>
           )}
         </section>
       </div>
