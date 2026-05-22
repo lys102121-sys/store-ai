@@ -70,6 +70,12 @@ type ResolveMissingInfoResponse = {
   detail?: string;
 };
 
+type DeleteApiResponse = {
+  success?: boolean;
+  error?: string;
+  detail?: string;
+};
+
 type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
@@ -404,6 +410,115 @@ const businessTypeInputGuides = {
   ],
 } as const;
 
+type InterpretedBusinessType = keyof typeof businessTypeInputGuides;
+
+function includesAnyKeyword(value: string, keywords: string[]) {
+  return keywords.some((keyword) => value.includes(keyword));
+}
+
+function interpretBusinessType(value: string): InterpretedBusinessType {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue in businessTypeInputGuides) {
+    return trimmedValue as InterpretedBusinessType;
+  }
+
+  const normalizedValue = trimmedValue.replace(/\s+/g, "").toLowerCase();
+
+  if (
+    includesAnyKeyword(normalizedValue, [
+      "카페",
+      "디저트",
+      "베이커리",
+      "케이크",
+      "쿠키",
+      "마카롱",
+      "빵집",
+      "커피",
+      "음료",
+      "수제청",
+      "티",
+      "브런치",
+    ])
+  ) {
+    return "디저트/카페";
+  }
+
+  if (
+    includesAnyKeyword(normalizedValue, [
+      "음식점",
+      "식당",
+      "배달",
+      "치킨",
+      "피자",
+      "족발",
+      "보쌈",
+      "분식",
+      "한식",
+      "중식",
+      "일식",
+      "도시락",
+      "샐러드",
+      "밀키트",
+    ])
+  ) {
+    return "배달 음식점";
+  }
+
+  if (
+    includesAnyKeyword(normalizedValue, [
+      "공방",
+      "핸드메이드",
+      "수제",
+      "반지",
+      "악세사리",
+      "주얼리",
+      "캔들",
+      "비누",
+      "도자기",
+      "가죽",
+      "꽃",
+      "플라워",
+    ])
+  ) {
+    return "공방/핸드메이드";
+  }
+
+  if (
+    includesAnyKeyword(normalizedValue, [
+      "의류",
+      "옷",
+      "패션",
+      "잡화",
+      "가방",
+      "신발",
+      "모자",
+      "양말",
+      "액세서리",
+      "키링",
+    ])
+  ) {
+    return "의류/잡화";
+  }
+
+  if (
+    includesAnyKeyword(normalizedValue, [
+      "생활용품",
+      "주방용품",
+      "욕실용품",
+      "인테리어",
+      "문구",
+      "반려동물용품",
+      "애견용품",
+      "청소용품",
+    ])
+  ) {
+    return "생활용품";
+  }
+
+  return "기타 스마트스토어";
+}
+
 export default function Home() {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -439,6 +554,23 @@ export default function Home() {
   const [changeOfMindRefund, setChangeOfMindRefund] = useState("불가능");
   const [defectContactDeadline, setDefectContactDeadline] = useState("");
   const [returnShippingFee, setReturnShippingFee] = useState("");
+  const [cafeCancelBeforeProduction, setCafeCancelBeforeProduction] =
+    useState("가능");
+  const [cafeCancelAfterProduction, setCafeCancelAfterProduction] =
+    useState("불가능");
+  const [cafeRefundAfterPickup, setCafeRefundAfterPickup] =
+    useState("확인 필요");
+  const [cafeProductIssueStandard, setCafeProductIssueStandard] = useState("");
+  const [cafeReservationCancelDeadline, setCafeReservationCancelDeadline] =
+    useState("");
+  const [foodCancelBeforeCooking, setFoodCancelBeforeCooking] =
+    useState("가능");
+  const [foodCancelAfterCooking, setFoodCancelAfterCooking] =
+    useState("불가능");
+  const [foodRefundAfterDelivery, setFoodRefundAfterDelivery] = useState("");
+  const [foodMissingWrongStandard, setFoodMissingWrongStandard] = useState("");
+  const [foodConditionIssueStandard, setFoodConditionIssueStandard] =
+    useState("");
   const [storeError, setStoreError] = useState("");
   const [storeSaving, setStoreSaving] = useState(false);
   const [hasStore, setHasStore] = useState(false);
@@ -448,10 +580,14 @@ export default function Home() {
   const [history, setHistory] = useState<ReviewHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
+  const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null);
 
   const [csMessages, setCsMessages] = useState<CsMessageHistoryItem[]>([]);
   const [csMessagesLoading, setCsMessagesLoading] = useState(true);
   const [csMessagesError, setCsMessagesError] = useState("");
+  const [deletingCsMessageId, setDeletingCsMessageId] = useState<
+    number | null
+  >(null);
 
   const [missingInfos, setMissingInfos] = useState<MissingInfoItem[]>([]);
   const [missingInfosLoading, setMissingInfosLoading] = useState(true);
@@ -709,6 +845,7 @@ export default function Home() {
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
+        setDeletingCsMessageId(null);
         setMissingInfos([]);
         setMissingInfosError("");
         setMissingInfosLoading(false);
@@ -719,6 +856,7 @@ export default function Home() {
         setInsights("");
         setInsightsError("");
         setInsightsLoading(false);
+        setDeletingReviewId(null);
       });
 
       return () => {
@@ -1113,6 +1251,111 @@ export default function Home() {
     }
   }
 
+  async function handleDeleteReview(reviewId: number) {
+    if (!window.confirm("이 항목을 삭제할까요?")) return;
+
+    setDeletingReviewId(reviewId);
+    setHistoryError("");
+
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as DeleteApiResponse;
+
+      if (!response.ok) {
+        setHistoryError(data.error ?? "리뷰 항목을 삭제하지 못했습니다.");
+        return;
+      }
+
+      await Promise.all([loadHistory(), loadInsights()]);
+    } catch {
+      setHistoryError("네트워크 오류로 리뷰 항목을 삭제하지 못했습니다.");
+    } finally {
+      setDeletingReviewId(null);
+    }
+  }
+
+  async function handleDeleteCsMessage(csMessageId: number) {
+    if (!window.confirm("이 항목을 삭제할까요?")) return;
+
+    setDeletingCsMessageId(csMessageId);
+    setCsMessagesError("");
+
+    try {
+      const response = await fetch(`/api/cs-messages/${csMessageId}`, {
+        method: "DELETE",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as DeleteApiResponse;
+
+      if (!response.ok) {
+        setCsMessagesError(data.error ?? "CS 문의 항목을 삭제하지 못했습니다.");
+        return;
+      }
+
+      await loadCsMessages();
+    } catch {
+      setCsMessagesError("네트워크 오류로 CS 문의 항목을 삭제하지 못했습니다.");
+    } finally {
+      setDeletingCsMessageId(null);
+    }
+  }
+
+  const pendingMissingInfoCount = missingInfos.filter(
+    (item) => item.status === "pending",
+  ).length;
+
+  const operationSummaryItems = [
+    {
+      label: "전체 리뷰 수",
+      value: historyLoading ? "—" : stats.total.toLocaleString("ko-KR"),
+      description: "지금까지 생성/관리한 리뷰 답글",
+      className:
+        "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
+      valueClassName: "text-zinc-950 dark:text-zinc-50",
+    },
+    {
+      label: "부정 리뷰 수",
+      value: historyLoading ? "—" : stats.negative.toLocaleString("ko-KR"),
+      description: "우선 확인이 필요한 리뷰",
+      className:
+        stats.negative > 0
+          ? "border-red-200 bg-red-50/80 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
+          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
+      valueClassName:
+        stats.negative > 0
+          ? "text-red-700 dark:text-red-300"
+          : "text-zinc-950 dark:text-zinc-50",
+    },
+    {
+      label: "최근 CS 문의 수",
+      value: csMessagesLoading
+        ? "—"
+        : csMessages.length.toLocaleString("ko-KR"),
+      description: "저장된 고객 문의 답변",
+      className:
+        "border-sky-200 bg-sky-50/70 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/25 dark:text-sky-100",
+      valueClassName: "text-sky-700 dark:text-sky-300",
+    },
+    {
+      label: "확인 필요한 정보",
+      value: missingInfosLoading
+        ? "—"
+        : pendingMissingInfoCount.toLocaleString("ko-KR"),
+      description: "AI가 답변을 위해 추가로 요청한 정보",
+      className:
+        pendingMissingInfoCount > 0
+          ? "border-amber-300 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-200/80 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-100 dark:ring-amber-900/70"
+          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
+      valueClassName:
+        pendingMissingInfoCount > 0
+          ? "text-amber-700 dark:text-amber-300"
+          : "text-zinc-950 dark:text-zinc-50",
+    },
+  ] as const;
+
   const kpiItems = [
     {
       label: "전체 리뷰",
@@ -1171,10 +1414,11 @@ export default function Home() {
     "기타 스마트스토어",
   ] as const;
 
+  const interpretedBusinessType = interpretBusinessType(businessType);
   const businessTypeGuideItems =
-    businessTypeInputGuides[
-      businessType as keyof typeof businessTypeInputGuides
-    ] ?? businessTypeInputGuides["기타 스마트스토어"];
+    businessTypeInputGuides[interpretedBusinessType];
+  const isCafePolicyHelper = interpretedBusinessType === "디저트/카페";
+  const isFoodPolicyHelper = interpretedBusinessType === "배달 음식점";
 
   const policyOptionButtonClass =
     "rounded-lg border px-3 py-2 text-xs font-medium transition";
@@ -1236,6 +1480,27 @@ export default function Home() {
     const cutoff = shippingCutoffTime.trim() || "출고 마감 시간";
     const courier = courierName.trim() || "택배사";
     const remoteFee = remoteAreaFee.trim() || "추가 배송비";
+
+    if (isCafePolicyHelper) {
+      const pickupGuide = courierName.trim() || "픽업/예약 안내";
+      const reservationGuide = remoteAreaFee.trim() || "예약 가능 일정";
+
+      setShippingPolicy(
+        `${cutoff} 기준으로 픽업 또는 예약 준비 시간이 달라질 수 있습니다. ${pickupGuide}를 확인해 주시고, ${reservationGuide}은 주문 전 문의해 주세요.`,
+      );
+      return;
+    }
+
+    if (isFoodPolicyHelper) {
+      const deliveryArea = remoteAreaFee.trim() || "배달 가능 지역";
+      const deliveryGuide = courierName.trim() || "조리/배달 상황";
+
+      setShippingPolicy(
+        `${cutoff} 기준으로 주문 접수와 조리 시간이 달라질 수 있습니다. ${deliveryArea}과 ${deliveryGuide}에 따라 배달 시간이 달라질 수 있습니다.`,
+      );
+      return;
+    }
+
     const shippingSentence =
       sameDayShipping === "가능"
         ? `${cutoff} 이전 주문은 당일 출고되며, ${courier}을 통해 발송됩니다.`
@@ -1247,6 +1512,67 @@ export default function Home() {
   }
 
   function handleBuildRefundPolicy() {
+    if (isCafePolicyHelper) {
+      const beforeProduction =
+        cafeCancelBeforeProduction === "가능"
+          ? "제조 시작 전에는 취소가 가능합니다."
+          : "제조 시작 전에도 취소가 어려울 수 있습니다.";
+      const afterProduction =
+        cafeCancelAfterProduction === "가능"
+          ? "제조가 시작된 이후에도 취소 가능 여부를 확인해 드립니다."
+          : "제조가 시작된 이후에는 취소가 어려울 수 있습니다.";
+      const afterPickup =
+        cafeRefundAfterPickup === "가능"
+          ? "픽업/수령 후에도 제품 상태를 확인한 뒤 환불 가능 여부를 안내드립니다."
+          : cafeRefundAfterPickup === "불가능"
+            ? "픽업/수령 후에는 환불이 어려울 수 있습니다."
+            : "픽업/수령 후 환불은 제품 상태를 확인한 뒤 안내드립니다.";
+      const issueStandard =
+        cafeProductIssueStandard.trim() ||
+        "제품에 문제가 있는 경우 수령 후 가능한 빠르게 문의해 주시면 확인 후 안내드리겠습니다.";
+      const reservationDeadline = cafeReservationCancelDeadline.trim();
+
+      setRefundPolicy(
+        [
+          beforeProduction,
+          afterProduction,
+          afterPickup,
+          issueStandard,
+          reservationDeadline
+            ? `예약 주문 취소는 ${reservationDeadline}까지 문의해 주세요.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+      return;
+    }
+
+    if (isFoodPolicyHelper) {
+      const beforeCooking =
+        foodCancelBeforeCooking === "가능"
+          ? "조리 시작 전에는 취소가 가능합니다."
+          : "조리 시작 전에도 취소가 어려울 수 있습니다.";
+      const afterCooking =
+        foodCancelAfterCooking === "가능"
+          ? "조리가 시작된 이후에도 취소 가능 여부를 확인해 드립니다."
+          : "조리가 시작된 이후에는 취소가 어려울 수 있습니다.";
+      const afterDelivery =
+        foodRefundAfterDelivery.trim() ||
+        "배달 완료 후 환불은 주문 상태와 사유를 확인한 뒤 안내드리겠습니다.";
+      const missingWrong =
+        foodMissingWrongStandard.trim() ||
+        "음식 누락이나 오배송이 있는 경우 주문 정보를 확인한 뒤 안내드리겠습니다.";
+      const conditionIssue =
+        foodConditionIssueStandard.trim() ||
+        "음식 상태 문제가 있는 경우 사진과 주문 정보를 함께 알려주시면 확인 후 안내드리겠습니다.";
+
+      setRefundPolicy(
+        `${beforeCooking} ${afterCooking} ${afterDelivery} ${missingWrong} ${conditionIssue}`,
+      );
+      return;
+    }
+
     const deadline = defectContactDeadline.trim() || "문의 기한";
     const returnFee = returnShippingFee.trim() || "반품 배송비";
     const changeOfMindSentence =
@@ -1354,6 +1680,45 @@ export default function Home() {
                   </div>
                 ),
               )}
+            </div>
+          </section>
+        ) : null}
+
+        {authUser ? (
+          <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  Daily Summary
+                </p>
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  오늘의 운영 요약
+                </h2>
+              </div>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                AI가 부족한 정보를 발견하면 이곳에서 바로 확인할 수 있어요.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {operationSummaryItems.map((item) => (
+                <article
+                  key={item.label}
+                  className={`rounded-xl border p-4 transition ${item.className}`}
+                >
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    {item.label}
+                  </p>
+                  <p
+                    className={`mt-2 text-3xl font-semibold tracking-tight ${item.valueClassName}`}
+                  >
+                    {item.value}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
             </div>
           </section>
         ) : null}
@@ -1711,7 +2076,11 @@ export default function Home() {
                       htmlFor="shipping_cutoff"
                       className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
                     >
-                      출고 마감 시간
+                      {isCafePolicyHelper
+                        ? "예약/픽업 기준 시간"
+                        : isFoodPolicyHelper
+                          ? "주문 접수 기준 시간"
+                          : "출고 마감 시간"}
                     </label>
                     <input
                       id="shipping_cutoff"
@@ -1720,14 +2089,24 @@ export default function Home() {
                       onChange={(event) =>
                         setShippingCutoffTime(event.target.value)
                       }
-                      placeholder="예: 오후 2시"
+                      placeholder={
+                        isCafePolicyHelper
+                          ? "예: 픽업 하루 전 오후 6시"
+                          : isFoodPolicyHelper
+                            ? "예: 오후 8시"
+                            : "예: 오후 2시"
+                      }
                       className={inputClass}
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      당일 출고 여부
+                      {isCafePolicyHelper
+                        ? "당일 픽업/예약 가능 여부"
+                        : isFoodPolicyHelper
+                          ? "당일 주문 가능 여부"
+                          : "당일 출고 여부"}
                     </p>
                     <div className="flex gap-2">
                       {["가능", "불가능"].map((option) => (
@@ -1753,14 +2132,24 @@ export default function Home() {
                       htmlFor="courier_name"
                       className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
                     >
-                      택배사
+                      {isCafePolicyHelper
+                        ? "픽업/예약 안내"
+                        : isFoodPolicyHelper
+                          ? "조리/배달 안내"
+                          : "택배사"}
                     </label>
                     <input
                       id="courier_name"
                       type="text"
                       value={courierName}
                       onChange={(event) => setCourierName(event.target.value)}
-                      placeholder="예: CJ대한통운"
+                      placeholder={
+                        isCafePolicyHelper
+                          ? "예: 매장 픽업 가능"
+                          : isFoodPolicyHelper
+                            ? "예: 주문량에 따라 배달 시간 변동"
+                            : "예: CJ대한통운"
+                      }
                       className={inputClass}
                     />
                   </div>
@@ -1770,14 +2159,24 @@ export default function Home() {
                       htmlFor="remote_area_fee"
                       className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
                     >
-                      제주/도서산간 추가 배송비
+                      {isCafePolicyHelper
+                        ? "예약 가능 일정"
+                        : isFoodPolicyHelper
+                          ? "배달 가능 지역"
+                          : "제주/도서산간 추가 배송비"}
                     </label>
                     <input
                       id="remote_area_fee"
                       type="text"
                       value={remoteAreaFee}
                       onChange={(event) => setRemoteAreaFee(event.target.value)}
-                      placeholder="예: 3,000원"
+                      placeholder={
+                        isCafePolicyHelper
+                          ? "예: 최소 2일 전 예약"
+                          : isFoodPolicyHelper
+                            ? "예: 매장 반경 3km"
+                            : "예: 3,000원"
+                      }
                       className={inputClass}
                     />
                   </div>
@@ -1815,68 +2214,292 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      단순 변심 환불 가능 여부
-                    </p>
-                    <div className="flex gap-2">
-                      {["가능", "불가능"].map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => setChangeOfMindRefund(option)}
-                          className={`${policyOptionButtonClass} ${
-                            changeOfMindRefund === option
-                              ? "border-emerald-600 bg-emerald-600 text-white"
-                              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-                          }`}
-                          aria-pressed={changeOfMindRefund === option}
-                        >
-                          {option}
-                        </button>
-                      ))}
+                {isCafePolicyHelper ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        제조 시작 전 취소 가능 여부
+                      </p>
+                      <div className="flex gap-2">
+                        {["가능", "불가능"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setCafeCancelBeforeProduction(option)
+                            }
+                            className={`${policyOptionButtonClass} ${
+                              cafeCancelBeforeProduction === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={
+                              cafeCancelBeforeProduction === option
+                            }
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        제조 시작 후 취소 가능 여부
+                      </p>
+                      <div className="flex gap-2">
+                        {["가능", "불가능"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setCafeCancelAfterProduction(option)
+                            }
+                            className={`${policyOptionButtonClass} ${
+                              cafeCancelAfterProduction === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={
+                              cafeCancelAfterProduction === option
+                            }
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        픽업/수령 후 환불 가능 여부
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {["가능", "불가능", "확인 필요"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setCafeRefundAfterPickup(option)}
+                            className={`${policyOptionButtonClass} ${
+                              cafeRefundAfterPickup === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={cafeRefundAfterPickup === option}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="cafe_reservation_cancel_deadline"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        예약 주문 취소 마감 시간
+                      </label>
+                      <input
+                        id="cafe_reservation_cancel_deadline"
+                        type="text"
+                        value={cafeReservationCancelDeadline}
+                        onChange={(event) =>
+                          setCafeReservationCancelDeadline(event.target.value)
+                        }
+                        placeholder="예: 픽업 하루 전 오후 6시까지"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label
+                        htmlFor="cafe_product_issue_standard"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        제품 이상 시 처리 기준
+                      </label>
+                      <input
+                        id="cafe_product_issue_standard"
+                        type="text"
+                        value={cafeProductIssueStandard}
+                        onChange={(event) =>
+                          setCafeProductIssueStandard(event.target.value)
+                        }
+                        placeholder="예: 제품에 문제가 있는 경우 수령 후 가능한 빠르게 문의"
+                        className={inputClass}
+                      />
                     </div>
                   </div>
+                ) : isFoodPolicyHelper ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        조리 시작 전 취소 가능 여부
+                      </p>
+                      <div className="flex gap-2">
+                        {["가능", "불가능"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setFoodCancelBeforeCooking(option)}
+                            className={`${policyOptionButtonClass} ${
+                              foodCancelBeforeCooking === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={foodCancelBeforeCooking === option}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="defect_deadline"
-                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                    >
-                      상품 하자 문의 기한
-                    </label>
-                    <input
-                      id="defect_deadline"
-                      type="text"
-                      value={defectContactDeadline}
-                      onChange={(event) =>
-                        setDefectContactDeadline(event.target.value)
-                      }
-                      placeholder="예: 수령 후 24시간 이내"
-                      className={inputClass}
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        조리 시작 후 취소 가능 여부
+                      </p>
+                      <div className="flex gap-2">
+                        {["가능", "불가능"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setFoodCancelAfterCooking(option)}
+                            className={`${policyOptionButtonClass} ${
+                              foodCancelAfterCooking === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={foodCancelAfterCooking === option}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="return_shipping_fee"
-                      className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                    >
-                      반품 배송비
-                    </label>
-                    <input
-                      id="return_shipping_fee"
-                      type="text"
-                      value={returnShippingFee}
-                      onChange={(event) =>
-                        setReturnShippingFee(event.target.value)
-                      }
-                      placeholder="예: 고객 부담 3,000원"
-                      className={inputClass}
-                    />
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="food_refund_after_delivery"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        배달 완료 후 환불 기준
+                      </label>
+                      <input
+                        id="food_refund_after_delivery"
+                        type="text"
+                        value={foodRefundAfterDelivery}
+                        onChange={(event) =>
+                          setFoodRefundAfterDelivery(event.target.value)
+                        }
+                        placeholder="예: 주문 상태와 사유 확인 후 안내"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="food_missing_wrong_standard"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        음식 누락/오배송 처리 기준
+                      </label>
+                      <input
+                        id="food_missing_wrong_standard"
+                        type="text"
+                        value={foodMissingWrongStandard}
+                        onChange={(event) =>
+                          setFoodMissingWrongStandard(event.target.value)
+                        }
+                        placeholder="예: 누락 메뉴와 주문 정보 확인 후 안내"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label
+                        htmlFor="food_condition_issue_standard"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        음식 상태 문제 처리 기준
+                      </label>
+                      <input
+                        id="food_condition_issue_standard"
+                        type="text"
+                        value={foodConditionIssueStandard}
+                        onChange={(event) =>
+                          setFoodConditionIssueStandard(event.target.value)
+                        }
+                        placeholder="예: 사진과 주문 정보를 확인한 뒤 안내"
+                        className={inputClass}
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        단순 변심 환불 가능 여부
+                      </p>
+                      <div className="flex gap-2">
+                        {["가능", "불가능"].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setChangeOfMindRefund(option)}
+                            className={`${policyOptionButtonClass} ${
+                              changeOfMindRefund === option
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                            }`}
+                            aria-pressed={changeOfMindRefund === option}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="defect_deadline"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        상품 하자 문의 기한
+                      </label>
+                      <input
+                        id="defect_deadline"
+                        type="text"
+                        value={defectContactDeadline}
+                        onChange={(event) =>
+                          setDefectContactDeadline(event.target.value)
+                        }
+                        placeholder="예: 수령 후 24시간 이내"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="return_shipping_fee"
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        반품 배송비
+                      </label>
+                      <input
+                        id="return_shipping_fee"
+                        type="text"
+                        value={returnShippingFee}
+                        onChange={(event) =>
+                          setReturnShippingFee(event.target.value)
+                        }
+                        placeholder="예: 고객 부담 3,000원"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <textarea
                 id="refund_policy"
@@ -2039,7 +2662,15 @@ export default function Home() {
                   key={item.id}
                   className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25"
                 >
-                  <div className="mb-3 flex justify-end">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteCsMessage(item.id)}
+                      disabled={deletingCsMessageId === item.id}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                    >
+                      {deletingCsMessageId === item.id ? "삭제 중..." : "삭제"}
+                    </button>
                     <time
                       dateTime={item.created_at}
                       className="text-xs text-zinc-500 dark:text-zinc-400"
@@ -2387,12 +3018,22 @@ export default function Home() {
                         </span>
                       ) : null}
                     </div>
-                    <time
-                      dateTime={item.created_at}
-                      className="text-xs text-zinc-600 dark:text-zinc-400"
-                    >
-                      {formatDate(item.created_at)}
-                    </time>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteReview(item.id)}
+                        disabled={deletingReviewId === item.id}
+                        className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                      >
+                        {deletingReviewId === item.id ? "삭제 중..." : "삭제"}
+                      </button>
+                      <time
+                        dateTime={item.created_at}
+                        className="text-xs text-zinc-600 dark:text-zinc-400"
+                      >
+                        {formatDate(item.created_at)}
+                      </time>
+                    </div>
                   </div>
 
                   <div className="space-y-3 text-sm">
