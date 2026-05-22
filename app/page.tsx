@@ -358,6 +358,52 @@ const inputClass =
 const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
 
+const businessTypeInputGuides = {
+  "배달 음식점": [
+    "대표 메뉴명",
+    "맵기/양/구성",
+    "원산지 또는 알레르기 성분",
+    "배달 가능 지역",
+    "포장/재가열 방법",
+  ],
+  "디저트/카페": [
+    "대표 상품명",
+    "보관 방법",
+    "알레르기 성분",
+    "픽업/예약 가능 여부",
+    "선물 포장 가능 여부",
+  ],
+  "공방/핸드메이드": [
+    "대표 상품명",
+    "재질/소재",
+    "제작 기간",
+    "사이즈 조절 가능 여부",
+    "보관/변색 주의사항",
+    "선물 포장 가능 여부",
+  ],
+  "의류/잡화": [
+    "대표 상품명",
+    "사이즈 정보",
+    "소재/세탁 방법",
+    "교환/반품 기준",
+    "재고/입고 일정",
+  ],
+  "생활용품": [
+    "대표 상품명",
+    "구성품",
+    "사용 방법",
+    "A/S 또는 교환 기준",
+    "주의사항",
+  ],
+  "기타 스마트스토어": [
+    "대표 상품명",
+    "상품 구성",
+    "배송/교환/환불 기준",
+    "자주 묻는 질문",
+    "주의사항",
+  ],
+} as const;
+
 export default function Home() {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1125,6 +1171,11 @@ export default function Home() {
     "기타 스마트스토어",
   ] as const;
 
+  const businessTypeGuideItems =
+    businessTypeInputGuides[
+      businessType as keyof typeof businessTypeInputGuides
+    ] ?? businessTypeInputGuides["기타 스마트스토어"];
+
   const policyOptionButtonClass =
     "rounded-lg border px-3 py-2 text-xs font-medium transition";
 
@@ -1474,6 +1525,27 @@ export default function Home() {
                 className={inputClass}
                 aria-label="업종 직접 입력"
               />
+
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/25">
+                <div className="mb-3">
+                  <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                    이 업종은 이런 정보를 입력하면 좋아요
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                    아래 정보를 채워두면 AI가 고객 문의에 더 정확하게 답변할 수 있어요.
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {businessTypeGuideItems.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-100"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
