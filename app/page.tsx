@@ -73,6 +73,7 @@ type ResolveMissingInfoResponse = {
 type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
+  business_type: string | null;
   tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
@@ -93,6 +94,7 @@ type StoreApiResponse = {
 
 type StoreDraft = {
   storeName: string;
+  businessType: string;
   storeTone: string;
   shippingPolicy: string;
   refundPolicy: string;
@@ -294,6 +296,8 @@ function isStoreDraft(value: unknown): value is StoreDraft {
 
   return (
     typeof draft.storeName === "string" &&
+    (draft.businessType === undefined ||
+      typeof draft.businessType === "string") &&
     typeof draft.storeTone === "string" &&
     typeof draft.shippingPolicy === "string" &&
     typeof draft.refundPolicy === "string" &&
@@ -373,6 +377,7 @@ export default function Home() {
   const [csLoading, setCsLoading] = useState(false);
 
   const [storeName, setStoreName] = useState("");
+  const [businessType, setBusinessType] = useState("");
   const [storeTone, setStoreTone] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
@@ -424,6 +429,7 @@ export default function Home() {
   const storeDraft = useMemo<StoreDraft>(
     () => ({
       storeName,
+      businessType,
       storeTone,
       shippingPolicy,
       refundPolicy,
@@ -435,6 +441,7 @@ export default function Home() {
     }),
     [
       storeName,
+      businessType,
       storeTone,
       shippingPolicy,
       refundPolicy,
@@ -451,6 +458,7 @@ export default function Home() {
 
     if (store) {
       setStoreName(store.store_name ?? "");
+      setBusinessType(store.business_type ?? "");
       setStoreTone(store.tone ?? "");
       setShippingPolicy(store.shipping_policy ?? "");
       setRefundPolicy(store.refund_policy ?? "");
@@ -463,6 +471,7 @@ export default function Home() {
     }
 
     setStoreName("");
+    setBusinessType("");
     setStoreTone("");
     setShippingPolicy("");
     setRefundPolicy("");
@@ -642,6 +651,7 @@ export default function Home() {
         setStoreStatusLoading(false);
         setStoreDraftReady(false);
         setStoreName("");
+        setBusinessType("");
         setStoreTone("");
         setShippingPolicy("");
         setRefundPolicy("");
@@ -680,6 +690,7 @@ export default function Home() {
 
       if (draft) {
         setStoreName(draft.storeName);
+        setBusinessType(draft.businessType ?? "");
         setStoreTone(draft.storeTone);
         setShippingPolicy(draft.shippingPolicy);
         setRefundPolicy(draft.refundPolicy);
@@ -959,6 +970,7 @@ export default function Home() {
         }),
         body: JSON.stringify({
           store_name: name,
+          business_type: businessType,
           tone: storeTone,
           shipping_policy: shippingPolicy,
           refund_policy: refundPolicy,
@@ -1102,6 +1114,15 @@ export default function Home() {
     "짧고 깔끔하게",
     "센스 있고 밝게",
     "고급스럽고 차분하게",
+  ] as const;
+
+  const businessTypeOptions = [
+    "배달 음식점",
+    "디저트/카페",
+    "공방/핸드메이드",
+    "의류/잡화",
+    "생활용품",
+    "기타 스마트스토어",
   ] as const;
 
   const policyOptionButtonClass =
@@ -1425,6 +1446,33 @@ export default function Home() {
                 onChange={(e) => setStoreName(e.target.value)}
                 placeholder="예) 행복한 빵집"
                 className={inputClass}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="business_type" className="text-sm font-medium">
+                업종
+              </label>
+              <select
+                id="business_type"
+                value={businessType}
+                onChange={(event) => setBusinessType(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">업종을 선택해 주세요</option>
+                {businessTypeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={businessType}
+                onChange={(event) => setBusinessType(event.target.value)}
+                placeholder="직접 입력도 가능합니다. 예: 반려동물 용품"
+                className={inputClass}
+                aria-label="업종 직접 입력"
               />
             </div>
 

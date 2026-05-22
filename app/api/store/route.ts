@@ -2,6 +2,7 @@ import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 type RequestBody = {
   store_name?: unknown;
+  business_type?: unknown;
   tone?: unknown;
   shipping_policy?: unknown;
   refund_policy?: unknown;
@@ -13,7 +14,7 @@ type RequestBody = {
 };
 
 const storeSelectColumns =
-  "id, user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at";
+  "id, user_id, store_name, business_type, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at";
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -35,6 +36,8 @@ export async function POST(request: Request) {
 
   if (
     typeof body.store_name !== "string" ||
+    (body.business_type !== undefined &&
+      typeof body.business_type !== "string") ||
     typeof body.tone !== "string" ||
     typeof body.shipping_policy !== "string" ||
     typeof body.refund_policy !== "string" ||
@@ -47,13 +50,15 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "store_name, tone, shipping_policy, refund_policy, and product fields must all be strings.",
+          "store_name, business_type, tone, shipping_policy, refund_policy, and product fields must all be strings.",
       },
       { status: 400 },
     );
   }
 
   const store_name = body.store_name.trim();
+  const business_type =
+    typeof body.business_type === "string" ? body.business_type.trim() : "";
   const tone = body.tone.trim();
   const shipping_policy = body.shipping_policy.trim();
   const refund_policy = body.refund_policy.trim();
@@ -73,6 +78,7 @@ export async function POST(request: Request) {
   const savedAt = new Date().toISOString();
   const storePayload = {
     store_name,
+    business_type,
     tone,
     shipping_policy,
     refund_policy,

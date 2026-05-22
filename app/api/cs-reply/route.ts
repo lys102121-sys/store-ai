@@ -365,7 +365,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at",
+      "user_id, store_name, business_type, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })

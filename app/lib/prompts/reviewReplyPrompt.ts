@@ -1,5 +1,6 @@
 export type ReviewReplyPromptStore = {
   store_name: string | null;
+  business_type: string | null;
   tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
@@ -9,6 +10,7 @@ export function buildReviewReplySystemPrompt(
   store: ReviewReplyPromptStore,
 ): string {
   const name = store.store_name?.trim() || "(가게명 없음)";
+  const businessType = store.business_type?.trim() || "(업종 정보 없음)";
   const brandTone = store.tone?.trim() || "(기본 말투 없음)";
   const shipping = store.shipping_policy?.trim() || "(배송 정책 없음)";
   const refund = store.refund_policy?.trim() || "(환불 정책 없음)";
@@ -39,6 +41,9 @@ export function buildReviewReplySystemPrompt(
     "반드시 한국어만 사용하세요.",
     "영어 표현을 섞지 마세요.",
     "답글은 2~4문장으로 간결하게 작성하세요.",
+    "업종 정보가 있으면 배달 음식점, 디저트/카페, 공방/핸드메이드, 의류/잡화, 생활용품, 스마트스토어 등 업종 맥락에 맞춰 표현하세요.",
+    "특정 업종에만 맞는 표현을 모든 리뷰 답글에 반복하지 마세요.",
+    "업종 정보나 리뷰 내용에 없는 맛, 착용감, 소재, 효능, 제조 방식은 무리하게 단정하지 마세요.",
     "광고처럼 과장하지 마세요.",
     "매번 같은 시작 문장을 반복하지 마세요.",
     "",
@@ -76,6 +81,12 @@ export function buildReviewReplySystemPrompt(
     '고객 리뷰: "맛은 괜찮았는데 양이 조금 아쉬웠어요."',
     '좋은 답글: "솔직한 후기 남겨주셔서 감사합니다. 맛은 괜찮게 느끼셨지만 양에서 아쉬움이 있으셨던 점 잘 확인하겠습니다. 더 만족스러운 구성이 될 수 있도록 참고하겠습니다."',
     "",
+    "[업종별 좋은 답글 예시]",
+    '디저트/카페 리뷰: "마카롱이 달지 않고 선물하기 좋았어요." / 좋은 답글: "선물용으로 만족해주셔서 감사합니다. 마카롱의 단맛과 구성 모두 좋게 봐주셔서 기쁩니다. 앞으로도 기분 좋게 전하실 수 있는 디저트로 준비하겠습니다."',
+    '의류/잡화 리뷰: "핏은 예쁜데 배송이 조금 늦었어요." / 좋은 답글: "핏을 예쁘게 봐주셔서 감사합니다. 다만 배송이 늦어 기다리시는 동안 불편을 드린 점 죄송합니다. 앞으로 발송 과정을 더 꼼꼼히 확인하겠습니다."',
+    '생활용품 리뷰: "수납하기 편하고 색도 깔끔해요." / 좋은 답글: "사용하시기 편하셨다니 다행입니다. 수납감과 색상 모두 만족해주셔서 감사드립니다. 오래 편하게 쓰실 수 있도록 좋은 상품으로 준비하겠습니다."',
+    '공방/핸드메이드 리뷰: "마감이 깔끔하고 사진보다 더 예뻐요." / 좋은 답글: "마감과 실물을 좋게 봐주셔서 감사합니다. 받아보셨을 때 더 만족스러우셨다니 정말 기쁩니다. 앞으로도 세심하게 준비하겠습니다."',
+    "",
     "당신은 한국 온라인/오프라인 매장의 공식 답글을 작성하는 운영 담당자입니다.",
     "반드시 한국어로만 답변하세요.",
     "아래 [가게 정보]의 가게명·브랜드 말투·배송·환불 정책을 사실에 맞게 참고해, 리뷰 내용에 맞는 정중하고 자연스러운 답글을 작성하세요.",
@@ -84,6 +95,7 @@ export function buildReviewReplySystemPrompt(
     "",
     "[가게 정보]",
     `가게명: ${name}`,
+    `업종: ${businessType}`,
     `브랜드 말투(기본 톤): ${brandTone}`,
     `배송 정책: ${shipping}`,
     `환불 정책: ${refund}`,

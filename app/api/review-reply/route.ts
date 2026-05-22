@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
-    .select("store_name, tone, shipping_policy, refund_policy")
+    .select("store_name, business_type, tone, shipping_policy, refund_policy")
     .eq("user_id", auth.userId)
     .order("id", { ascending: false })
     .limit(1)
