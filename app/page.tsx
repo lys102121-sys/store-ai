@@ -76,6 +76,8 @@ type DeleteApiResponse = {
   detail?: string;
 };
 
+type DashboardTab = "start" | "store" | "answer" | "manage";
+
 type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
@@ -140,6 +142,36 @@ function InsightsIcon({ className }: { className?: string }) {
       <path d="M16.3 7.7l2.1-2.1" />
       <circle cx="12" cy="12" r="4" />
     </svg>
+  );
+}
+
+function EmptyStateCard({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
+      <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+        {title}
+      </h3>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        {description}
+      </p>
+      <button
+        type="button"
+        onClick={onAction}
+        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+      >
+        {actionLabel}
+      </button>
+    </div>
   );
 }
 
@@ -520,6 +552,7 @@ function interpretBusinessType(value: string): InterpretedBusinessType {
 }
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<DashboardTab>("start");
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -1423,10 +1456,24 @@ export default function Home() {
   const policyOptionButtonClass =
     "rounded-lg border px-3 py-2 text-xs font-medium transition";
 
+  const dashboardTabs = [
+    { id: "start", label: "시작하기" },
+    { id: "store", label: "가게 설정" },
+    { id: "answer", label: "답변 작성" },
+    { id: "manage", label: "운영 관리" },
+  ] as const satisfies ReadonlyArray<{ id: DashboardTab; label: string }>;
+
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
+    });
+  }
+
+  function goToTabSection(tab: DashboardTab, targetId: string) {
+    setActiveTab(tab);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollToSection(targetId));
     });
   }
 
@@ -1587,7 +1634,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <div className="mx-auto w-full max-w-5xl space-y-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
@@ -1642,7 +1689,38 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <nav
+          aria-label="대시보드 탭"
+          className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {dashboardTabs.map((tab) => {
+              const isSelected = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                    isSelected
+                      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-950"
+                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                  }`}
+                  aria-pressed={isSelected}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <section
+          className={`overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${
+            activeTab === "start" ? "order-[10]" : "hidden"
+          }`}
+        >
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
               <p className="mb-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
@@ -1660,14 +1738,14 @@ export default function Home() {
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
-                  onClick={() => scrollToSection("store-info")}
+                  onClick={() => goToTabSection("store", "store-info")}
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                 >
                   가게 정보 등록하기
                 </button>
                 <button
                   type="button"
-                  onClick={() => scrollToSection("cs-reply")}
+                  onClick={() => goToTabSection("answer", "cs-reply")}
                   className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
                 >
                   문의 답변 써보기
@@ -1719,8 +1797,8 @@ export default function Home() {
           </div>
         </section>
 
-        {authUser && !storeStatusLoading && !hasStore ? (
-          <section className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
+        {activeTab === "start" && authUser && !storeStatusLoading && !hasStore ? (
+          <section className="order-[20] rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
@@ -1735,7 +1813,7 @@ export default function Home() {
               </div>
               <button
                 type="button"
-                onClick={() => scrollToSection("store-info")}
+                onClick={() => goToTabSection("store", "store-info")}
                 className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
               >
                 가게 정보 등록하기
@@ -1761,8 +1839,8 @@ export default function Home() {
           </section>
         ) : null}
 
-        {authUser ? (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+        {activeTab === "start" && authUser ? (
+          <section className="order-[30] rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
@@ -1797,10 +1875,19 @@ export default function Home() {
                 </article>
               ))}
             </div>
+            {pendingMissingInfoCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => goToTabSection("manage", "missing-infos")}
+                className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
+              >
+                확인 필요한 정보 보기
+              </button>
+            ) : null}
           </section>
         ) : null}
 
-        <section className="sticky top-0 z-20 -mx-4 border-b border-zinc-200/70 bg-zinc-50/90 px-4 py-3 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/90 sm:top-2 sm:mx-0 sm:rounded-2xl sm:border sm:shadow-sm">
+        <section className="hidden">
           <div className="mb-3">
             <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               카테고리 / 빠른 이동
@@ -1823,7 +1910,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section>
+        <section className={activeTab === "manage" ? "order-[44]" : "hidden"}>
           <div className="mb-4">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               리뷰 통계
@@ -1858,7 +1945,9 @@ export default function Home() {
 
         <section
           id="ai-insights"
-          className={`${cardClass} scroll-mt-32 border-indigo-200/60 dark:border-indigo-900/50`}
+          className={`${cardClass} scroll-mt-32 border-indigo-200/60 dark:border-indigo-900/50 ${
+            activeTab === "manage" ? "order-[45]" : "hidden"
+          }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex gap-3">
@@ -1911,7 +2000,12 @@ export default function Home() {
           )}
         </section>
 
-        <section id="store-info" className={`${cardClass} scroll-mt-32`}>
+        <section
+          id="store-info"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "store" ? "order-[20]" : "hidden"
+          }`}
+        >
           <div className="mb-6">
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
               가게 정보
@@ -2603,9 +2697,28 @@ export default function Home() {
           ) : null}
         </section>
 
+        {activeTab === "answer" && needsStoreInfo ? (
+          <section className="order-[29] rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                먼저 가게 설정을 완료하면 AI 답변을 더 정확하게 만들 수 있어요
+              </p>
+              <button
+                type="button"
+                onClick={() => goToTabSection("store", "store-info")}
+                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              >
+                가게 설정하기
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <section
           id="cs-reply"
-          className={`${cardClass} scroll-mt-32 border-sky-200/70 dark:border-sky-900/50`}
+          className={`${cardClass} scroll-mt-32 border-sky-200/70 dark:border-sky-900/50 ${
+            activeTab === "answer" ? "order-[30]" : "hidden"
+          }`}
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -2698,7 +2811,12 @@ export default function Home() {
           </form>
         </section>
 
-        <section id="cs-history" className={`${cardClass} scroll-mt-32`}>
+        <section
+          id="cs-history"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "manage" ? "order-[42]" : "hidden"
+          }`}
+        >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -2729,9 +2847,12 @@ export default function Home() {
               CS 문의를 불러오는 중...
             </p>
           ) : csMessages.length === 0 ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              아직 저장된 CS 문의가 없습니다.
-            </p>
+            <EmptyStateCard
+              title="아직 고객 문의 기록이 없습니다"
+              description="자주 들어오는 문의를 입력하고 AI 답변을 생성해보세요."
+              actionLabel="문의 답변 작성하기"
+              onAction={() => goToTabSection("answer", "cs-reply")}
+            />
           ) : (
             <ul className="space-y-4">
               {csMessages.map((item) => (
@@ -2780,7 +2901,12 @@ export default function Home() {
           )}
         </section>
 
-        <section id="missing-infos" className={`${cardClass} scroll-mt-32`}>
+        <section
+          id="missing-infos"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "manage" ? "order-[41]" : "hidden"
+          }`}
+        >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -2817,9 +2943,12 @@ export default function Home() {
               확인이 필요한 정보를 불러오는 중...
             </p>
           ) : missingInfos.length === 0 ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              아직 추가 확인이 필요한 정보가 없습니다.
-            </p>
+            <EmptyStateCard
+              title="현재 확인이 필요한 정보가 없습니다"
+              description="AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다."
+              actionLabel="가게 정보 보강하기"
+              onAction={() => goToTabSection("store", "store-info")}
+            />
           ) : (
             <ul className="space-y-4">
               {missingInfos.map((item) => (
@@ -2950,7 +3079,12 @@ export default function Home() {
           )}
         </section>
 
-        <section id="review-reply" className={`${cardClass} scroll-mt-32`}>
+        <section
+          id="review-reply"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "answer" ? "order-[31]" : "hidden"
+          }`}
+        >
           <div className="mb-6">
             <p className="mb-2 inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
               리뷰 답글
@@ -3021,7 +3155,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="review-history" className={`${cardClass} scroll-mt-32`}>
+        <section
+          id="review-history"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "manage" ? "order-[43]" : "hidden"
+          }`}
+        >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -3072,9 +3211,12 @@ export default function Home() {
               히스토리를 불러오는 중...
             </p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              아직 저장된 리뷰가 없습니다.
-            </p>
+            <EmptyStateCard
+              title="아직 리뷰 답글 기록이 없습니다"
+              description="고객 리뷰를 입력하고 첫 AI 답글을 생성해보세요."
+              actionLabel="리뷰 답글 작성하기"
+              onAction={() => goToTabSection("answer", "review-reply")}
+            />
           ) : (
             <ul className="space-y-4">
               {history.map((item) => (
