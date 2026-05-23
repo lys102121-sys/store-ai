@@ -396,8 +396,10 @@ const inputClass =
 const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
 
-// TODO: Replace with the Google Form feedback URL after beta setup.
-const betaFeedbackHref = "#";
+const copyButtonClass =
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
+
+const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
 const businessTypeInputGuides = {
   "배달 음식점": [
@@ -624,6 +626,8 @@ export default function Home() {
   const [deletingCsMessageId, setDeletingCsMessageId] = useState<
     number | null
   >(null);
+  const [copyMessage, setCopyMessage] = useState("");
+  const [copyError, setCopyError] = useState("");
 
   const [missingInfos, setMissingInfos] = useState<MissingInfoItem[]>([]);
   const [missingInfosLoading, setMissingInfosLoading] = useState(true);
@@ -1339,6 +1343,31 @@ export default function Home() {
     }
   }
 
+  async function handleCopyText(
+    text: string,
+    successMessage = "복사되었습니다",
+  ) {
+    const copyTarget = text.trim();
+
+    if (!copyTarget) {
+      setCopyMessage("");
+      setCopyError("복사할 답변이 없습니다.");
+      window.setTimeout(() => setCopyError(""), 2000);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(copyTarget);
+      setCopyError("");
+      setCopyMessage(successMessage);
+      window.setTimeout(() => setCopyMessage(""), 2000);
+    } catch {
+      setCopyMessage("");
+      setCopyError("복사에 실패했습니다. 다시 시도해 주세요.");
+      window.setTimeout(() => setCopyError(""), 2500);
+    }
+  }
+
   const pendingMissingInfoCount = missingInfos.filter(
     (item) => item.status === "pending",
   ).length;
@@ -1699,8 +1728,9 @@ export default function Home() {
 
         <section className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
           <p className="text-sm leading-6 text-sky-950 dark:text-sky-100">
-            현재 베타 테스트 중입니다. AI 답변이 어색하거나 불편한 점이
-            있다면 피드백을 남겨주세요.
+            현재는 생성된 답변을 복사해 배민, 스마트스토어, 네이버 등 실제
+            플랫폼에 붙여넣어 사용하는 베타 버전입니다. 답변 품질과 정보 학습
+            기능을 먼저 검증 중이며, 이후 플랫폼 연동 기능을 준비할 예정입니다.
           </p>
           <a
             href={betaFeedbackHref}
@@ -1736,6 +1766,19 @@ export default function Home() {
             })}
           </div>
         </nav>
+
+        {copyMessage || copyError ? (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              copyError
+                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+            }`}
+            role="status"
+          >
+            {copyError || copyMessage}
+          </div>
+        ) : null}
 
         <section
           className={`overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${
@@ -2818,11 +2861,24 @@ export default function Home() {
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-sm font-medium">생성된 CS 답변</h3>
-                {csLoading ? (
-                  <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                    작성 중
-                  </span>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {csReply && !csLoading ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleCopyText(csReply, "답변이 복사되었습니다")
+                      }
+                      className={copyButtonClass}
+                    >
+                      답변 복사
+                    </button>
+                  ) : null}
+                  {csLoading ? (
+                    <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                      작성 중
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div
                 className="min-h-56 whitespace-pre-wrap rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
@@ -2913,9 +2969,23 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <p className="mb-1 font-medium text-emerald-700 dark:text-emerald-300">
-                        답변
-                      </p>
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                          답변
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleCopyText(
+                              item.reply,
+                              "답변이 복사되었습니다",
+                            )
+                          }
+                          className={copyButtonClass}
+                        >
+                          복사
+                        </button>
+                      </div>
                       <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
                         {item.reply}
                       </p>
@@ -3186,9 +3256,23 @@ export default function Home() {
                       </p>
                     </div>
                     <div>
-                      <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
-                        답글
-                      </p>
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                          답글
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleCopyText(
+                              item.reply,
+                              "답글이 복사되었습니다",
+                            )
+                          }
+                          className={copyButtonClass}
+                        >
+                          복사
+                        </button>
+                      </div>
                       <p className="leading-6 text-zinc-700 dark:text-zinc-300">
                         {item.reply}
                       </p>
@@ -3267,7 +3351,20 @@ export default function Home() {
           ) : null}
 
           <div className="mt-6">
-            <h2 className="mb-2 text-sm font-medium">AI 답글 출력</h2>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium">AI 답글 출력</h2>
+              {reply && !isLoading ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handleCopyText(reply, "답글이 복사되었습니다")
+                  }
+                  className={copyButtonClass}
+                >
+                  답글 복사
+                </button>
+              ) : null}
+            </div>
             <div className="min-h-28 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
               {isLoading
                 ? "답글을 생성하고 있습니다..."
@@ -3387,9 +3484,23 @@ export default function Home() {
                       </p>
                     </div>
                     <div>
-                      <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
-                        답글
-                      </p>
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                          답글
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleCopyText(
+                              item.reply,
+                              "답글이 복사되었습니다",
+                            )
+                          }
+                          className={copyButtonClass}
+                        >
+                          복사
+                        </button>
+                      </div>
                       <p className="leading-6 text-zinc-700 dark:text-zinc-300">
                         {item.reply}
                       </p>
