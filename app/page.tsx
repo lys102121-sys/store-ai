@@ -40,6 +40,18 @@ type ReviewApiResponse = {
   detail?: string;
 };
 
+type BatchReviewReplyResult = {
+  review: string;
+  reply: string;
+  sentiment: Sentiment;
+};
+
+type BatchReviewApiResponse = {
+  results?: BatchReviewReplyResult[];
+  error?: string;
+  detail?: string;
+};
+
 type CsReplyApiResponse = {
   reply?: string;
   error?: string;
@@ -90,6 +102,7 @@ type StoreSettings = {
   product_details: string | null;
   product_caution: string | null;
   extra_faq: string | null;
+  owner_reply_examples: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -111,6 +124,7 @@ type StoreDraft = {
   productDetails: string;
   productCaution: string;
   extraFaq: string;
+  ownerReplyExamples: string;
 };
 
 type InsightsApiResponse = {
@@ -343,7 +357,9 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     typeof draft.productDescription === "string" &&
     typeof draft.productDetails === "string" &&
     typeof draft.productCaution === "string" &&
-    typeof draft.extraFaq === "string"
+    typeof draft.extraFaq === "string" &&
+    (draft.ownerReplyExamples === undefined ||
+      typeof draft.ownerReplyExamples === "string")
   );
 }
 
@@ -359,7 +375,13 @@ function readStoreDraft(userId: string): StoreDraft | null {
 
     const parsedDraft: unknown = JSON.parse(rawDraft);
 
-    return isStoreDraft(parsedDraft) ? parsedDraft : null;
+    return isStoreDraft(parsedDraft)
+      ? {
+          ...parsedDraft,
+          businessType: parsedDraft.businessType ?? "",
+          ownerReplyExamples: parsedDraft.ownerReplyExamples ?? "",
+        }
+      : null;
   } catch {
     return null;
   }
@@ -568,6 +590,15 @@ export default function Home() {
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [batchReviewsInput, setBatchReviewsInput] = useState("");
+  const [batchReviewResults, setBatchReviewResults] = useState<
+    BatchReviewReplyResult[]
+  >([]);
+  const [batchReviewError, setBatchReviewError] = useState("");
+  const [batchReviewLoading, setBatchReviewLoading] = useState(false);
+  const [batchReviewCopyMessages, setBatchReviewCopyMessages] = useState<
+    Record<number, { type: "success" | "error"; message: string }>
+  >({});
 
   const [customerMessage, setCustomerMessage] = useState("");
   const [csTone, setCsTone] = useState("");
@@ -585,6 +616,7 @@ export default function Home() {
   const [productDetails, setProductDetails] = useState("");
   const [productCaution, setProductCaution] = useState("");
   const [extraFaq, setExtraFaq] = useState("");
+  const [ownerReplyExamples, setOwnerReplyExamples] = useState("");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -660,6 +692,7 @@ export default function Home() {
       productDetails,
       productCaution,
       extraFaq,
+      ownerReplyExamples,
     }),
     [
       storeName,
@@ -672,6 +705,7 @@ export default function Home() {
       productDetails,
       productCaution,
       extraFaq,
+      ownerReplyExamples,
     ],
   );
 
@@ -689,6 +723,7 @@ export default function Home() {
       setProductDetails(store.product_details ?? "");
       setProductCaution(store.product_caution ?? "");
       setExtraFaq(store.extra_faq ?? "");
+      setOwnerReplyExamples(store.owner_reply_examples ?? "");
       return;
     }
 
@@ -702,6 +737,7 @@ export default function Home() {
     setProductDetails("");
     setProductCaution("");
     setExtraFaq("");
+    setOwnerReplyExamples("");
   }, []);
 
   useEffect(() => {
@@ -882,6 +918,7 @@ export default function Home() {
         setProductDetails("");
         setProductCaution("");
         setExtraFaq("");
+        setOwnerReplyExamples("");
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -923,6 +960,7 @@ export default function Home() {
         setProductDetails(draft.productDetails);
         setProductCaution(draft.productCaution);
         setExtraFaq(draft.extraFaq);
+        setOwnerReplyExamples(draft.ownerReplyExamples);
       }
 
       setStoreDraftReady(true);
@@ -1112,6 +1150,84 @@ export default function Home() {
     }
   }
 
+  async function handleBatchReviewSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const reviews = batchReviewsInput
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (reviews.length === 0) {
+      setBatchReviewError("리뷰를 한 개 이상 입력해 주세요.");
+      setBatchReviewResults([]);
+      return;
+    }
+
+    if (reviews.length > 10) {
+      setBatchReviewError("한 번에 최대 10개까지 생성할 수 있습니다.");
+      setBatchReviewResults([]);
+      return;
+    }
+
+    const tooLongReview = reviews.find((item) => item.length > 1000);
+
+    if (tooLongReview) {
+      setBatchReviewError("각 리뷰는 1,000자 이하로 입력해 주세요.");
+      setBatchReviewResults([]);
+      return;
+    }
+
+    if (!authUser) {
+      setBatchReviewError("로그인이 필요합니다.");
+      setBatchReviewResults([]);
+      return;
+    }
+
+    if (needsStoreInfo) {
+      setBatchReviewError(
+        "가게 정보를 먼저 등록해야 AI가 정확히 답변할 수 있습니다.",
+      );
+      setBatchReviewResults([]);
+      return;
+    }
+
+    setBatchReviewLoading(true);
+    setBatchReviewError("");
+    setBatchReviewResults([]);
+    setBatchReviewCopyMessages({});
+
+    try {
+      const response = await fetch("/api/review-reply/batch", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          reviews,
+          tone: tone.trim() || storeTone.trim(),
+        }),
+      });
+      const data = (await response.json()) as BatchReviewApiResponse;
+
+      if (!response.ok || !data.results) {
+        setBatchReviewError(
+          data.error ?? "리뷰 답글을 일괄 생성하지 못했습니다.",
+        );
+        return;
+      }
+
+      setBatchReviewResults(data.results);
+      await Promise.all([loadHistory(), loadInsights()]);
+    } catch {
+      setBatchReviewError(
+        "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setBatchReviewLoading(false);
+    }
+  }
+
   async function handleCsReplySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1203,6 +1319,7 @@ export default function Home() {
           product_details: productDetails,
           product_caution: productCaution,
           extra_faq: extraFaq,
+          owner_reply_examples: ownerReplyExamples,
         }),
       });
 
@@ -1366,6 +1483,43 @@ export default function Home() {
       setCopyError("복사에 실패했습니다. 다시 시도해 주세요.");
       window.setTimeout(() => setCopyError(""), 2500);
     }
+  }
+
+  async function handleBatchReviewCopy(index: number, text: string) {
+    const copyTarget = text.trim();
+
+    if (!copyTarget) {
+      setBatchReviewCopyMessages({
+        [index]: { type: "error", message: "복사할 답글이 없습니다." },
+      });
+      window.setTimeout(() => {
+        setBatchReviewCopyMessages((current) => {
+          const next = { ...current };
+          delete next[index];
+          return next;
+        });
+      }, 2500);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(copyTarget);
+      setBatchReviewCopyMessages({
+        [index]: { type: "success", message: "답글이 복사되었습니다" },
+      });
+    } catch {
+      setBatchReviewCopyMessages({
+        [index]: { type: "error", message: "복사에 실패했습니다" },
+      });
+    }
+
+    window.setTimeout(() => {
+      setBatchReviewCopyMessages((current) => {
+        const next = { ...current };
+        delete next[index];
+        return next;
+      });
+    }, 2500);
   }
 
   const pendingMissingInfoCount = missingInfos.filter(
@@ -2283,6 +2437,38 @@ export default function Home() {
                     className={textareaClass}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+              <div className="space-y-2">
+                <label
+                  htmlFor="owner_reply_examples"
+                  className="text-sm font-semibold text-emerald-950 dark:text-emerald-100"
+                >
+                  사장님 말투 학습
+                </label>
+                <p className="text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+                  평소 직접 쓰셨던 리뷰 답글을 3개 이상 붙여넣어 주세요. AI가
+                  문장 길이, 말투, 이모지 사용, 감사/사과 표현을 참고해 답글을
+                  작성합니다.
+                </p>
+                <textarea
+                  id="owner_reply_examples"
+                  value={ownerReplyExamples}
+                  onChange={(event) =>
+                    setOwnerReplyExamples(event.target.value)
+                  }
+                  placeholder={[
+                    "예:",
+                    "맛있게 드셔주셔서 감사합니다 :) 다음에도 정성껏 준비하겠습니다.",
+                    "",
+                    "기다리셨을 텐데 배송이 늦어 죄송합니다. 다음에는 더 빠르게 준비해드릴게요.",
+                    "",
+                    "솔직한 후기 남겨주셔서 감사합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
+                  ].join("\n")}
+                  className="min-h-40 w-full resize-y rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-500 dark:border-emerald-900/70 dark:bg-zinc-950"
+                />
               </div>
             </div>
 
@@ -3371,6 +3557,149 @@ export default function Home() {
                 : reply || "생성된 답글이 여기에 표시됩니다."}
             </div>
           </div>
+        </section>
+
+        <section
+          id="batch-review-reply"
+          className={`${cardClass} scroll-mt-32 ${
+            activeTab === "answer" ? "order-[32]" : "hidden"
+          }`}
+        >
+          <div className="mb-6">
+            <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
+              일괄 생성
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              리뷰 답글 일괄 생성
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              여러 리뷰를 줄바꿈으로 붙여넣으면, 각 리뷰에 맞는 답글을 한
+              번에 생성합니다.
+            </p>
+          </div>
+
+          <form onSubmit={handleBatchReviewSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label
+                htmlFor="batch_reviews"
+                className="text-sm font-medium"
+              >
+                여러 리뷰 입력
+              </label>
+              <textarea
+                id="batch_reviews"
+                value={batchReviewsInput}
+                onChange={(event) => setBatchReviewsInput(event.target.value)}
+                placeholder={[
+                  "예: 포장이 깔끔하고 배송도 빨랐어요.",
+                  "맛은 좋았는데 양이 조금 아쉬웠어요.",
+                  "상품은 예쁜데 배송이 조금 늦었어요.",
+                ].join("\n")}
+                className="min-h-40 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-950"
+              />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                빈 줄은 자동으로 무시되며, 한 번에 최대 10개까지 생성할 수
+                있습니다.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={batchReviewLoading || aiGenerationBlocked}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-700 px-5 text-sm font-medium text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+            >
+              {batchReviewLoading ? "일괄 생성 중..." : "일괄 답글 생성"}
+            </button>
+
+            {needsStoreInfo ? (
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                먼저 우리 가게 정보를 등록해주세요
+              </p>
+            ) : null}
+
+            {batchReviewError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                {batchReviewError}
+              </div>
+            ) : null}
+          </form>
+
+          {batchReviewResults.length > 0 ? (
+            <div className="mt-6 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  생성 결과
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  각 답글은 바로 복사해서 실제 플랫폼에 붙여넣을 수 있습니다.
+                </p>
+              </div>
+
+              <ul className="space-y-4">
+                {batchReviewResults.map((item, index) => {
+                  const copyStatus = batchReviewCopyMessages[index];
+
+                  return (
+                    <li
+                      key={`${item.review}-${index}`}
+                      className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/20"
+                    >
+                      {copyStatus ? (
+                        <div
+                          className={`mb-3 rounded-lg border px-3 py-2 text-xs font-medium ${
+                            copyStatus.type === "error"
+                              ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          }`}
+                          role="status"
+                        >
+                          {copyStatus.message}
+                        </div>
+                      ) : null}
+
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${sentimentBadgeClass(item.sentiment)}`}
+                        >
+                          {sentimentLabel(item.sentiment)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 text-sm">
+                        <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                          <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
+                            원본 리뷰
+                          </p>
+                          <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                            {item.review}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                          <div className="mb-1 flex items-center justify-between gap-3">
+                            <p className="font-medium text-indigo-700 dark:text-indigo-300">
+                              AI 답글
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleBatchReviewCopy(index, item.reply)
+                              }
+                              className={copyButtonClass}
+                            >
+                              답글 복사
+                            </button>
+                          </div>
+                          <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                            {item.reply}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
         </section>
 
         <section

@@ -1,18 +1,21 @@
 import OpenAI from "openai";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 import {
   generateReviewReplyWithSentiment,
   reviewReplyStoreSelect,
 } from "@/app/lib/reviewReplyGeneration";
-import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-type RequestBody = {
-  review?: unknown;
+const MAX_BATCH_REVIEWS = 10;
+const MAX_REVIEW_LENGTH = 1000;
+
+type BatchReviewReplyRequestBody = {
+  reviews?: unknown;
   tone?: unknown;
 };
 
@@ -30,10 +33,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: RequestBody;
+  let body: BatchReviewReplyRequestBody;
 
   try {
-    body = (await request.json()) as RequestBody;
+    body = (await request.json()) as BatchReviewReplyRequestBody;
   } catch {
     return Response.json(
       { error: "Invalid JSON request body." },
@@ -41,12 +44,41 @@ export async function POST(request: Request) {
     );
   }
 
-  const review = typeof body.review === "string" ? body.review.trim() : "";
-  const tone = typeof body.tone === "string" ? body.tone.trim() : "";
-
-  if (!review || !tone) {
+  if (!Array.isArray(body.reviews)) {
     return Response.json(
-      { error: "Both 'review' and 'tone' must be non-empty strings." },
+      { error: "'reviews' must be an array of strings." },
+      { status: 400 },
+    );
+  }
+
+  const reviews = body.reviews
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (reviews.length === 0) {
+    return Response.json(
+      { error: "At least one review is required." },
+      { status: 400 },
+    );
+  }
+
+  if (reviews.length > MAX_BATCH_REVIEWS) {
+    return Response.json(
+      { error: "You can generate up to 10 review replies at once." },
+      { status: 400 },
+    );
+  }
+
+  const tooLongReview = reviews.find(
+    (review) => review.length > MAX_REVIEW_LENGTH,
+  );
+
+  if (tooLongReview) {
+    return Response.json(
+      {
+        error: `Each review must be ${MAX_REVIEW_LENGTH} characters or fewer.`,
+      },
       { status: 400 },
     );
   }
@@ -77,32 +109,42 @@ export async function POST(request: Request) {
   }
 
   const storeSettings = store as unknown as ReviewReplyPromptStore;
+  const tone =
+    typeof body.tone === "string" && body.tone.trim()
+      ? body.tone.trim()
+      : storeSettings.tone?.trim() || "가게 기본 말투";
 
   try {
-    const result = await generateReviewReplyWithSentiment(
-      openai,
-      storeSettings,
-      review,
-      tone,
-    );
+    const results = [];
 
-    const { error: reviewSaveError } = await auth.supabase
-      .from("reviews")
-      .insert({
+    for (const review of reviews) {
+      const result = await generateReviewReplyWithSentiment(
+        openai,
+        storeSettings,
+        review,
+        tone,
+      );
+
+      results.push(result);
+    }
+
+    const { error: saveError } = await auth.supabase.from("reviews").insert(
+      results.map((result) => ({
         user_id: auth.userId,
         review: result.review,
         reply: result.reply,
         sentiment: result.sentiment,
-      });
+      })),
+    );
 
-    if (reviewSaveError) {
+    if (saveError) {
       return Response.json(
-        { error: "Failed to save review.", detail: reviewSaveError.message },
+        { error: "Failed to save reviews.", detail: saveError.message },
         { status: 500 },
       );
     }
 
-    return Response.json({ reply: result.reply });
+    return Response.json({ results });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown OpenAI API error.";
