@@ -396,6 +396,9 @@ const inputClass =
 const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
 
+// TODO: Replace with the Google Form feedback URL after beta setup.
+const betaFeedbackHref = "#";
+
 const businessTypeInputGuides = {
   "배달 음식점": [
     "대표 메뉴명",
@@ -1692,6 +1695,19 @@ export default function Home() {
               </button>
             )}
           </div>
+        </section>
+
+        <section className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-sm leading-6 text-sky-950 dark:text-sky-100">
+            현재 베타 테스트 중입니다. AI 답변이 어색하거나 불편한 점이
+            있다면 피드백을 남겨주세요.
+          </p>
+          <a
+            href={betaFeedbackHref}
+            className="mt-3 inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-sky-300 bg-white px-3 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 dark:border-sky-800 dark:bg-zinc-950 dark:text-sky-200 dark:hover:bg-sky-950/60 sm:mt-0"
+          >
+            피드백 남기기
+          </a>
         </section>
 
         <nav
