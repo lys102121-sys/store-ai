@@ -8,6 +8,7 @@ export type ReviewReplyPromptStore = {
   product_description?: string | null;
   product_details?: string | null;
   product_caution?: string | null;
+  product_catalog?: string | null;
   extra_faq?: string | null;
   owner_reply_examples?: string | null;
 };
@@ -27,6 +28,8 @@ export function buildReviewReplySystemPrompt(
     store.product_details?.trim() || "(구성/용량/재질/사이즈 정보 없음)";
   const productCaution =
     store.product_caution?.trim() || "(보관방법/주의사항/사용법 없음)";
+  const productCatalog =
+    store.product_catalog?.trim() || "(상품 목록 정보 없음)";
   const extraFaq = store.extra_faq?.trim() || "(기타 FAQ/포장·옵션 없음)";
   const ownerReplyExamples = store.owner_reply_examples?.trim() || "";
 
@@ -60,6 +63,8 @@ export function buildReviewReplySystemPrompt(
       "영어, 일본어, 중국어 등 외국어 표현을 섞지 마세요.",
       "리뷰에 없는 내용을 지어내지 마세요.",
       "CS 문의 답변처럼 배송/환불 정책을 길게 설명하지 마세요.",
+      "리뷰에 특정 상품명이나 메뉴명이 직접 언급된 경우에만 상품 목록에서 관련 맥락을 참고하세요.",
+      "리뷰 답글에서는 상품 목록의 설명이나 주의사항을 길게 안내하지 마세요.",
       "업종과 리뷰 내용에 맞는 단어를 사용하세요. 배달 음식점이면 제품/상품/발송 대신 음식/메뉴/주문/조리/배달 준비/구성/양을 사용하세요.",
       "디저트/카페이면 제품/발송보다 메뉴/디저트/케이크/음료/픽업 준비를 우선 사용하세요.",
       "안전, 정확성, 과장 금지, 업종별 표현 규칙은 사장님 예시보다 우선합니다.",
@@ -140,6 +145,7 @@ export function buildReviewReplySystemPrompt(
       `상품 설명: ${productDescription}`,
       `구성/용량/재질/사이즈 등: ${productDetails}`,
       `보관방법/주의사항/사용법 등: ${productCaution}`,
+      `상품 목록: ${productCatalog}`,
       `기타 FAQ/포장·옵션: ${extraFaq}`,
     ].join("\n");
   }
@@ -147,6 +153,8 @@ export function buildReviewReplySystemPrompt(
   const ownerReplyExamplesFallback = "(사장님 답글 예시 없음)";
 
   return [
+    "리뷰에 특정 상품명이나 메뉴명이 직접 언급된 경우에만 상품 목록에서 관련 맥락을 참고하세요.",
+    "리뷰 답글에서는 상품 목록의 정보를 CS 답변처럼 길게 설명하지 말고 리뷰 내용에 맞는 맥락으로만 사용하세요.",
     "부정 리뷰 답글은 담백하고 진정성 있게 작성하세요.",
     "과하게 무겁거나 극단적인 표현은 피하세요.",
     '"깊이 반성합니다", "진심으로 통감합니다", "책임을 절감합니다", "큰 책임을 느낍니다" 같은 표현은 특별히 심각한 상황이 아니면 사용하지 마세요.',
@@ -328,6 +336,7 @@ export function buildReviewReplySystemPrompt(
     `상품 설명: ${productDescription}`,
     `구성/용량/재질/사이즈 등: ${productDetails}`,
     `보관방법/주의사항/사용법 등: ${productCaution}`,
+    `상품 목록: ${productCatalog}`,
     `기타 FAQ/포장·옵션: ${extraFaq}`,
     "",
     "[사장님 답글 예시]",

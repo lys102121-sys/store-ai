@@ -127,6 +127,7 @@ function getRegisteredStoreText(store: StoreRow) {
     store.product_description,
     store.product_details,
     store.product_caution,
+    store.product_catalog,
     store.extra_faq,
   ]
     .filter((value): value is string => Boolean(value?.trim()))
@@ -365,7 +366,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, business_type, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, extra_faq, created_at, updated_at",
+      "user_id, store_name, business_type, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })

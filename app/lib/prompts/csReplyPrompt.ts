@@ -9,6 +9,7 @@ export type CsReplyPromptStore = {
   product_description: string | null;
   product_details: string | null;
   product_caution: string | null;
+  product_catalog: string | null;
   extra_faq: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -29,6 +30,8 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
   const productCaution =
     store.product_caution?.trim() ||
     "(보관방법/주의사항/알레르기/사용법 정보 없음)";
+  const productCatalog =
+    store.product_catalog?.trim() || "(상품 목록 정보 없음)";
   const extraFaq = store.extra_faq?.trim() || "(기타 FAQ/포장·옵션 정보 없음)";
 
   return [
@@ -154,16 +157,27 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     '나쁜 예시: "물에 닿으면 변색될 수 있습니다. 궁금한 점이 더 있으시면 언제든지 문의해 주세요."',
     "이유: 구체적인 관리 방법인 '마른 천으로 닦아 보관'을 빠뜨렸고 일반적인 마무리로 끝났기 때문입니다.",
     "",
-    "[대표 상품 정보 - 상품 문의에서 반드시 우선 참고]",
+    "[대표 상품 정보 - 문의 상품과 직접 관련될 때 참고]",
     `대표 상품명: ${productName}`,
     `상품 설명: ${productDescription}`,
     `구성/용량/재질/사이즈 등: ${productDetails}`,
     `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
     "",
+    "[상품 목록]",
+    productCatalog,
+    "",
     "[기타 FAQ/포장·옵션]",
     extraFaq,
     "",
-    "상품 관련 질문은 배송정책이나 환불정책보다 대표 상품 정보를 먼저 확인하세요.",
+    "[상품 목록 활용 규칙]",
+    "고객 문의가 특정 상품명, 메뉴명, 옵션명과 관련되어 있으면 [상품 목록]에서 가장 관련 있는 항목을 먼저 찾으세요.",
+    "상품 목록에 해당 상품 정보가 있으면 그 정보를 우선 근거로 답변하세요.",
+    "대표 상품 정보와 상품 목록 정보가 모두 있으면 고객 문의에 더 직접적으로 관련된 상품 목록 정보를 우선하세요.",
+    "상품 목록에 없는 내용은 추측하지 마세요.",
+    "특정 상품을 찾기 어렵거나 여러 상품이 가능하면 고객에게 어떤 상품인지 자연스럽게 확인하세요.",
+    '고객에게 "상품 목록", "등록된 정보", "데이터" 같은 내부 표현은 사용하지 마세요.',
+    "",
+    "상품 관련 질문은 배송정책이나 환불정책보다 상품 목록과 대표 상품 정보를 먼저 확인하세요.",
     "선물 포장, 옵션, 기타 자주 묻는 질문은 extra_faq도 반드시 참고하세요.",
     "사이즈, 사이즈 조절, 길이, 폭, 구성, 용량, 재질, 색상, 사용법, 보관방법, 주의사항, 알레르기 질문은 product_details와 product_caution을 최우선으로 참고하세요.",
     "알레르기, 알러지, 피부 예민함, 금속 알레르기 문의는 product_details의 소재 정보와 product_caution의 주의사항을 함께 확인하되 안전을 단정하지 마세요.",
@@ -172,7 +186,7 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     "대표 상품 정보에 있는 내용을 '명시되어 있지 않습니다'라고 답하지 마세요.",
     '등록된 대표 상품 정보와 정책 어디에도 없는 내용에만 "정확한 안내를 위해 확인 후 다시 말씀드리겠습니다."처럼 안내하세요.',
     "",
-    "상품 관련 문의라면 product_name, product_description, product_details, product_caution 정보를 우선 참고하세요.",
+    "상품 관련 문의라면 product_catalog, product_name, product_description, product_details, product_caution 정보를 우선 참고하세요.",
     '등록된 상품 정보에 없는 내용은 추측하지 말고 반드시 "정확한 안내를 위해 확인 후 다시 말씀드리겠습니다."처럼 안내하세요.',
     "상품 정보와 정책 정보가 모두 관련된 문의라면 문의에 직접 필요한 내용만 간결하게 반영하세요.",
     "",
@@ -233,6 +247,9 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     `상품 설명: ${productDescription}`,
     `구성/용량/재질/사이즈 등: ${productDetails}`,
     `보관방법/주의사항/알레르기/사용법 등: ${productCaution}`,
+    "",
+    "[상품 목록]",
+    productCatalog,
     "",
     "[기타 FAQ/포장·옵션]",
     extraFaq,

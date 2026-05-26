@@ -101,6 +101,7 @@ type StoreSettings = {
   product_description: string | null;
   product_details: string | null;
   product_caution: string | null;
+  product_catalog: string | null;
   extra_faq: string | null;
   owner_reply_examples: string | null;
   created_at: string | null;
@@ -123,6 +124,7 @@ type StoreDraft = {
   productDescription: string;
   productDetails: string;
   productCaution: string;
+  productCatalog: string;
   extraFaq: string;
   ownerReplyExamples: string;
 };
@@ -357,6 +359,8 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     typeof draft.productDescription === "string" &&
     typeof draft.productDetails === "string" &&
     typeof draft.productCaution === "string" &&
+    (draft.productCatalog === undefined ||
+      typeof draft.productCatalog === "string") &&
     typeof draft.extraFaq === "string" &&
     (draft.ownerReplyExamples === undefined ||
       typeof draft.ownerReplyExamples === "string")
@@ -379,6 +383,7 @@ function readStoreDraft(userId: string): StoreDraft | null {
       ? {
           ...parsedDraft,
           businessType: parsedDraft.businessType ?? "",
+          productCatalog: parsedDraft.productCatalog ?? "",
           ownerReplyExamples: parsedDraft.ownerReplyExamples ?? "",
         }
       : null;
@@ -615,6 +620,7 @@ export default function Home() {
   const [productDescription, setProductDescription] = useState("");
   const [productDetails, setProductDetails] = useState("");
   const [productCaution, setProductCaution] = useState("");
+  const [productCatalog, setProductCatalog] = useState("");
   const [extraFaq, setExtraFaq] = useState("");
   const [ownerReplyExamples, setOwnerReplyExamples] = useState("");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
@@ -691,6 +697,7 @@ export default function Home() {
       productDescription,
       productDetails,
       productCaution,
+      productCatalog,
       extraFaq,
       ownerReplyExamples,
     }),
@@ -704,6 +711,7 @@ export default function Home() {
       productDescription,
       productDetails,
       productCaution,
+      productCatalog,
       extraFaq,
       ownerReplyExamples,
     ],
@@ -722,6 +730,7 @@ export default function Home() {
       setProductDescription(store.product_description ?? "");
       setProductDetails(store.product_details ?? "");
       setProductCaution(store.product_caution ?? "");
+      setProductCatalog(store.product_catalog ?? "");
       setExtraFaq(store.extra_faq ?? "");
       setOwnerReplyExamples(store.owner_reply_examples ?? "");
       return;
@@ -736,6 +745,7 @@ export default function Home() {
     setProductDescription("");
     setProductDetails("");
     setProductCaution("");
+    setProductCatalog("");
     setExtraFaq("");
     setOwnerReplyExamples("");
   }, []);
@@ -917,6 +927,7 @@ export default function Home() {
         setProductDescription("");
         setProductDetails("");
         setProductCaution("");
+        setProductCatalog("");
         setExtraFaq("");
         setOwnerReplyExamples("");
         setCsMessages([]);
@@ -959,6 +970,7 @@ export default function Home() {
         setProductDescription(draft.productDescription);
         setProductDetails(draft.productDetails);
         setProductCaution(draft.productCaution);
+        setProductCatalog(draft.productCatalog);
         setExtraFaq(draft.extraFaq);
         setOwnerReplyExamples(draft.ownerReplyExamples);
       }
@@ -1318,6 +1330,7 @@ export default function Home() {
           product_description: productDescription,
           product_details: productDetails,
           product_caution: productCaution,
+          product_catalog: productCatalog,
           extra_faq: extraFaq,
           owner_reply_examples: ownerReplyExamples,
         }),
@@ -2437,6 +2450,61 @@ export default function Home() {
                     className={textareaClass}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <div className="space-y-2">
+                <label
+                  htmlFor="product_catalog"
+                  className="text-sm font-semibold text-sky-950 dark:text-sky-100"
+                >
+                  상품 목록 학습
+                </label>
+                <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                  여러 상품 정보를 한 번에 입력해두면 AI가 고객 문의에서 관련
+                  상품을 찾아 더 정확히 답변합니다.
+                </p>
+                <div className="rounded-lg border border-sky-200 bg-white/80 p-3 dark:border-sky-900/70 dark:bg-zinc-950/60">
+                  <p className="text-xs font-semibold text-sky-950 dark:text-sky-100">
+                    추천 입력 형식
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                    상품명은 [ ] 안에 적고, 상품 정보는 - 로 줄마다 나눠 적으면
+                    AI가 더 정확하게 답변할 수 있어요.
+                  </p>
+                  <pre className="mt-3 rounded-md bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-950 dark:bg-sky-950/40 dark:text-sky-100">
+                    {"[상품명]\n- 구성/용량\n- 옵션/가격\n- 보관법\n- 알레르기/주의사항"}
+                  </pre>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    필수 형식은 아니지만, 상품별로 줄을 나눠 입력하면 AI가 어떤
+                    상품의 정보인지 더 잘 구분합니다.
+                  </p>
+                </div>
+                <textarea
+                  id="product_catalog"
+                  value={productCatalog}
+                  onChange={(event) => setProductCatalog(event.target.value)}
+                  placeholder={[
+                    "[딸기 생크림 케이크]",
+                    "- 1호, 2~3인용",
+                    "- 우유, 계란, 밀 포함",
+                    "- 냉장 보관, 당일 섭취 권장",
+                    "- 선물 포장 가능, 추가 1,000원",
+                    "",
+                    "[초코 케이크]",
+                    "- 1호, 2~3인용",
+                    "- 우유, 계란, 밀, 카카오 포함",
+                    "- 냉장 보관, 당일 섭취 권장",
+                    "- 초코판 문구 가능",
+                    "",
+                    "[레터링 쿠키]",
+                    "- 6개 세트",
+                    "- 예약 주문 필요",
+                    "- 파손 우려로 택배 불가, 픽업 권장",
+                  ].join("\n")}
+                  className="min-h-64 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
+                />
               </div>
             </div>
 

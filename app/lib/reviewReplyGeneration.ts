@@ -23,6 +23,7 @@ export const reviewReplyStoreSelect = [
   "product_description",
   "product_details",
   "product_caution",
+  "product_catalog",
   "extra_faq",
   "owner_reply_examples",
 ].join(", ");
