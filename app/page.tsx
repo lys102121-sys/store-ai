@@ -476,6 +476,137 @@ const businessTypeInputGuides = {
   ],
 } as const;
 
+type ExampleStorePreset = {
+  label: string;
+  storeName: string;
+  businessType: string;
+  productName: string;
+  productDescription: string;
+  productDetails: string;
+  productCaution: string;
+  productCatalog: string;
+  extraFaq: string;
+  shippingPolicy: string;
+  refundPolicy: string;
+  ownerReplyExamples: string;
+  ownerCsExamples: string;
+};
+
+const exampleStorePresets: readonly ExampleStorePreset[] = [
+  {
+    label: "디저트/카페",
+    storeName: "모아 디저트",
+    businessType: "디저트/카페",
+    productName: "딸기 생크림 케이크",
+    productDescription:
+      "제철 딸기와 부드러운 생크림으로 준비하는 예약 케이크입니다.",
+    productDetails: "1호(2~3인용), 우유/계란/밀 포함, 레터링 문구 가능",
+    productCaution: "수령 후 냉장 보관해 주세요. 당일 섭취를 권장합니다.",
+    productCatalog: [
+      "[딸기 생크림 케이크]",
+      "- 1호, 2~3인용",
+      "- 우유, 계란, 밀 포함",
+      "- 냉장 보관, 당일 섭취 권장",
+      "- 레터링 문구 가능",
+      "",
+      "[레터링 쿠키]",
+      "- 6개 세트",
+      "- 예약 주문 필요",
+      "- 실온 보관, 수령 후 3일 이내 섭취 권장",
+    ].join("\n"),
+    extraFaq:
+      "선물 포장 가능합니다. 케이크 레터링 문구는 주문 요청사항에 남겨주세요.",
+    shippingPolicy:
+      "픽업 하루 전 오후 6시까지 예약해 주시면 매장 픽업으로 준비합니다. 케이크는 택배 배송을 제공하지 않습니다.",
+    refundPolicy:
+      "제작 시작 전에는 취소 가능합니다. 제작 시작 후에는 취소 및 환불이 어렵습니다. 수령한 제품에 문제가 있는 경우 바로 문의해 주세요.",
+    ownerReplyExamples: [
+      "맛있게 드셔주셔서 감사합니다 :) 다음에도 예쁘고 맛있게 준비해드릴게요.",
+      "선물용으로 골라주셨는데 만족하셨다니 정말 다행이에요. 감사합니다.",
+      "기대하셨을 텐데 아쉬움을 드려 죄송합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
+    ].join("\n\n"),
+    ownerCsExamples: [
+      "안녕하세요, 모아 디저트입니다. 케이크는 픽업 하루 전 오후 6시까지 예약해 주시면 준비 가능합니다.",
+      "선물 포장 가능합니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.",
+      "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
+    ].join("\n\n"),
+  },
+  {
+    label: "배달 음식점",
+    storeName: "해담 반찬",
+    businessType: "배달 음식점",
+    productName: "오늘의 집밥 반찬 세트",
+    productDescription:
+      "매일 준비하는 메인 반찬 1종과 곁들임 반찬 3종 구성입니다.",
+    productDetails: "2인 기준, 메뉴는 당일 구성에 따라 달라질 수 있음",
+    productCaution:
+      "수령 후 바로 냉장 보관해 주세요. 조리 당일 섭취를 권장합니다.",
+    productCatalog: [
+      "[오늘의 집밥 반찬 세트]",
+      "- 메인 반찬 1종, 곁들임 반찬 3종",
+      "- 2인 기준",
+      "- 수령 후 냉장 보관, 조리 당일 섭취 권장",
+      "",
+      "[소불고기 도시락]",
+      "- 밥, 소불고기, 기본 반찬 구성",
+      "- 주문 당일 조리",
+    ].join("\n"),
+    extraFaq:
+      "일회용 수저가 필요하시면 주문 요청사항에 남겨주세요. 알레르기 관련 문의는 주문 전 확인해 주세요.",
+    shippingPolicy:
+      "오후 5시 이전 접수된 주문은 당일 배달 가능합니다. 주문량과 배달 지역에 따라 도착 시간이 달라질 수 있습니다.",
+    refundPolicy:
+      "조리 시작 전에는 취소 가능합니다. 조리 시작 후에는 취소가 어렵습니다. 누락이나 오배송, 음식 상태 문제가 있는 경우 주문 정보와 함께 문의해 주세요.",
+    ownerReplyExamples: [
+      "맛있게 드셔주셔서 감사합니다 :) 다음에도 든든하게 챙겨드릴게요.",
+      "반찬 구성을 좋게 봐주셔서 감사합니다. 맛있게 드셨다니 다행이에요.",
+      "배달이 늦어 기다리셨을 텐데 죄송합니다. 다음에는 준비 과정을 더 꼼꼼히 챙기겠습니다.",
+    ].join("\n\n"),
+    ownerCsExamples: [
+      "안녕하세요, 해담 반찬입니다. 오후 5시 이전 주문은 당일 배달 가능합니다.",
+      "누락된 메뉴가 있다면 주문 정보와 함께 알려주시면 확인 후 안내드리겠습니다.",
+      "정확한 안내를 위해 주문 상태를 확인한 뒤 다시 말씀드리겠습니다.",
+    ].join("\n\n"),
+  },
+  {
+    label: "스마트스토어/생활용품",
+    storeName: "하루살림",
+    businessType: "생활용품",
+    productName: "실리콘 밀폐용기 3종 세트",
+    productDescription:
+      "주방에서 간편하게 사용하는 접이식 실리콘 밀폐용기 세트입니다.",
+    productDetails: "소/중/대 3종 구성, BPA FREE 실리콘 소재",
+    productCaution:
+      "첫 사용 전 세척해 주세요. 화기 근처나 날카로운 도구 사용은 피해주세요.",
+    productCatalog: [
+      "[실리콘 밀폐용기 3종 세트]",
+      "- 소/중/대 3종 구성",
+      "- BPA FREE 실리콘 소재",
+      "- 전자레인지 사용 시 뚜껑을 열고 사용",
+      "",
+      "[대나무 키친타월 홀더]",
+      "- 원목 소재",
+      "- 물기에 장시간 노출되지 않도록 주의",
+    ].join("\n"),
+    extraFaq:
+      "선물 포장 가능합니다. 묶음 구매 관련 문의는 주문 전에 남겨주세요.",
+    shippingPolicy:
+      "평일 오후 2시 이전 주문은 당일 출고됩니다. 제주/도서산간 지역은 추가 배송비 3,000원이 발생합니다.",
+    refundPolicy:
+      "사용 흔적이 없는 상품은 수령 후 7일 이내 교환 및 반품 문의가 가능합니다. 단순 변심 반품 배송비는 고객 부담입니다.",
+    ownerReplyExamples: [
+      "일상에서 편하게 사용하고 계시다니 기뻐요. 후기 남겨주셔서 감사합니다 :)",
+      "깔끔하게 받아보셨다니 다행입니다. 다음에도 꼼꼼히 보내드릴게요.",
+      "사용하시며 불편을 드려 죄송합니다. 말씀해주신 부분은 확인해보겠습니다.",
+    ].join("\n\n"),
+    ownerCsExamples: [
+      "안녕하세요, 하루살림입니다. 평일 오후 2시 이전 주문은 당일 출고됩니다.",
+      "사용 흔적이 없는 상품은 수령 후 7일 이내 교환 및 반품 문의가 가능합니다.",
+      "해당 사용 가능 여부는 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
+    ].join("\n\n"),
+  },
+];
+
 type InterpretedBusinessType = keyof typeof businessTypeInputGuides;
 
 function includesAnyKeyword(value: string, keywords: string[]) {
@@ -648,6 +779,8 @@ export default function Home() {
   const [foodConditionIssueStandard, setFoodConditionIssueStandard] =
     useState("");
   const [storeError, setStoreError] = useState("");
+  const [storeExampleMessage, setStoreExampleMessage] = useState("");
+  const [isExamplePickerOpen, setIsExamplePickerOpen] = useState(false);
   const [storeSaving, setStoreSaving] = useState(false);
   const [hasStore, setHasStore] = useState(false);
   const [storeStatusLoading, setStoreStatusLoading] = useState(true);
@@ -719,6 +852,8 @@ export default function Home() {
 
   const applyStoreToForm = useCallback((store: StoreSettings | null) => {
     setHasStore(Boolean(store));
+    setStoreExampleMessage("");
+    setIsExamplePickerOpen(false);
 
     if (store) {
       setStoreName(store.store_name ?? "");
@@ -930,6 +1065,8 @@ export default function Home() {
         setExtraFaq("");
         setOwnerReplyExamples("");
         setOwnerCsExamples("");
+        setStoreExampleMessage("");
+        setIsExamplePickerOpen(false);
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -1292,6 +1429,26 @@ export default function Home() {
     }
   }
 
+  function handleUseExampleStore(preset: ExampleStorePreset) {
+    setStoreName(preset.storeName);
+    setBusinessType(preset.businessType);
+    setProductName(preset.productName);
+    setProductDescription(preset.productDescription);
+    setProductDetails(preset.productDetails);
+    setProductCaution(preset.productCaution);
+    setProductCatalog(preset.productCatalog);
+    setExtraFaq(preset.extraFaq);
+    setShippingPolicy(preset.shippingPolicy);
+    setRefundPolicy(preset.refundPolicy);
+    setOwnerReplyExamples(preset.ownerReplyExamples);
+    setOwnerCsExamples(preset.ownerCsExamples);
+    setStoreError("");
+    setStoreExampleMessage(
+      "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
+    );
+    setIsExamplePickerOpen(false);
+  }
+
   async function handleStoreSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1340,6 +1497,7 @@ export default function Home() {
 
       setHasStore(true);
       removeStoreDraft(authUser.id);
+      setStoreExampleMessage("");
       alert("저장되었습니다.");
     } catch {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -2228,18 +2386,61 @@ export default function Home() {
             activeTab === "store" ? "order-[20]" : "hidden"
           }`}
         >
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              가게 정보
-            </h2>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              가게명·말투 학습 예시·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
-            </p>
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                가게 정보
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                가게명·말투 학습 예시·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsExamplePickerOpen((current) => !current)}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/70"
+              aria-expanded={isExamplePickerOpen}
+            >
+              예시 데이터로 체험하기
+            </button>
           </div>
 
           {hasStore ? (
             <p className="-mt-4 mb-6 text-sm font-medium text-emerald-700 dark:text-emerald-300">
               현재 등록된 가게 정보를 수정할 수 있습니다
+            </p>
+          ) : null}
+
+          {isExamplePickerOpen ? (
+            <section className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+              <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                체험할 업종을 선택해 주세요
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+                선택한 예시 정보는 폼에만 입력됩니다. 확인하거나 수정한 뒤
+                저장할 수 있습니다.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {exampleStorePresets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => handleUseExampleStore(preset)}
+                    className="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-100 dark:hover:bg-emerald-950/60"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {storeExampleMessage ? (
+            <p
+              className="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200"
+              role="status"
+            >
+              {storeExampleMessage}
             </p>
           ) : null}
 
@@ -2996,7 +3197,7 @@ export default function Home() {
               disabled={storeSaving}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
             >
-              {storeSaving ? "저장 중..." : "저장"}
+              {storeSaving ? "저장 중..." : "가게 정보 저장"}
             </button>
           </form>
 
