@@ -16,7 +16,6 @@ export type ReviewReplyGenerationResult = {
 export const reviewReplyStoreSelect = [
   "store_name",
   "business_type",
-  "tone",
   "shipping_policy",
   "refund_policy",
   "product_name",
@@ -108,7 +107,6 @@ export async function generateReviewReply(
   openai: OpenAI,
   store: ReviewReplyPromptStore,
   review: string,
-  tone: string,
 ): Promise<string> {
   const systemPrompt = buildReviewReplySystemPrompt(store);
   const completion = await openai.responses.create({
@@ -123,7 +121,7 @@ export async function generateReviewReply(
         content: [
           {
             type: "input_text",
-            text: `고객 리뷰:\n${review}\n\n이번 답글에 추가로 반영할 말투·요청:\n${tone}\n\n이 말투를 가게 기본 톤과 어색하지 않게 조화롭게 반영하세요.`,
+            text: `고객 리뷰:\n${review}\n\n저장된 사장님 리뷰 답글 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답글을 작성하세요.`,
           },
         ],
       },
@@ -143,11 +141,10 @@ export async function generateReviewReplyWithSentiment(
   openai: OpenAI,
   store: ReviewReplyPromptStore,
   review: string,
-  tone: string,
 ): Promise<ReviewReplyGenerationResult> {
   const [sentiment, reply] = await Promise.all([
     analyzeReviewSentiment(openai, review),
-    generateReviewReply(openai, store, review, tone),
+    generateReviewReply(openai, store, review),
   ]);
 
   return { review, reply, sentiment };

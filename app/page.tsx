@@ -94,7 +94,6 @@ type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
   business_type: string | null;
-  tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
   product_name: string | null;
@@ -104,6 +103,7 @@ type StoreSettings = {
   product_catalog: string | null;
   extra_faq: string | null;
   owner_reply_examples: string | null;
+  owner_cs_examples: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -117,7 +117,6 @@ type StoreApiResponse = {
 type StoreDraft = {
   storeName: string;
   businessType: string;
-  storeTone: string;
   shippingPolicy: string;
   refundPolicy: string;
   productName: string;
@@ -127,6 +126,7 @@ type StoreDraft = {
   productCatalog: string;
   extraFaq: string;
   ownerReplyExamples: string;
+  ownerCsExamples: string;
 };
 
 type InsightsApiResponse = {
@@ -352,7 +352,6 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     typeof draft.storeName === "string" &&
     (draft.businessType === undefined ||
       typeof draft.businessType === "string") &&
-    typeof draft.storeTone === "string" &&
     typeof draft.shippingPolicy === "string" &&
     typeof draft.refundPolicy === "string" &&
     typeof draft.productName === "string" &&
@@ -363,7 +362,9 @@ function isStoreDraft(value: unknown): value is StoreDraft {
       typeof draft.productCatalog === "string") &&
     typeof draft.extraFaq === "string" &&
     (draft.ownerReplyExamples === undefined ||
-      typeof draft.ownerReplyExamples === "string")
+      typeof draft.ownerReplyExamples === "string") &&
+    (draft.ownerCsExamples === undefined ||
+      typeof draft.ownerCsExamples === "string")
   );
 }
 
@@ -385,6 +386,7 @@ function readStoreDraft(userId: string): StoreDraft | null {
           businessType: parsedDraft.businessType ?? "",
           productCatalog: parsedDraft.productCatalog ?? "",
           ownerReplyExamples: parsedDraft.ownerReplyExamples ?? "",
+          ownerCsExamples: parsedDraft.ownerCsExamples ?? "",
         }
       : null;
   } catch {
@@ -591,7 +593,6 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
 
   const [review, setReview] = useState("");
-  const [tone, setTone] = useState("");
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -606,14 +607,12 @@ export default function Home() {
   >({});
 
   const [customerMessage, setCustomerMessage] = useState("");
-  const [csTone, setCsTone] = useState("");
   const [csReply, setCsReply] = useState("");
   const [csError, setCsError] = useState("");
   const [csLoading, setCsLoading] = useState(false);
 
   const [storeName, setStoreName] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [storeTone, setStoreTone] = useState("");
   const [shippingPolicy, setShippingPolicy] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
   const [productName, setProductName] = useState("");
@@ -623,6 +622,7 @@ export default function Home() {
   const [productCatalog, setProductCatalog] = useState("");
   const [extraFaq, setExtraFaq] = useState("");
   const [ownerReplyExamples, setOwnerReplyExamples] = useState("");
+  const [ownerCsExamples, setOwnerCsExamples] = useState("");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -690,7 +690,6 @@ export default function Home() {
     () => ({
       storeName,
       businessType,
-      storeTone,
       shippingPolicy,
       refundPolicy,
       productName,
@@ -700,11 +699,11 @@ export default function Home() {
       productCatalog,
       extraFaq,
       ownerReplyExamples,
+      ownerCsExamples,
     }),
     [
       storeName,
       businessType,
-      storeTone,
       shippingPolicy,
       refundPolicy,
       productName,
@@ -714,6 +713,7 @@ export default function Home() {
       productCatalog,
       extraFaq,
       ownerReplyExamples,
+      ownerCsExamples,
     ],
   );
 
@@ -723,7 +723,6 @@ export default function Home() {
     if (store) {
       setStoreName(store.store_name ?? "");
       setBusinessType(store.business_type ?? "");
-      setStoreTone(store.tone ?? "");
       setShippingPolicy(store.shipping_policy ?? "");
       setRefundPolicy(store.refund_policy ?? "");
       setProductName(store.product_name ?? "");
@@ -733,12 +732,12 @@ export default function Home() {
       setProductCatalog(store.product_catalog ?? "");
       setExtraFaq(store.extra_faq ?? "");
       setOwnerReplyExamples(store.owner_reply_examples ?? "");
+      setOwnerCsExamples(store.owner_cs_examples ?? "");
       return;
     }
 
     setStoreName("");
     setBusinessType("");
-    setStoreTone("");
     setShippingPolicy("");
     setRefundPolicy("");
     setProductName("");
@@ -748,6 +747,7 @@ export default function Home() {
     setProductCatalog("");
     setExtraFaq("");
     setOwnerReplyExamples("");
+    setOwnerCsExamples("");
   }, []);
 
   useEffect(() => {
@@ -920,7 +920,6 @@ export default function Home() {
         setStoreDraftReady(false);
         setStoreName("");
         setBusinessType("");
-        setStoreTone("");
         setShippingPolicy("");
         setRefundPolicy("");
         setProductName("");
@@ -930,6 +929,7 @@ export default function Home() {
         setProductCatalog("");
         setExtraFaq("");
         setOwnerReplyExamples("");
+        setOwnerCsExamples("");
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -963,7 +963,6 @@ export default function Home() {
       if (draft) {
         setStoreName(draft.storeName);
         setBusinessType(draft.businessType ?? "");
-        setStoreTone(draft.storeTone);
         setShippingPolicy(draft.shippingPolicy);
         setRefundPolicy(draft.refundPolicy);
         setProductName(draft.productName);
@@ -973,6 +972,7 @@ export default function Home() {
         setProductCatalog(draft.productCatalog);
         setExtraFaq(draft.extraFaq);
         setOwnerReplyExamples(draft.ownerReplyExamples);
+        setOwnerCsExamples(draft.ownerCsExamples);
       }
 
       setStoreDraftReady(true);
@@ -1109,10 +1109,9 @@ export default function Home() {
     event.preventDefault();
 
     const trimmedReview = review.trim();
-    const trimmedTone = tone.trim();
 
-    if (!trimmedReview || !trimmedTone) {
-      setError("리뷰와 톤을 모두 입력해 주세요.");
+    if (!trimmedReview) {
+      setError("리뷰를 입력해 주세요.");
       setReply("");
       return;
     }
@@ -1141,7 +1140,6 @@ export default function Home() {
         }),
         body: JSON.stringify({
           review: trimmedReview,
-          tone: trimmedTone,
         }),
       });
 
@@ -1217,7 +1215,6 @@ export default function Home() {
         }),
         body: JSON.stringify({
           reviews,
-          tone: tone.trim() || storeTone.trim(),
         }),
       });
       const data = (await response.json()) as BatchReviewApiResponse;
@@ -1244,10 +1241,9 @@ export default function Home() {
     event.preventDefault();
 
     const trimmedCustomerMessage = customerMessage.trim();
-    const trimmedTone = csTone.trim();
 
-    if (!trimmedCustomerMessage || !trimmedTone) {
-      setCsError("고객 문의와 답변 톤을 모두 입력해 주세요.");
+    if (!trimmedCustomerMessage) {
+      setCsError("고객 문의를 입력해 주세요.");
       setCsReply("");
       return;
     }
@@ -1276,7 +1272,6 @@ export default function Home() {
         }),
         body: JSON.stringify({
           customerMessage: trimmedCustomerMessage,
-          tone: trimmedTone,
         }),
       });
 
@@ -1323,7 +1318,6 @@ export default function Home() {
         body: JSON.stringify({
           store_name: name,
           business_type: businessType,
-          tone: storeTone,
           shipping_policy: shippingPolicy,
           refund_policy: refundPolicy,
           product_name: productName,
@@ -1333,6 +1327,7 @@ export default function Home() {
           product_catalog: productCatalog,
           extra_faq: extraFaq,
           owner_reply_examples: ownerReplyExamples,
+          owner_cs_examples: ownerCsExamples,
         }),
       });
 
@@ -1632,14 +1627,6 @@ export default function Home() {
     { label: "최근 CS 문의", targetId: "cs-history" },
     { label: "확인 필요 정보", targetId: "missing-infos" },
     { label: "AI 운영 분석", targetId: "ai-insights" },
-  ] as const;
-
-  const tonePresets = [
-    "친절하고 정중하게",
-    "따뜻하고 다정하게",
-    "짧고 깔끔하게",
-    "센스 있고 밝게",
-    "고급스럽고 차분하게",
   ] as const;
 
   const businessTypeOptions = [
@@ -1990,7 +1977,7 @@ export default function Home() {
                   step: "1단계",
                   title: "가게 정보 등록",
                   description:
-                    "업종, 말투, 배송·환불 정책, 상품 정보를 입력합니다.",
+                    "업종, 말투 학습 예시, 배송·환불 정책, 상품 정보를 입력합니다.",
                 },
                 {
                   step: "2단계",
@@ -2039,7 +2026,7 @@ export default function Home() {
                   먼저 우리 가게 정보를 등록해주세요
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  AI 답변이 가게 정책과 말투를 반영할 수 있도록 기본 정보를 먼저 저장해주세요.
+                  AI 답변이 가게 정책과 사장님 응대 방식을 반영할 수 있도록 기본 정보를 먼저 저장해주세요.
                 </p>
               </div>
               <button
@@ -2051,7 +2038,7 @@ export default function Home() {
               </button>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {["가게명 입력", "말투 입력", "배송정책 입력", "환불정책 입력"].map(
+              {["가게명 입력", "말투 예시 입력", "배송정책 입력", "환불정책 입력"].map(
                 (step, index) => (
                   <div
                     key={step}
@@ -2246,7 +2233,7 @@ export default function Home() {
               가게 정보
             </h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              가게명·말투·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
+              가게명·말투 학습 예시·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
             </p>
           </div>
 
@@ -2316,41 +2303,6 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="store_tone" className="text-sm font-medium">
-                말투
-              </label>
-              <input
-                id="store_tone"
-                type="text"
-                value={storeTone}
-                onChange={(e) => setStoreTone(e.target.value)}
-                placeholder="예) 친근하고 짧게"
-                className={inputClass}
-              />
-              <div className="flex flex-wrap gap-2 pt-1">
-                {tonePresets.map((preset) => {
-                  const isSelected = storeTone === preset;
-
-                  return (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setStoreTone(preset)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                        isSelected
-                          ? "border-emerald-600 bg-emerald-600 text-white shadow-sm dark:border-emerald-500 dark:bg-emerald-500"
-                          : "border-zinc-200 bg-white text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/40"
-                      }`}
-                      aria-pressed={isSelected}
-                    >
-                      {preset}
-                    </button>
-                  );
-                })}
               </div>
             </div>
 
@@ -2514,12 +2466,12 @@ export default function Home() {
                   htmlFor="owner_reply_examples"
                   className="text-sm font-semibold text-emerald-950 dark:text-emerald-100"
                 >
-                  사장님 말투 학습
+                  사장님 리뷰 말투 학습
                 </label>
                 <p className="text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
                   평소 직접 쓰셨던 리뷰 답글을 3개 이상 붙여넣어 주세요. AI가
-                  문장 길이, 말투, 이모지 사용, 감사/사과 표현을 참고해 답글을
-                  작성합니다.
+                  문장 길이, 말투, 이모지 사용, 감사/사과 표현을 참고해 리뷰
+                  답글을 작성합니다.
                 </p>
                 <textarea
                   id="owner_reply_examples"
@@ -2536,6 +2488,42 @@ export default function Home() {
                     "솔직한 후기 남겨주셔서 감사합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
                   ].join("\n")}
                   className="min-h-40 w-full resize-y rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-500 dark:border-emerald-900/70 dark:bg-zinc-950"
+                />
+              </div>
+            </div>
+
+            <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+              예시를 입력하지 않아도 AI가 기본적으로 친절하고 자연스럽게
+              작성합니다. 예시를 입력하면 사장님이 평소 쓰는 말투를 더 잘
+              따라갑니다.
+            </p>
+
+            <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <div className="space-y-2">
+                <label
+                  htmlFor="owner_cs_examples"
+                  className="text-sm font-semibold text-sky-950 dark:text-sky-100"
+                >
+                  CS 응대 말투 학습
+                </label>
+                <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                  평소 고객 문의에 답변하실 때 쓰는 문장을 3개 이상 붙여넣어
+                  주세요. AI가 문장 길이, 안내 방식, 마무리 표현을
+                  참고해 문의 답변을 작성합니다.
+                </p>
+                <textarea
+                  id="owner_cs_examples"
+                  value={ownerCsExamples}
+                  onChange={(event) => setOwnerCsExamples(event.target.value)}
+                  placeholder={[
+                    "예:",
+                    "안녕하세요. 문의주신 상품은 오늘 오후 2시 이전 주문 시 당일 출고됩니다.",
+                    "",
+                    "선물 포장 가능합니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.",
+                    "",
+                    "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
+                  ].join("\n")}
+                  className="min-h-40 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
                 />
               </div>
             </div>
@@ -3077,20 +3065,6 @@ export default function Home() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="cs_tone" className="text-sm font-medium">
-                  답변 톤 입력
-                </label>
-                <input
-                  id="cs_tone"
-                  type="text"
-                  value={csTone}
-                  onChange={(event) => setCsTone(event.target.value)}
-                  placeholder="예) 정중하고 빠르게 안심시키는 톤"
-                  className={inputClass}
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={csLoading || aiGenerationBlocked}
@@ -3567,20 +3541,6 @@ export default function Home() {
                 onChange={(event) => setReview(event.target.value)}
                 placeholder="예: 족발이 정말 부드럽고 맛있었어요! 다음에도 주문할게요."
                 className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="tone" className="text-sm font-medium">
-                톤 입력
-              </label>
-              <input
-                id="tone"
-                type="text"
-                value={tone}
-                onChange={(event) => setTone(event.target.value)}
-                placeholder="예) 정중하고 따뜻한 톤"
-                className={inputClass}
               />
             </div>
 

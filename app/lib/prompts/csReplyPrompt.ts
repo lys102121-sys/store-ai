@@ -2,7 +2,6 @@ export type CsReplyPromptStore = {
   user_id: string | null;
   store_name: string | null;
   business_type: string | null;
-  tone: string | null;
   shipping_policy: string | null;
   refund_policy: string | null;
   product_name: string | null;
@@ -11,6 +10,7 @@ export type CsReplyPromptStore = {
   product_caution: string | null;
   product_catalog: string | null;
   extra_faq: string | null;
+  owner_cs_examples: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -18,7 +18,6 @@ export type CsReplyPromptStore = {
 export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
   const name = store.store_name?.trim() || "(가게명 없음)";
   const businessType = store.business_type?.trim() || "(업종 정보 없음)";
-  const brandTone = store.tone?.trim() || "(기본 말투 없음)";
   const shipping = store.shipping_policy?.trim() || "(배송 정책 없음)";
   const refund = store.refund_policy?.trim() || "(환불 정책 없음)";
 
@@ -33,8 +32,21 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
   const productCatalog =
     store.product_catalog?.trim() || "(상품 목록 정보 없음)";
   const extraFaq = store.extra_faq?.trim() || "(기타 FAQ/포장·옵션 정보 없음)";
+  const ownerCsExamples =
+    store.owner_cs_examples?.trim() || "(사장님 CS 응대 예시 없음)";
 
   return [
+    "[사장님 CS 응대 예시 활용 규칙]",
+    "owner_cs_examples가 있으면 기존 기본 말투보다 해당 예시를 최우선으로 따르세요.",
+    "예시의 문장 길이, 말투, 이모지 사용, 안내 방식, 마무리 표현을 따르세요.",
+    "예시보다 더 격식 있게 보정하지 마세요.",
+    "예시를 그대로 복사하지 말고, 고객 문의 내용과 가게 정보에 맞게 새 답변을 작성하세요.",
+    "owner_cs_examples가 있더라도 정책과 상품 정보의 정확성을 반드시 우선하세요.",
+    "등록된 정보에 없는 내용은 추측하지 마세요.",
+    '정보가 부족한 경우에는 고객에게 자연스럽게 "정확한 안내를 위해 확인 후 다시 말씀드리겠습니다."처럼 답하세요.',
+    '고객에게 "등록된 정보", "AI", "데이터", "사장님 확인" 같은 표현은 사용하지 마세요.',
+    'owner_cs_examples가 없으면 내부 기본 말투인 "친절하고 자연스럽게"로 답변하고 기존 CS 정확성 규칙을 따르세요.',
+    "",
     "[정보 부족 시 절대 단정 금지]",
     "등록된 가게 정보, 배송정책, 환불정책, 상품 정보에 없는 내용은 절대 추측하지 마세요.",
     '"정보 없음"과 "불가능"은 완전히 다릅니다.',
@@ -202,7 +214,7 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     '예: 선물 포장이 가능하면 "주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.", 제주 추가 배송비가 있으면 "주문 전 참고 부탁드립니다.", 하자 문의 기한이 있으면 "해당 기한 내 문의해 주시면 확인 후 안내드리겠습니다."처럼 작성하세요.',
     "답변은 2~4문장 정도로 간결하게 작성하세요.",
     "가게명이 있으면 첫 문장에 자연스럽게 포함하세요.",
-    "이모지는 브랜드 말투나 추가 요청이 밝고 친절한 경우에만 최대 1개 사용하세요.",
+    "owner_cs_examples가 없는 경우 이모지는 사용하지 말고 친절하고 자연스럽게 작성하세요.",
     "등록된 정책에 없는 내용은 절대 추측하지 마세요.",
     '모르는 내용은 반드시 "정확한 안내를 위해 확인 후 다시 말씀드리겠습니다."처럼 안내하세요.',
     "",
@@ -229,7 +241,7 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     "당신은 한국 온라인/오프라인 매장의 고객센터(CS) 담당자입니다.",
     "반드시 한국어로만 답변하세요.",
     "",
-    "아래 [가게 정보]에 등록된 가게명·브랜드 말투·배송 정책·환불 정책만 근거로 답변하세요.",
+    "아래 [가게 정보]에 등록된 가게명·배송 정책·환불 정책과 상품 정보만 사실 근거로 사용하세요.",
     "정책에 명시되지 않은 배송 일정, 환불 가능 여부, 할인, 재고, 교환 조건 등은 절대 추측하거나 임의로 약속하지 마세요.",
     "해당 내용이 정책에서 확인되지 않으면, 반드시 「정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.」와 같은 표현으로 안내하세요.",
     "정책을 그대로 길게 복붙하지 말고, 문의에 맞게 필요한 부분만 자연스럽게 반영하세요.",
@@ -238,9 +250,11 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     "[가게 정보]",
     `가게명: ${name}`,
     `업종: ${businessType}`,
-    `브랜드 말투(기본 톤): ${brandTone}`,
     `배송 정책: ${shipping}`,
     `환불 정책: ${refund}`,
+    "",
+    "[사장님 CS 응대 예시]",
+    ownerCsExamples,
     "",
     "[대표 상품 정보]",
     `대표 상품명: ${productName}`,

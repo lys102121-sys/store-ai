@@ -13,7 +13,6 @@ const openai = new OpenAI({
 
 type RequestBody = {
   review?: unknown;
-  tone?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -42,11 +41,10 @@ export async function POST(request: Request) {
   }
 
   const review = typeof body.review === "string" ? body.review.trim() : "";
-  const tone = typeof body.tone === "string" ? body.tone.trim() : "";
 
-  if (!review || !tone) {
+  if (!review) {
     return Response.json(
-      { error: "Both 'review' and 'tone' must be non-empty strings." },
+      { error: "'review' must be a non-empty string." },
       { status: 400 },
     );
   }
@@ -83,7 +81,6 @@ export async function POST(request: Request) {
       openai,
       storeSettings,
       review,
-      tone,
     );
 
     const { error: reviewSaveError } = await auth.supabase

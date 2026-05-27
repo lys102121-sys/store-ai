@@ -11,7 +11,6 @@ const openai = new OpenAI({
 
 type RequestBody = {
   customerMessage?: unknown;
-  tone?: unknown;
 };
 
 type StoreRow = CsReplyPromptStore;
@@ -120,7 +119,6 @@ function sanitizeCustomerReply(reply: string) {
 function getRegisteredStoreText(store: StoreRow) {
   return [
     store.store_name,
-    store.tone,
     store.shipping_policy,
     store.refund_policy,
     store.product_name,
@@ -351,13 +349,11 @@ export async function POST(request: Request) {
     typeof body.customerMessage === "string"
       ? body.customerMessage.trim()
       : "";
-  const tone = typeof body.tone === "string" ? body.tone.trim() : "";
 
-  if (!customerMessage || !tone) {
+  if (!customerMessage) {
     return Response.json(
       {
-        error:
-          "Both 'customerMessage' and 'tone' must be non-empty strings.",
+        error: "'customerMessage' must be a non-empty string.",
       },
       { status: 400 },
     );
@@ -366,7 +362,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, business_type, tone, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, created_at, updated_at",
+      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
@@ -407,7 +403,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: "input_text",
-              text: `고객 문의:\n${customerMessage}\n\n이번 답변에 반영할 말투·요청:\n${tone}\n\n가게 기본 톤과 어긋나지 않게 조화롭게 반영하세요.`,
+              text: `고객 문의:\n${customerMessage}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
             },
           ],
         },

@@ -16,7 +16,6 @@ const MAX_REVIEW_LENGTH = 1000;
 
 type BatchReviewReplyRequestBody = {
   reviews?: unknown;
-  tone?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -109,10 +108,6 @@ export async function POST(request: Request) {
   }
 
   const storeSettings = store as unknown as ReviewReplyPromptStore;
-  const tone =
-    typeof body.tone === "string" && body.tone.trim()
-      ? body.tone.trim()
-      : storeSettings.tone?.trim() || "가게 기본 말투";
 
   try {
     const results = [];
@@ -122,7 +117,6 @@ export async function POST(request: Request) {
         openai,
         storeSettings,
         review,
-        tone,
       );
 
       results.push(result);
