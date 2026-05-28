@@ -420,13 +420,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: csMessageSaveError } = await auth.supabase
+    let { error: csMessageSaveError } = await auth.supabase
       .from("cs_messages")
       .insert({
         user_id: auth.userId,
         customer_message: customerMessage,
         reply,
+        status: "pending",
       });
+
+    if (csMessageSaveError && /status/i.test(csMessageSaveError.message)) {
+      const fallback = await auth.supabase.from("cs_messages").insert({
+        user_id: auth.userId,
+        customer_message: customerMessage,
+        reply,
+      });
+
+      csMessageSaveError = fallback.error;
+    }
 
     if (csMessageSaveError) {
       console.error("Failed to save CS message.", csMessageSaveError);

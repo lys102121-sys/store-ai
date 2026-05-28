@@ -83,14 +83,26 @@ export async function POST(request: Request) {
       review,
     );
 
-    const { error: reviewSaveError } = await auth.supabase
+    let { error: reviewSaveError } = await auth.supabase
       .from("reviews")
       .insert({
         user_id: auth.userId,
         review: result.review,
         reply: result.reply,
         sentiment: result.sentiment,
+        status: "pending",
       });
+
+    if (reviewSaveError && /status/i.test(reviewSaveError.message)) {
+      const fallback = await auth.supabase.from("reviews").insert({
+        user_id: auth.userId,
+        review: result.review,
+        reply: result.reply,
+        sentiment: result.sentiment,
+      });
+
+      reviewSaveError = fallback.error;
+    }
 
     if (reviewSaveError) {
       return Response.json(

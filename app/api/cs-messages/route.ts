@@ -7,11 +7,24 @@ export async function GET(request: Request) {
     return auth.response;
   }
 
-  const { data, error } = await auth.supabase
+  const primary = await auth.supabase
     .from("cs_messages")
-    .select("id, customer_message, reply, created_at")
+    .select("id, customer_message, reply, status, created_at")
     .eq("user_id", auth.userId)
     .order("created_at", { ascending: false });
+  let data: unknown[] | null = primary.data;
+  let error = primary.error;
+
+  if (error && /status/i.test(error.message)) {
+    const fallback = await auth.supabase
+      .from("cs_messages")
+      .select("id, customer_message, reply, created_at")
+      .eq("user_id", auth.userId)
+      .order("created_at", { ascending: false });
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     return Response.json(

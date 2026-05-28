@@ -12,6 +12,7 @@ type ReviewHistoryItem = {
   review: string;
   reply: string;
   sentiment: Sentiment | string;
+  status?: WorkflowStatus | null;
   created_at: string;
 };
 
@@ -19,6 +20,7 @@ type CsMessageHistoryItem = {
   id: number;
   customer_message: string;
   reply: string;
+  status?: WorkflowStatus | null;
   created_at: string;
 };
 
@@ -84,6 +86,31 @@ type ResolveMissingInfoResponse = {
 
 type DeleteApiResponse = {
   success?: boolean;
+  error?: string;
+  detail?: string;
+};
+
+type WorkflowStatus = "pending" | "needs_review" | "completed" | "answered";
+
+type WorkflowItemType = "cs" | "review" | "missing_info";
+
+type WorkflowItem = {
+  key: string;
+  id: number | string;
+  type: WorkflowItemType;
+  typeLabel: string;
+  original: string;
+  reply: string;
+  status: WorkflowStatus;
+  createdAt: string;
+  canMutate: boolean;
+};
+
+const WORKFLOW_PAGE_SIZE = 5;
+
+type UpdateWorkflowItemResponse = {
+  review?: ReviewHistoryItem;
+  csMessage?: CsMessageHistoryItem;
   error?: string;
   detail?: string;
 };
@@ -236,6 +263,43 @@ function sentimentBadgeClass(sentiment: string) {
 
 const urgentBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm dark:bg-red-500";
+
+function normalizeWorkflowStatus(status?: string | null): WorkflowStatus {
+  if (
+    status === "pending" ||
+    status === "needs_review" ||
+    status === "completed" ||
+    status === "answered"
+  ) {
+    return status;
+  }
+
+  return "pending";
+}
+
+function workflowStatusLabel(status: WorkflowStatus) {
+  switch (status) {
+    case "needs_review":
+      return "확인 필요";
+    case "completed":
+    case "answered":
+      return "답변 완료";
+    default:
+      return "승인 대기";
+  }
+}
+
+function workflowStatusBadgeClass(status: WorkflowStatus) {
+  switch (status) {
+    case "needs_review":
+      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800";
+    case "completed":
+    case "answered":
+      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+    default:
+      return "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-900/50 dark:text-sky-200 dark:ring-sky-800";
+  }
+}
 
 function computeReviewStats(reviews: ReviewHistoryItem[]) {
   const total = reviews.length;
@@ -799,6 +863,18 @@ export default function Home() {
   >(null);
   const [copyMessage, setCopyMessage] = useState("");
   const [copyError, setCopyError] = useState("");
+  const [workflowError, setWorkflowError] = useState("");
+  const [workflowUpdatingKey, setWorkflowUpdatingKey] = useState<string | null>(
+    null,
+  );
+  const [editingWorkflowKey, setEditingWorkflowKey] = useState<string | null>(
+    null,
+  );
+  const [editingWorkflowReply, setEditingWorkflowReply] = useState("");
+  const [selectedWorkflowStatus, setSelectedWorkflowStatus] =
+    useState<WorkflowStatus>("needs_review");
+  const [visibleWorkflowCount, setVisibleWorkflowCount] =
+    useState(WORKFLOW_PAGE_SIZE);
 
   const [missingInfos, setMissingInfos] = useState<MissingInfoItem[]>([]);
   const [missingInfosLoading, setMissingInfosLoading] = useState(true);
@@ -1071,6 +1147,12 @@ export default function Home() {
         setCsMessagesError("");
         setCsMessagesLoading(false);
         setDeletingCsMessageId(null);
+        setWorkflowError("");
+        setWorkflowUpdatingKey(null);
+        setEditingWorkflowKey(null);
+        setEditingWorkflowReply("");
+        setSelectedWorkflowStatus("needs_review");
+        setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
         setMissingInfos([]);
         setMissingInfosError("");
         setMissingInfosLoading(false);
@@ -1626,6 +1708,81 @@ export default function Home() {
     }
   }
 
+  async function handleUpdateWorkflowItem(
+    item: WorkflowItem,
+    payload: { reply?: string; status?: WorkflowStatus },
+  ) {
+    if (!item.canMutate || item.type === "missing_info") return;
+
+    setWorkflowUpdatingKey(item.key);
+    setWorkflowError("");
+
+    try {
+      const endpoint =
+        item.type === "review"
+          ? `/api/reviews/${item.id}`
+          : `/api/cs-messages/${item.id}`;
+      const response = await fetch(endpoint, {
+        method: "PATCH",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify(payload),
+      });
+      const data = (await response.json()) as UpdateWorkflowItemResponse;
+
+      if (!response.ok) {
+        setWorkflowError(
+          data.error ?? "처리 항목을 업데이트하지 못했습니다.",
+        );
+        return;
+      }
+
+      await Promise.all([loadHistory(), loadCsMessages(), loadInsights()]);
+      setEditingWorkflowKey(null);
+      setEditingWorkflowReply("");
+    } catch {
+      setWorkflowError(
+        "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
+      );
+    } finally {
+      setWorkflowUpdatingKey(null);
+    }
+  }
+
+  function handleStartWorkflowEdit(item: WorkflowItem) {
+    if (!item.canMutate) return;
+
+    setEditingWorkflowKey(item.key);
+    setEditingWorkflowReply(item.reply);
+    setWorkflowError("");
+  }
+
+  function scrollToWorkflowInbox() {
+    document
+      .getElementById("ai-cs-inbox")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleCollapseWorkflowItems() {
+    setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+    scrollToWorkflowInbox();
+  }
+
+  async function handleDeleteWorkflowItem(item: WorkflowItem) {
+    if (item.type === "review") {
+      await handleDeleteReview(Number(item.id));
+      return;
+    }
+
+    if (item.type === "cs") {
+      await handleDeleteCsMessage(Number(item.id));
+      return;
+    }
+
+    goToTabSection("manage", "missing-infos");
+  }
+
   async function handleCopyText(
     text: string,
     successMessage = "복사되었습니다",
@@ -1696,6 +1853,106 @@ export default function Home() {
     .slice(0, 3);
   const recentCsMessages = csMessages.slice(0, 5);
   const recentReviews = history.slice(0, 5);
+  const workflowItems = useMemo<WorkflowItem[]>(() => {
+    const reviewItems = history.map((item) => ({
+      key: `review-${item.id}`,
+      id: item.id,
+      type: "review" as const,
+      typeLabel: "리뷰",
+      original: item.review,
+      reply: item.reply,
+      status: normalizeWorkflowStatus(item.status),
+      createdAt: item.created_at,
+      canMutate: true,
+    }));
+
+    const csItems = csMessages.map((item) => ({
+      key: `cs-${item.id}`,
+      id: item.id,
+      type: "cs" as const,
+      typeLabel: "고객 문의",
+      original: item.customer_message,
+      reply: item.reply,
+      status: normalizeWorkflowStatus(item.status),
+      createdAt: item.created_at,
+      canMutate: true,
+    }));
+
+    const missingInfoItems = missingInfos.map((item) => ({
+      key: `missing-${item.id}`,
+      id: item.id,
+      type: "missing_info" as const,
+      typeLabel: "고객 문의",
+      original: item.source_message || item.question,
+      reply: item.reason,
+      status: "needs_review" as const,
+      createdAt: item.created_at,
+      canMutate: false,
+    }));
+
+    return [...reviewItems, ...csItems, ...missingInfoItems].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [csMessages, history, missingInfos]);
+
+  const workflowPendingItems = workflowItems.filter(
+    (item) => item.status === "pending",
+  );
+  const workflowNeedsReviewItems = workflowItems.filter(
+    (item) => item.status === "needs_review",
+  );
+  const workflowCompletedItems = workflowItems.filter(
+    (item) => item.status === "completed" || item.status === "answered",
+  );
+  const workflowColumns = [
+    {
+      status: "needs_review" as const,
+      title: "확인 필요",
+      items: workflowNeedsReviewItems,
+    },
+    {
+      status: "pending" as const,
+      title: "승인 대기",
+      items: workflowPendingItems,
+    },
+    {
+      status: "completed" as const,
+      title: "답변 완료",
+      items: workflowCompletedItems,
+    },
+  ];
+  const selectedWorkflowColumn =
+    workflowColumns.find((column) => column.status === selectedWorkflowStatus) ??
+    workflowColumns[0];
+  const visibleWorkflowItems = selectedWorkflowColumn.items.slice(
+    0,
+    visibleWorkflowCount,
+  );
+  const visibleWorkflowItemCount = visibleWorkflowItems.length;
+  const selectedWorkflowTotalCount = selectedWorkflowColumn.items.length;
+  const canShowMoreWorkflowItems =
+    visibleWorkflowItemCount < selectedWorkflowTotalCount;
+  const canCollapseWorkflowItems = visibleWorkflowCount > WORKFLOW_PAGE_SIZE;
+  const selectedWorkflowEmptyState = {
+    needs_review: {
+      title: "현재 확인이 필요한 항목이 없습니다",
+      description:
+        "AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다.",
+    },
+    pending: {
+      title: "현재 승인 대기 중인 답변이 없습니다",
+      description: "AI가 새 답변 초안을 만들면 이곳에서 확인할 수 있습니다.",
+    },
+    completed: {
+      title: "아직 답변 완료된 항목이 없습니다",
+      description: "승인 완료한 답변이 이곳에 쌓입니다.",
+    },
+    answered: {
+      title: "아직 답변 완료된 항목이 없습니다",
+      description: "승인 완료한 답변이 이곳에 쌓입니다.",
+    },
+  }[selectedWorkflowColumn.status];
 
   const operationSummaryItems = [
     {
@@ -1779,6 +2036,7 @@ export default function Home() {
 
   const categoryItems = [
     { label: "우리 가게 정보", targetId: "store-info" },
+    { label: "AI CS 처리함", targetId: "ai-cs-inbox" },
     { label: "문의에 답변하기", targetId: "cs-reply" },
     { label: "리뷰에 답글 달기", targetId: "review-reply" },
     { label: "리뷰 히스토리", targetId: "review-history" },
@@ -3319,6 +3577,328 @@ export default function Home() {
               </div>
             </div>
           </form>
+        </section>
+
+        <section
+          id="ai-cs-inbox"
+          className={`${cardClass} scroll-mt-32 border-indigo-200/70 dark:border-indigo-900/50 ${
+            activeTab === "manage" ? "order-[41]" : "hidden"
+          }`}
+        >
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
+                AI CS 직원
+              </p>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                AI CS 처리함
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                AI가 작성한 답변 초안을 모아두는 처리함입니다. 사장님이
+                확인 후 승인하거나 수정할 수 있어요. 플랫폼 연동 후에는
+                이곳에서 실제 답변 등록까지 이어질 예정입니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                void Promise.all([
+                  loadHistory(),
+                  loadCsMessages(),
+                  loadMissingInfos(),
+                ])
+              }
+              disabled={historyLoading || csMessagesLoading || missingInfosLoading}
+              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              새로고침
+            </button>
+          </div>
+
+          <div className="mb-5 overflow-x-auto">
+            <div className="grid min-w-full grid-cols-3 gap-2 sm:gap-3">
+              {workflowColumns.map((column) => {
+                const isSelected = selectedWorkflowStatus === column.status;
+
+                return (
+                  <button
+                    key={column.status}
+                    type="button"
+                    onClick={() => {
+                      setSelectedWorkflowStatus(column.status);
+                      setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+                      setEditingWorkflowKey(null);
+                      setEditingWorkflowReply("");
+                    }}
+                    className={`rounded-xl border px-3 py-3 text-left transition ${
+                      isSelected
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900"
+                        : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="block text-xs font-medium">
+                      {column.title}
+                    </span>
+                    <span className="mt-1 block text-xl font-semibold sm:text-2xl">
+                      {column.items.length.toLocaleString("ko-KR")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {workflowError ? (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {workflowError}
+            </div>
+          ) : null}
+
+          {historyLoading || csMessagesLoading || missingInfosLoading ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              AI CS 처리 항목을 불러오는 중...
+            </p>
+          ) : selectedWorkflowColumn.items.length === 0 ? (
+            <EmptyStateCard
+              title={selectedWorkflowEmptyState.title}
+              description={selectedWorkflowEmptyState.description}
+              actionLabel={
+                selectedWorkflowColumn.status === "pending"
+                  ? "답변 작성하기"
+                  : selectedWorkflowColumn.status === "needs_review"
+                    ? "확인 필요 정보 보기"
+                    : "문의 답변 작성하기"
+              }
+              onAction={() =>
+                selectedWorkflowColumn.status === "needs_review"
+                  ? goToTabSection("manage", "missing-infos")
+                  : goToTabSection("answer", "cs-reply")
+              }
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {selectedWorkflowColumn.title} 항목
+                </h3>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(
+                    selectedWorkflowColumn.status,
+                  )}`}
+                >
+                  {selectedWorkflowTotalCount}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                최근 {visibleWorkflowItemCount.toLocaleString("ko-KR")}개 / 전체{" "}
+                {selectedWorkflowTotalCount.toLocaleString("ko-KR")}개 표시 중
+              </p>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {visibleWorkflowItems.map((item) => {
+                      const isEditing = editingWorkflowKey === item.key;
+                      const isUpdating = workflowUpdatingKey === item.key;
+
+                      return (
+                        <article
+                          key={item.key}
+                          className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                        >
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
+                                {item.typeLabel}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(
+                                  item.status,
+                                )}`}
+                              >
+                                {workflowStatusLabel(item.status)}
+                              </span>
+                            </div>
+                            <time
+                              dateTime={item.createdAt}
+                              className="text-xs text-zinc-500 dark:text-zinc-400"
+                            >
+                              {formatDate(item.createdAt)}
+                            </time>
+                          </div>
+
+                          <div className="space-y-3 text-sm">
+                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                              <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
+                                원문
+                              </p>
+                              <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                                {item.original}
+                              </p>
+                            </div>
+
+                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                              <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                                  AI 답변 초안
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCopyText(
+                                      item.reply,
+                                      "답변이 복사되었습니다",
+                                    )
+                                  }
+                                  className={copyButtonClass}
+                                >
+                                  복사
+                                </button>
+                              </div>
+
+                              {isEditing ? (
+                                <textarea
+                                  value={editingWorkflowReply}
+                                  onChange={(event) =>
+                                    setEditingWorkflowReply(event.target.value)
+                                  }
+                                  className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900"
+                                />
+                              ) : (
+                                <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                                  {item.reply}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateWorkflowItem(item, {
+                                      reply: editingWorkflowReply,
+                                    })
+                                  }
+                                  disabled={isUpdating}
+                                  className="rounded-lg bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                                >
+                                  {isUpdating ? "저장 중..." : "수정 저장"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingWorkflowKey(null);
+                                    setEditingWorkflowReply("");
+                                  }}
+                                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                >
+                                  취소
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateWorkflowItem(item, {
+                                      status: "completed",
+                                    })
+                                  }
+                                  disabled={!item.canMutate || isUpdating}
+                                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                >
+                                  승인 완료
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartWorkflowEdit(item)}
+                                  disabled={!item.canMutate || isUpdating}
+                                  className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/60 dark:bg-zinc-900 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                                >
+                                  수정하기
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateWorkflowItem(item, {
+                                      status: "needs_review",
+                                    })
+                                  }
+                                  disabled={!item.canMutate || isUpdating}
+                                  className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                >
+                                  확인 필요로 표시
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleDeleteWorkflowItem(item)
+                                  }
+                                  disabled={
+                                    (item.type === "review" &&
+                                      deletingReviewId === item.id) ||
+                                    (item.type === "cs" &&
+                                      deletingCsMessageId === item.id)
+                                  }
+                                  className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                                >
+                                  삭제
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          {!item.canMutate ? (
+                            <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
+                              missing_infos에서 온 확인 필요 항목입니다. 아래
+                              확인 필요 정보 섹션에서 내용을 보강해 주세요.
+                            </p>
+                          ) : null}
+                        </article>
+                      );
+                    })}
+              </div>
+
+              {canShowMoreWorkflowItems || canCollapseWorkflowItems ? (
+                <div className="flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    최근 {visibleWorkflowItemCount.toLocaleString("ko-KR")}개 /
+                    전체 {selectedWorkflowTotalCount.toLocaleString("ko-KR")}개
+                    표시 중
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    {canShowMoreWorkflowItems ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setVisibleWorkflowCount((current) =>
+                            Math.min(
+                              current + WORKFLOW_PAGE_SIZE,
+                              selectedWorkflowTotalCount,
+                            ),
+                          )
+                        }
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-900/60 dark:bg-zinc-900 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                      >
+                        더 보기
+                      </button>
+                    ) : null}
+                    {canCollapseWorkflowItems ? (
+                      <button
+                        type="button"
+                        onClick={handleCollapseWorkflowItems}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        접기
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
         </section>
 
         <section
