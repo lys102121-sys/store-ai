@@ -17,6 +17,13 @@ export type ReviewReplyGenerationResult = {
   riskLevel: RiskLevel;
 };
 
+const healthSafetyPattern =
+  /알레르기|알러지|두드러기|발진|복통|식중독|상한\s*것\s*같|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응/;
+
+function hasHealthSafetySignal(text: string) {
+  return healthSafetyPattern.test(text);
+}
+
 export const reviewReplyStoreSelect = [
   "store_name",
   "business_type",
@@ -29,6 +36,7 @@ export const reviewReplyStoreSelect = [
   "product_catalog",
   "extra_faq",
   "owner_reply_examples",
+  "auto_complete_positive_reviews",
 ].join(", ");
 
 function parseSentiment(output: string | undefined): Sentiment | null {
@@ -221,12 +229,13 @@ export async function generateReviewReplyWithSentiment(
     analyzeReviewSentiment(openai, review),
     generateReviewReply(openai, store, review),
   ]);
+  const hasHealthSafetyIssue = hasHealthSafetySignal(review);
 
   return {
     review,
     reply: decision.reply,
     sentiment,
-    handlingType: decision.handlingType,
-    riskLevel: decision.riskLevel,
+    handlingType: hasHealthSafetyIssue ? "needs_approval" : decision.handlingType,
+    riskLevel: hasHealthSafetyIssue ? "high" : decision.riskLevel,
   };
 }

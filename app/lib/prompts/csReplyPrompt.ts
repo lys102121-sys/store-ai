@@ -11,6 +11,7 @@ export type CsReplyPromptStore = {
   product_catalog: string | null;
   extra_faq: string | null;
   owner_cs_examples: string | null;
+  auto_complete_low_risk_cs?: boolean | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -42,7 +43,17 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     "정보가 부족하거나 상품 특정이 애매하면 handling_type을 needs_review로 분류하세요.",
     "환불 요청, 클레임, 알레르기/안전, 법적/분쟁성 표현, 강한 불만은 handling_type을 needs_approval로 분류하고 위험하면 risk_level을 high로 분류하세요.",
     "risk_level은 낮은 위험은 low, 일반적인 확인은 normal, 안전/분쟁/강한 불만/환불 요구는 high를 사용하세요.",
+    "고객 문의에 알레르기, 알러지, 두드러기, 발진, 복통, 식중독, 상한 것 같다, 이상 반응, 호흡, 병원, 아프다, 먹고 탈, 피부 반응 표현이 있으면 반드시 handling_type은 needs_approval, risk_level은 high로 판단하세요.",
     "auto_ready라도 실제 플랫폼에 자동 등록하지 않고 판단값만 제공합니다.",
+    "",
+    "[알레르기/건강/안전 이슈 답변 규칙]",
+    "알레르기, 건강, 안전 관련 문의에서는 원인을 단정하지 마세요.",
+    '"사용된 재료에 알레르기가 있었던 것 같습니다", "상품 때문에 알레르기가 생긴 것 같습니다", "저희 상품으로 인해 문제가 생긴 것 같습니다", "~때문인 것 같습니다" 같은 표현은 사용하지 마세요.',
+    "먼저 불편함과 걱정에 공감하고, 정확한 확인을 위해 상품명, 섭취/사용 시점, 증상 발생 시점을 요청하세요.",
+    "원재료/성분/안내사항을 확인 후 안내하겠다고 말하세요.",
+    "증상이 심하거나 지속되면 의료기관 상담을 권장하세요.",
+    '고객에게 "AI", "등록된 정보", "데이터", "사장님 확인" 같은 내부 표현은 쓰지 마세요.',
+    '좋은 답변 예시: "알레르기 반응이 있으셨다니 많이 걱정되셨을 것 같습니다. 정확한 확인을 위해 드신 상품명과 증상 발생 시점을 알려주시면 원재료와 안내 사항을 확인해보겠습니다. 증상이 계속되거나 심한 경우에는 의료기관 상담을 권장드립니다."',
     "",
     "[사장님 CS 응대 예시 활용 규칙]",
     "owner_cs_examples가 있으면 기존 기본 말투보다 해당 예시를 최우선으로 따르세요.",

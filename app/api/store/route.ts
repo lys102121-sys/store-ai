@@ -13,10 +13,12 @@ type RequestBody = {
   extra_faq?: unknown;
   owner_reply_examples?: unknown;
   owner_cs_examples?: unknown;
+  auto_complete_low_risk_cs?: unknown;
+  auto_complete_positive_reviews?: unknown;
 };
 
 const storeSelectColumns =
-  "id, user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, created_at, updated_at";
+  "id, user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, auto_complete_low_risk_cs, auto_complete_positive_reviews, created_at, updated_at";
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -49,7 +51,11 @@ export async function POST(request: Request) {
     typeof body.product_catalog !== "string" ||
     typeof body.extra_faq !== "string" ||
     typeof body.owner_reply_examples !== "string" ||
-    typeof body.owner_cs_examples !== "string"
+    typeof body.owner_cs_examples !== "string" ||
+    (body.auto_complete_low_risk_cs !== undefined &&
+      typeof body.auto_complete_low_risk_cs !== "boolean") ||
+    (body.auto_complete_positive_reviews !== undefined &&
+      typeof body.auto_complete_positive_reviews !== "boolean")
   ) {
     return Response.json(
       {
@@ -73,6 +79,9 @@ export async function POST(request: Request) {
   const extra_faq = body.extra_faq.trim();
   const owner_reply_examples = body.owner_reply_examples.trim();
   const owner_cs_examples = body.owner_cs_examples.trim();
+  const auto_complete_low_risk_cs = body.auto_complete_low_risk_cs ?? false;
+  const auto_complete_positive_reviews =
+    body.auto_complete_positive_reviews ?? false;
 
   if (!store_name) {
     return Response.json(
@@ -95,6 +104,8 @@ export async function POST(request: Request) {
     extra_faq,
     owner_reply_examples,
     owner_cs_examples,
+    auto_complete_low_risk_cs,
+    auto_complete_positive_reviews,
     updated_at: savedAt,
   };
 

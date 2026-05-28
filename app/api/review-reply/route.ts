@@ -82,6 +82,15 @@ export async function POST(request: Request) {
       storeSettings,
       review,
     );
+    const status =
+      storeSettings.auto_complete_positive_reviews &&
+      result.sentiment === "positive" &&
+      result.handlingType === "auto_ready" &&
+      result.riskLevel === "low"
+        ? "completed"
+        : result.handlingType === "needs_review"
+          ? "needs_review"
+          : "pending";
 
     let { error: reviewSaveError } = await auth.supabase
       .from("reviews")
@@ -90,7 +99,7 @@ export async function POST(request: Request) {
         review: result.review,
         reply: result.reply,
         sentiment: result.sentiment,
-        status: "pending",
+        status,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
       });
@@ -107,7 +116,7 @@ export async function POST(request: Request) {
         review: result.review,
         reply: result.reply,
         sentiment: result.sentiment,
-        status: "pending",
+        status,
       });
 
       reviewSaveError = fallback.error;
@@ -133,6 +142,7 @@ export async function POST(request: Request) {
 
     return Response.json({
       reply: result.reply,
+      status,
       handling_type: result.handlingType,
       risk_level: result.riskLevel,
     });

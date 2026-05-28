@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const { data, error } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, created_at, updated_at",
+      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, auto_complete_low_risk_cs, auto_complete_positive_reviews, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })

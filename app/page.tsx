@@ -44,6 +44,7 @@ type MissingInfoItem = {
 
 type ReviewApiResponse = {
   reply?: string;
+  status?: WorkflowStatus;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
   error?: string;
@@ -58,6 +59,7 @@ type BatchReviewReplyResult = {
   riskLevel?: RiskLevel;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
+  status?: WorkflowStatus;
 };
 
 type BatchReviewApiResponse = {
@@ -68,6 +70,7 @@ type BatchReviewApiResponse = {
 
 type CsReplyApiResponse = {
   reply?: string;
+  status?: WorkflowStatus;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
   error?: string;
@@ -147,6 +150,8 @@ type StoreSettings = {
   extra_faq: string | null;
   owner_reply_examples: string | null;
   owner_cs_examples: string | null;
+  auto_complete_low_risk_cs: boolean | null;
+  auto_complete_positive_reviews: boolean | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -170,6 +175,8 @@ type StoreDraft = {
   extraFaq: string;
   ownerReplyExamples: string;
   ownerCsExamples: string;
+  autoCompleteLowRiskCs: boolean;
+  autoCompletePositiveReviews: boolean;
 };
 
 type InsightsApiResponse = {
@@ -508,7 +515,11 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     (draft.ownerReplyExamples === undefined ||
       typeof draft.ownerReplyExamples === "string") &&
     (draft.ownerCsExamples === undefined ||
-      typeof draft.ownerCsExamples === "string")
+      typeof draft.ownerCsExamples === "string") &&
+    (draft.autoCompleteLowRiskCs === undefined ||
+      typeof draft.autoCompleteLowRiskCs === "boolean") &&
+    (draft.autoCompletePositiveReviews === undefined ||
+      typeof draft.autoCompletePositiveReviews === "boolean")
   );
 }
 
@@ -531,6 +542,9 @@ function readStoreDraft(userId: string): StoreDraft | null {
           productCatalog: parsedDraft.productCatalog ?? "",
           ownerReplyExamples: parsedDraft.ownerReplyExamples ?? "",
           ownerCsExamples: parsedDraft.ownerCsExamples ?? "",
+          autoCompleteLowRiskCs: parsedDraft.autoCompleteLowRiskCs ?? false,
+          autoCompletePositiveReviews:
+            parsedDraft.autoCompletePositiveReviews ?? false,
         }
       : null;
   } catch {
@@ -554,7 +568,9 @@ function removeStoreDraft(userId: string) {
 }
 
 function hasStoreDraftContent(draft: StoreDraft) {
-  return Object.values(draft).some((value) => value.trim().length > 0);
+  return Object.values(draft).some((value) =>
+    typeof value === "string" ? value.trim().length > 0 : value,
+  );
 }
 
 const kpiCardClass =
@@ -898,6 +914,9 @@ export default function Home() {
   const [extraFaq, setExtraFaq] = useState("");
   const [ownerReplyExamples, setOwnerReplyExamples] = useState("");
   const [ownerCsExamples, setOwnerCsExamples] = useState("");
+  const [autoCompleteLowRiskCs, setAutoCompleteLowRiskCs] = useState(false);
+  const [autoCompletePositiveReviews, setAutoCompletePositiveReviews] =
+    useState(false);
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -989,6 +1008,8 @@ export default function Home() {
       extraFaq,
       ownerReplyExamples,
       ownerCsExamples,
+      autoCompleteLowRiskCs,
+      autoCompletePositiveReviews,
     }),
     [
       storeName,
@@ -1003,6 +1024,8 @@ export default function Home() {
       extraFaq,
       ownerReplyExamples,
       ownerCsExamples,
+      autoCompleteLowRiskCs,
+      autoCompletePositiveReviews,
     ],
   );
 
@@ -1024,6 +1047,10 @@ export default function Home() {
       setExtraFaq(store.extra_faq ?? "");
       setOwnerReplyExamples(store.owner_reply_examples ?? "");
       setOwnerCsExamples(store.owner_cs_examples ?? "");
+      setAutoCompleteLowRiskCs(Boolean(store.auto_complete_low_risk_cs));
+      setAutoCompletePositiveReviews(
+        Boolean(store.auto_complete_positive_reviews),
+      );
       return;
     }
 
@@ -1039,6 +1066,8 @@ export default function Home() {
     setExtraFaq("");
     setOwnerReplyExamples("");
     setOwnerCsExamples("");
+    setAutoCompleteLowRiskCs(false);
+    setAutoCompletePositiveReviews(false);
   }, []);
 
   useEffect(() => {
@@ -1221,6 +1250,8 @@ export default function Home() {
         setExtraFaq("");
         setOwnerReplyExamples("");
         setOwnerCsExamples("");
+        setAutoCompleteLowRiskCs(false);
+        setAutoCompletePositiveReviews(false);
         setStoreExampleMessage("");
         setIsExamplePickerOpen(false);
         setCsMessages([]);
@@ -1272,6 +1303,8 @@ export default function Home() {
         setExtraFaq(draft.extraFaq);
         setOwnerReplyExamples(draft.ownerReplyExamples);
         setOwnerCsExamples(draft.ownerCsExamples);
+        setAutoCompleteLowRiskCs(draft.autoCompleteLowRiskCs);
+        setAutoCompletePositiveReviews(draft.autoCompletePositiveReviews);
       }
 
       setStoreDraftReady(true);
@@ -1604,6 +1637,8 @@ export default function Home() {
     setRefundPolicy(preset.refundPolicy);
     setOwnerReplyExamples(preset.ownerReplyExamples);
     setOwnerCsExamples(preset.ownerCsExamples);
+    setAutoCompleteLowRiskCs(false);
+    setAutoCompletePositiveReviews(false);
     setStoreError("");
     setStoreExampleMessage(
       "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
@@ -1647,6 +1682,8 @@ export default function Home() {
           extra_faq: extraFaq,
           owner_reply_examples: ownerReplyExamples,
           owner_cs_examples: ownerCsExamples,
+          auto_complete_low_risk_cs: autoCompleteLowRiskCs,
+          auto_complete_positive_reviews: autoCompletePositiveReviews,
         }),
       });
 
@@ -2910,6 +2947,48 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-violet-950 dark:text-violet-100">
+                    AI 자동 처리 설정
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                    AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
+                    긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 플랫폼
+                    연동 전까지는 앱 안에서만 완료 처리됩니다.
+                  </p>
+                </div>
+
+                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                  <input
+                    type="checkbox"
+                    checked={autoCompleteLowRiskCs}
+                    onChange={(event) =>
+                      setAutoCompleteLowRiskCs(event.target.checked)
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                  />
+                  <span>
+                    위험도 낮고 바로 답변 가능한 고객 문의는 자동으로 답변 완료
+                    처리
+                  </span>
+                </label>
+
+                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                  <input
+                    type="checkbox"
+                    checked={autoCompletePositiveReviews}
+                    onChange={(event) =>
+                      setAutoCompletePositiveReviews(event.target.checked)
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                  />
+                  <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
+                </label>
+              </div>
+            </div>
+
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -3742,6 +3821,8 @@ export default function Home() {
                 AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
                 사장님 확인이 필요한지 함께 판단합니다. 플랫폼 연동 후에는 이
                 판단을 기준으로 자동 처리와 승인 처리를 나눌 수 있습니다.
+                가게 설정에서 자동 처리 옵션을 켜면 낮은 위험도의 반복 문의와
+                긍정 리뷰는 자동으로 답변 완료 처리할 수 있습니다.
                 확인 필요한 정보, 주의 필요한 리뷰, 최근 문의와 리뷰 답글은
                 이제 AI CS 처리함에서 상태별로 관리할 수 있습니다.
               </p>
@@ -3846,6 +3927,14 @@ export default function Home() {
                 {visibleWorkflowItems.map((item) => {
                       const isEditing = editingWorkflowKey === item.key;
                       const isUpdating = workflowUpdatingKey === item.key;
+                      const isAutoCompleted =
+                        (item.status === "completed" ||
+                          item.status === "answered") &&
+                        item.handlingType === "auto_ready" &&
+                        item.riskLevel === "low";
+                      const isCompleted =
+                        item.status === "completed" ||
+                        item.status === "answered";
                       const needsAttention =
                         item.handlingType === "needs_review" ||
                         item.riskLevel === "high";
@@ -3945,6 +4034,13 @@ export default function Home() {
                             </p>
                           ) : null}
 
+                          {isAutoCompleted ? (
+                            <p className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
+                              AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
+                              자동 완료 처리했습니다.
+                            </p>
+                          ) : null}
+
                           {needsAttention ? (
                             <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
                               사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.
@@ -3979,18 +4075,21 @@ export default function Home() {
                               </>
                             ) : (
                               <>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleUpdateWorkflowItem(item, {
-                                      status: "completed",
-                                    })
-                                  }
-                                  disabled={!item.canMutate || isUpdating}
-                                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
-                                >
-                                  승인 완료
-                                </button>
+                                {!isCompleted &&
+                                item.status === "pending" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleUpdateWorkflowItem(item, {
+                                        status: "completed",
+                                      })
+                                    }
+                                    disabled={!item.canMutate || isUpdating}
+                                    className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                  >
+                                    승인 완료
+                                  </button>
+                                ) : null}
                                 <button
                                   type="button"
                                   onClick={() => handleStartWorkflowEdit(item)}
@@ -3999,18 +4098,33 @@ export default function Home() {
                                 >
                                   수정하기
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleUpdateWorkflowItem(item, {
-                                      status: "needs_review",
-                                    })
-                                  }
-                                  disabled={!item.canMutate || isUpdating}
-                                  className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
-                                >
-                                  확인 필요로 표시
-                                </button>
+                                {!isCompleted ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleUpdateWorkflowItem(item, {
+                                        status: "needs_review",
+                                      })
+                                    }
+                                    disabled={!item.canMutate || isUpdating}
+                                    className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                  >
+                                    확인 필요로 표시
+                                  </button>
+                                ) : item.canMutate ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleUpdateWorkflowItem(item, {
+                                        status: "needs_review",
+                                      })
+                                    }
+                                    disabled={isUpdating}
+                                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                  >
+                                    확인 필요로 되돌리기
+                                  </button>
+                                ) : null}
                                 <button
                                   type="button"
                                   onClick={() =>

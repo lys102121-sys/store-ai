@@ -44,6 +44,13 @@ type MissingInfoTopic =
   | "refund_exchange"
   | "general";
 
+const healthSafetyPattern =
+  /알레르기|알러지|두드러기|발진|복통|식중독|상한\s*것\s*같|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응/;
+
+function hasHealthSafetySignal(text: string) {
+  return healthSafetyPattern.test(text);
+}
+
 function parseCsReplyDecision(output: string | undefined): CsReplyDecision | null {
   if (!output) return null;
 
@@ -411,7 +418,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, created_at, updated_at",
+      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
@@ -482,7 +489,19 @@ export async function POST(request: Request) {
       },
     });
 
-    const decision = parseCsReplyDecision(completion.output_text?.trim());
+    const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
+    const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
+    const decision = parsedDecision
+      ? {
+          ...parsedDecision,
+          handlingType: hasHealthSafetyIssue
+            ? ("needs_approval" as const)
+            : parsedDecision.handlingType,
+          riskLevel: hasHealthSafetyIssue
+            ? ("high" as const)
+            : parsedDecision.riskLevel,
+        }
+      : null;
     const reply = decision
       ? sanitizeCustomerReply(decision.reply).trim()
       : "";
@@ -494,13 +513,28 @@ export async function POST(request: Request) {
       );
     }
 
+    const shouldCreateMissingInfo = shouldSaveMissingInfo(
+      reply,
+      customerMessage,
+      storeRow,
+    );
+    const status =
+      storeRow.auto_complete_low_risk_cs &&
+      decision.handlingType === "auto_ready" &&
+      decision.riskLevel === "low" &&
+      !shouldCreateMissingInfo
+        ? "completed"
+        : decision.handlingType === "needs_review" || shouldCreateMissingInfo
+          ? "needs_review"
+          : "pending";
+
     let { error: csMessageSaveError } = await auth.supabase
       .from("cs_messages")
       .insert({
         user_id: auth.userId,
         customer_message: customerMessage,
         reply,
-        status: "pending",
+        status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
       });
@@ -516,7 +550,7 @@ export async function POST(request: Request) {
         user_id: auth.userId,
         customer_message: customerMessage,
         reply,
-        status: "pending",
+        status,
       });
 
       csMessageSaveError = fallback.error;
@@ -536,7 +570,7 @@ export async function POST(request: Request) {
       console.error("Failed to save CS message.", csMessageSaveError);
     }
 
-    if (shouldSaveMissingInfo(reply, customerMessage, storeRow)) {
+    if (shouldCreateMissingInfo) {
       const missingInfo = buildMissingInfo(customerMessage);
       const topic = classifyMissingInfoTopic(
         `${customerMessage}\n${missingInfo.question}`,
@@ -554,6 +588,7 @@ export async function POST(request: Request) {
 
     return Response.json({
       reply,
+      status,
       handling_type: decision.handlingType,
       risk_level: decision.riskLevel,
     });

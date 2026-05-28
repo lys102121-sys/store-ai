@@ -10,6 +10,7 @@ export type ReviewReplyPromptStore = {
   product_catalog?: string | null;
   extra_faq?: string | null;
   owner_reply_examples?: string | null;
+  auto_complete_positive_reviews?: boolean | null;
 };
 
 export function buildReviewReplySystemPrompt(
@@ -38,7 +39,12 @@ export function buildReviewReplySystemPrompt(
       "단순 긍정 리뷰는 handling_type을 auto_ready, risk_level을 low로 분류하세요.",
       "배송 지연, 포장 아쉬움, 양 아쉬움 같은 일반 불만은 handling_type을 needs_approval로 분류하세요.",
       "위생, 알레르기, 심한 클레임, 환불 요구, 신고 언급은 handling_type을 needs_approval, risk_level을 high로 분류하세요.",
+      "리뷰에 알레르기, 알러지, 두드러기, 발진, 복통, 식중독, 상한 것 같다, 이상 반응, 호흡, 병원, 아프다, 먹고 탈, 피부 반응 표현이 있으면 반드시 handling_type은 needs_approval, risk_level은 high로 판단하세요.",
       "owner_reply_examples가 있으면 말투는 예시를 우선하되, 과장 금지와 리뷰에 없는 내용 추측 금지 규칙을 반드시 우선하세요.",
+      "알레르기/건강/안전 이슈 답글은 원인을 단정하지 말고, 불편과 걱정에 공감한 뒤 주문 정보와 함께 문의 주시면 원재료와 안내 사항을 확인하겠다고 안내하세요. 증상이 계속되거나 심하면 의료기관 상담을 권장하세요.",
+      '"상품 때문에", "저희 상품으로 인해", "~때문인 것 같습니다"처럼 원인을 단정하거나 추정하는 표현은 사용하지 마세요.',
+      "긍정 리뷰 답글은 감사 한 문장만으로 끝내지 말고, owner_reply_examples에 자연스러운 마무리 문장이 있으면 비슷한 길이의 마무리 문장 1개를 포함하세요.",
+      '"정성껏", "최선을", "보답", "늘 만족" 같은 식상한 표현은 피하고 owner_reply_examples의 끝맺음 방식을 따르세요.',
       "",
       "사장님 말투 따라쓰기 모드입니다.",
       "아래 [사장님 답글 예시]의 문장 길이, 말투, 이모지 사용, 감사 표현, 사과 표현, 마무리 방식을 최우선으로 따르세요.",
@@ -163,6 +169,9 @@ export function buildReviewReplySystemPrompt(
     "단순 긍정 리뷰는 handling_type을 auto_ready, risk_level을 low로 분류하세요.",
     "배송 지연, 포장 아쉬움, 양 아쉬움 같은 일반 불만은 handling_type을 needs_approval로 분류하세요.",
     "위생, 알레르기, 심한 클레임, 환불 요구, 신고 언급은 handling_type을 needs_approval, risk_level을 high로 분류하세요.",
+    "리뷰에 알레르기, 알러지, 두드러기, 발진, 복통, 식중독, 상한 것 같다, 이상 반응, 호흡, 병원, 아프다, 먹고 탈, 피부 반응 표현이 있으면 반드시 handling_type은 needs_approval, risk_level은 high로 판단하세요.",
+    "알레르기/건강/안전 이슈 답글은 원인을 단정하지 말고, 불편과 걱정에 공감한 뒤 주문 정보와 함께 문의 주시면 원재료와 안내 사항을 확인하겠다고 안내하세요. 증상이 계속되거나 심하면 의료기관 상담을 권장하세요.",
+    '"상품 때문에", "저희 상품으로 인해", "~때문인 것 같습니다"처럼 원인을 단정하거나 추정하는 표현은 사용하지 마세요.',
     "",
     '사장님 답글 예시가 없으므로 내부 기본 말투인 "친절하고 자연스럽게"로 리뷰 답글을 작성하세요.',
     "리뷰에 특정 상품명이나 메뉴명이 직접 언급된 경우에만 상품 목록에서 관련 맥락을 참고하세요.",

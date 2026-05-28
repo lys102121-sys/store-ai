@@ -122,12 +122,26 @@ export async function POST(request: Request) {
       results.push(result);
     }
 
-    const reviewRows = results.map((result) => ({
+    const resultsWithStatus = results.map((result) => {
+      const status =
+        storeSettings.auto_complete_positive_reviews &&
+        result.sentiment === "positive" &&
+        result.handlingType === "auto_ready" &&
+        result.riskLevel === "low"
+          ? "completed"
+          : result.handlingType === "needs_review"
+            ? "needs_review"
+            : "pending";
+
+      return { ...result, status };
+    });
+
+    const reviewRows = resultsWithStatus.map((result) => ({
       user_id: auth.userId,
       review: result.review,
       reply: result.reply,
       sentiment: result.sentiment,
-      status: "pending",
+      status: result.status,
       handling_type: result.handlingType,
       risk_level: result.riskLevel,
     }));
@@ -140,19 +154,19 @@ export async function POST(request: Request) {
       console.warn(
         "reviews handling columns are missing. Run: alter table reviews add column if not exists handling_type text default 'needs_approval'; alter table reviews add column if not exists risk_level text default 'normal';",
       );
-      const fallbackRows = results.map((result) => ({
+      const fallbackRows = resultsWithStatus.map((result) => ({
         user_id: auth.userId,
         review: result.review,
         reply: result.reply,
         sentiment: result.sentiment,
-        status: "pending",
+        status: result.status,
       }));
       const fallback = await auth.supabase.from("reviews").insert(fallbackRows);
       saveError = fallback.error;
     }
 
     if (saveError && /status/i.test(saveError.message)) {
-      const fallbackRows = results.map((result) => ({
+      const fallbackRows = resultsWithStatus.map((result) => ({
         user_id: auth.userId,
         review: result.review,
         reply: result.reply,
@@ -170,7 +184,7 @@ export async function POST(request: Request) {
     }
 
     return Response.json({
-      results: results.map((result) => ({
+      results: resultsWithStatus.map((result) => ({
         ...result,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
