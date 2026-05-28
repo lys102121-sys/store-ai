@@ -96,11 +96,31 @@ export async function PATCH(
     .eq("id", id)
     .eq("user_id", auth.userId)
     .select(
-      "id, review, reply, sentiment, status, handling_type, risk_level, created_at",
+      "id, review, reply, sentiment, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
     )
     .single();
 
   if (error) {
+    if (
+      /(source_platform|external_id|external_url|platform_status)/i.test(
+        error.message,
+      )
+    ) {
+      const fallback = await auth.supabase
+        .from("reviews")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .select(
+          "id, review, reply, sentiment, status, handling_type, risk_level, created_at",
+        )
+        .single();
+
+      if (!fallback.error) {
+        return Response.json({ review: fallback.data });
+      }
+    }
+
     if (/(handling_type|risk_level)/i.test(error.message)) {
       console.warn(
         "reviews handling columns are missing. Run: alter table reviews add column if not exists handling_type text default 'needs_approval'; alter table reviews add column if not exists risk_level text default 'normal';",

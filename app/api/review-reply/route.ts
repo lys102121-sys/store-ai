@@ -102,7 +102,33 @@ export async function POST(request: Request) {
         status,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
       });
+
+    if (
+      reviewSaveError &&
+      /(source_platform|external_id|external_url|platform_status)/i.test(
+        reviewSaveError.message,
+      )
+    ) {
+      console.warn(
+        "reviews platform columns are missing. Run: alter table reviews add column if not exists source_platform text default 'manual'; alter table reviews add column if not exists external_id text; alter table reviews add column if not exists external_url text; alter table reviews add column if not exists platform_status text default 'local';",
+      );
+      const fallback = await auth.supabase.from("reviews").insert({
+        user_id: auth.userId,
+        review: result.review,
+        reply: result.reply,
+        sentiment: result.sentiment,
+        status,
+        handling_type: result.handlingType,
+        risk_level: result.riskLevel,
+      });
+
+      reviewSaveError = fallback.error;
+    }
 
     if (
       reviewSaveError &&

@@ -99,11 +99,31 @@ export async function PATCH(
     .eq("id", id)
     .eq("user_id", auth.userId)
     .select(
-      "id, customer_message, reply, status, handling_type, risk_level, created_at",
+      "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
     )
     .single();
 
   if (error) {
+    if (
+      /(source_platform|external_id|external_url|platform_status)/i.test(
+        error.message,
+      )
+    ) {
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .select(
+          "id, customer_message, reply, status, handling_type, risk_level, created_at",
+        )
+        .single();
+
+      if (!fallback.error) {
+        return Response.json({ csMessage: fallback.data });
+      }
+    }
+
     if (/(handling_type|risk_level)/i.test(error.message)) {
       console.warn(
         "cs_messages handling columns are missing. Run: alter table cs_messages add column if not exists handling_type text default 'needs_approval'; alter table cs_messages add column if not exists risk_level text default 'normal';",

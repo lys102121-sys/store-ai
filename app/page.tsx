@@ -8,6 +8,15 @@ import { getSupabase } from "@/app/lib/supabase";
 type Sentiment = "positive" | "neutral" | "negative";
 type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
 type RiskLevel = "low" | "normal" | "high";
+type SourcePlatform =
+  | "manual"
+  | "smartstore"
+  | "coupang"
+  | "baemin"
+  | "yogiyo"
+  | "coupangeats"
+  | string;
+type PlatformStatus = "local" | "synced" | "posted" | "failed" | string;
 
 type ReviewHistoryItem = {
   id: number;
@@ -17,6 +26,10 @@ type ReviewHistoryItem = {
   status?: WorkflowStatus | null;
   handling_type?: HandlingType | null;
   risk_level?: RiskLevel | null;
+  source_platform?: SourcePlatform | null;
+  external_id?: string | null;
+  external_url?: string | null;
+  platform_status?: PlatformStatus | null;
   created_at: string;
 };
 
@@ -27,6 +40,10 @@ type CsMessageHistoryItem = {
   status?: WorkflowStatus | null;
   handling_type?: HandlingType | null;
   risk_level?: RiskLevel | null;
+  source_platform?: SourcePlatform | null;
+  external_id?: string | null;
+  external_url?: string | null;
+  platform_status?: PlatformStatus | null;
   created_at: string;
 };
 
@@ -121,6 +138,10 @@ type WorkflowItem = {
   status: WorkflowStatus;
   handlingType: HandlingType;
   riskLevel: RiskLevel;
+  sourcePlatform: SourcePlatform;
+  externalId: string | null;
+  externalUrl: string | null;
+  platformStatus: PlatformStatus;
   createdAt: string;
   canMutate: boolean;
 };
@@ -385,6 +406,57 @@ function riskLevelBadgeClass(value: RiskLevel) {
       return "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800";
     default:
       return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700";
+  }
+}
+
+function sourcePlatformLabel(value?: string | null) {
+  switch (value) {
+    case "manual":
+    case undefined:
+    case null:
+      return "수동 입력";
+    case "smartstore":
+      return "스마트스토어";
+    case "coupang":
+      return "쿠팡";
+    case "baemin":
+      return "배민";
+    case "yogiyo":
+      return "요기요";
+    case "coupangeats":
+      return "쿠팡이츠";
+    default:
+      return value;
+  }
+}
+
+function platformStatusLabel(value?: string | null) {
+  switch (value) {
+    case "local":
+    case undefined:
+    case null:
+      return "앱 내부";
+    case "synced":
+      return "연동됨";
+    case "posted":
+      return "플랫폼 등록 완료";
+    case "failed":
+      return "등록 실패";
+    default:
+      return value;
+  }
+}
+
+function platformStatusBadgeClass(value?: string | null) {
+  switch (value) {
+    case "posted":
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900";
+    case "synced":
+      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900";
+    case "failed":
+      return "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900";
+    default:
+      return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700";
   }
 }
 
@@ -2036,6 +2108,10 @@ export default function Home() {
       status: normalizeWorkflowStatus(item.status),
       handlingType: normalizeHandlingType(item.handling_type),
       riskLevel: normalizeRiskLevel(item.risk_level),
+      sourcePlatform: item.source_platform ?? "manual",
+      externalId: item.external_id ?? null,
+      externalUrl: item.external_url ?? null,
+      platformStatus: item.platform_status ?? "local",
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2050,6 +2126,10 @@ export default function Home() {
       status: normalizeWorkflowStatus(item.status),
       handlingType: normalizeHandlingType(item.handling_type),
       riskLevel: normalizeRiskLevel(item.risk_level),
+      sourcePlatform: item.source_platform ?? "manual",
+      externalId: item.external_id ?? null,
+      externalUrl: item.external_url ?? null,
+      platformStatus: item.platform_status ?? "local",
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2064,6 +2144,10 @@ export default function Home() {
       status: "needs_review" as const,
       handlingType: "needs_review" as const,
       riskLevel: "normal" as const,
+      sourcePlatform: "manual",
+      externalId: null,
+      externalUrl: null,
+      platformStatus: "local",
       createdAt: item.created_at,
       canMutate: false,
     }));
@@ -3952,6 +4036,16 @@ export default function Home() {
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
                                 {item.typeLabel}
+                              </span>
+                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                                {sourcePlatformLabel(item.sourcePlatform)}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${platformStatusBadgeClass(
+                                  item.platformStatus,
+                                )}`}
+                              >
+                                {platformStatusLabel(item.platformStatus)}
                               </span>
                               <span
                                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(

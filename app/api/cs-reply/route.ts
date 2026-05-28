@@ -537,7 +537,32 @@ export async function POST(request: Request) {
         status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
       });
+
+    if (
+      csMessageSaveError &&
+      /(source_platform|external_id|external_url|platform_status)/i.test(
+        csMessageSaveError.message,
+      )
+    ) {
+      console.warn(
+        "cs_messages platform columns are missing. Run: alter table cs_messages add column if not exists source_platform text default 'manual'; alter table cs_messages add column if not exists external_id text; alter table cs_messages add column if not exists external_url text; alter table cs_messages add column if not exists platform_status text default 'local';",
+      );
+      const fallback = await auth.supabase.from("cs_messages").insert({
+        user_id: auth.userId,
+        customer_message: customerMessage,
+        reply,
+        status,
+        handling_type: decision.handlingType,
+        risk_level: decision.riskLevel,
+      });
+
+      csMessageSaveError = fallback.error;
+    }
 
     if (
       csMessageSaveError &&

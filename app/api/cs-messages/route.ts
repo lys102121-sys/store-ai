@@ -10,12 +10,30 @@ export async function GET(request: Request) {
   const primary = await auth.supabase
     .from("cs_messages")
     .select(
-      "id, customer_message, reply, status, handling_type, risk_level, created_at",
+      "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
     )
     .eq("user_id", auth.userId)
     .order("created_at", { ascending: false });
   let data: unknown[] | null = primary.data;
   let error = primary.error;
+
+  if (
+    error &&
+    /(source_platform|external_id|external_url|platform_status)/i.test(
+      error.message,
+    )
+  ) {
+    const fallback = await auth.supabase
+      .from("cs_messages")
+      .select(
+        "id, customer_message, reply, status, handling_type, risk_level, created_at",
+      )
+      .eq("user_id", auth.userId)
+      .order("created_at", { ascending: false });
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error && /(handling_type|risk_level)/i.test(error.message)) {
     const fallback = await auth.supabase
