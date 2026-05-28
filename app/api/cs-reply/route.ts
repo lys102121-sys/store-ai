@@ -15,6 +15,15 @@ type RequestBody = {
 
 type StoreRow = CsReplyPromptStore;
 
+type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
+type RiskLevel = "low" | "normal" | "high";
+
+type CsReplyDecision = {
+  reply: string;
+  handlingType: HandlingType;
+  riskLevel: RiskLevel;
+};
+
 type ExistingMissingInfoRow = {
   id: string;
   question: string | null;
@@ -34,6 +43,46 @@ type MissingInfoTopic =
   | "shipping_schedule"
   | "refund_exchange"
   | "general";
+
+function parseCsReplyDecision(output: string | undefined): CsReplyDecision | null {
+  if (!output) return null;
+
+  try {
+    const parsed = JSON.parse(output) as {
+      reply?: unknown;
+      handling_type?: unknown;
+      risk_level?: unknown;
+    };
+    const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
+    const handlingType =
+      parsed.handling_type === "auto_ready" ||
+      parsed.handling_type === "needs_review" ||
+      parsed.handling_type === "needs_approval"
+        ? parsed.handling_type
+        : null;
+    const riskLevel =
+      parsed.risk_level === "low" ||
+      parsed.risk_level === "normal" ||
+      parsed.risk_level === "high"
+        ? parsed.risk_level
+        : null;
+
+    if (reply && handlingType && riskLevel) {
+      return { reply, handlingType, riskLevel };
+    }
+  } catch {
+    const reply = output.trim();
+    if (reply) {
+      return {
+        reply,
+        handlingType: "needs_approval",
+        riskLevel: "normal",
+      };
+    }
+  }
+
+  return null;
+}
 
 function classifyMissingInfoTopic(text: string): MissingInfoTopic {
   if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
@@ -408,12 +457,37 @@ export async function POST(request: Request) {
           ],
         },
       ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "cs_reply_decision",
+          schema: {
+            type: "object",
+            properties: {
+              reply: { type: "string" },
+              handling_type: {
+                type: "string",
+                enum: ["auto_ready", "needs_review", "needs_approval"],
+              },
+              risk_level: {
+                type: "string",
+                enum: ["low", "normal", "high"],
+              },
+            },
+            required: ["reply", "handling_type", "risk_level"],
+            additionalProperties: false,
+          },
+          strict: true,
+        },
+      },
     });
 
-    const rawReply = completion.output_text?.trim();
-    const reply = rawReply ? sanitizeCustomerReply(rawReply).trim() : "";
+    const decision = parseCsReplyDecision(completion.output_text?.trim());
+    const reply = decision
+      ? sanitizeCustomerReply(decision.reply).trim()
+      : "";
 
-    if (!reply) {
+    if (!decision || !reply) {
       return Response.json(
         { error: "Failed to generate a CS reply." },
         { status: 502 },
@@ -427,7 +501,26 @@ export async function POST(request: Request) {
         customer_message: customerMessage,
         reply,
         status: "pending",
+        handling_type: decision.handlingType,
+        risk_level: decision.riskLevel,
       });
+
+    if (
+      csMessageSaveError &&
+      /(handling_type|risk_level)/i.test(csMessageSaveError.message)
+    ) {
+      console.warn(
+        "cs_messages handling columns are missing. Run: alter table cs_messages add column if not exists handling_type text default 'needs_approval'; alter table cs_messages add column if not exists risk_level text default 'normal';",
+      );
+      const fallback = await auth.supabase.from("cs_messages").insert({
+        user_id: auth.userId,
+        customer_message: customerMessage,
+        reply,
+        status: "pending",
+      });
+
+      csMessageSaveError = fallback.error;
+    }
 
     if (csMessageSaveError && /status/i.test(csMessageSaveError.message)) {
       const fallback = await auth.supabase.from("cs_messages").insert({
@@ -459,7 +552,11 @@ export async function POST(request: Request) {
       });
     }
 
-    return Response.json({ reply });
+    return Response.json({
+      reply,
+      handling_type: decision.handlingType,
+      risk_level: decision.riskLevel,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown OpenAI API error.";

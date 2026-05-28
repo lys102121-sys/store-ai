@@ -18,6 +18,17 @@ function buildMissingStatusColumnResponse(detail: string) {
   );
 }
 
+function buildMissingHandlingColumnsResponse(detail: string) {
+  return Response.json(
+    {
+      error:
+        "reviews 테이블에 handling_type, risk_level 컬럼이 필요합니다. Supabase SQL editor에서 `alter table reviews add column if not exists handling_type text default 'needs_approval'; alter table reviews add column if not exists risk_level text default 'normal';`을 실행해 주세요.",
+      detail,
+    },
+    { status: 500 },
+  );
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -84,10 +95,33 @@ export async function PATCH(
     .update(payload)
     .eq("id", id)
     .eq("user_id", auth.userId)
-    .select("id, review, reply, sentiment, status, created_at")
+    .select(
+      "id, review, reply, sentiment, status, handling_type, risk_level, created_at",
+    )
     .single();
 
   if (error) {
+    if (/(handling_type|risk_level)/i.test(error.message)) {
+      console.warn(
+        "reviews handling columns are missing. Run: alter table reviews add column if not exists handling_type text default 'needs_approval'; alter table reviews add column if not exists risk_level text default 'normal';",
+      );
+      const fallback = await auth.supabase
+        .from("reviews")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .select("id, review, reply, sentiment, status, created_at")
+        .single();
+
+      if (!fallback.error) {
+        return Response.json({ review: fallback.data });
+      }
+
+      if (/(handling_type|risk_level)/i.test(fallback.error.message)) {
+        return buildMissingHandlingColumnsResponse(fallback.error.message);
+      }
+    }
+
     if (payload.status && /status/i.test(error.message)) {
       return buildMissingStatusColumnResponse(error.message);
     }

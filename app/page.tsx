@@ -6,6 +6,8 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabase } from "@/app/lib/supabase";
 
 type Sentiment = "positive" | "neutral" | "negative";
+type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
+type RiskLevel = "low" | "normal" | "high";
 
 type ReviewHistoryItem = {
   id: number;
@@ -13,6 +15,8 @@ type ReviewHistoryItem = {
   reply: string;
   sentiment: Sentiment | string;
   status?: WorkflowStatus | null;
+  handling_type?: HandlingType | null;
+  risk_level?: RiskLevel | null;
   created_at: string;
 };
 
@@ -21,6 +25,8 @@ type CsMessageHistoryItem = {
   customer_message: string;
   reply: string;
   status?: WorkflowStatus | null;
+  handling_type?: HandlingType | null;
+  risk_level?: RiskLevel | null;
   created_at: string;
 };
 
@@ -38,6 +44,8 @@ type MissingInfoItem = {
 
 type ReviewApiResponse = {
   reply?: string;
+  handling_type?: HandlingType;
+  risk_level?: RiskLevel;
   error?: string;
   detail?: string;
 };
@@ -46,6 +54,10 @@ type BatchReviewReplyResult = {
   review: string;
   reply: string;
   sentiment: Sentiment;
+  handlingType?: HandlingType;
+  riskLevel?: RiskLevel;
+  handling_type?: HandlingType;
+  risk_level?: RiskLevel;
 };
 
 type BatchReviewApiResponse = {
@@ -56,6 +68,8 @@ type BatchReviewApiResponse = {
 
 type CsReplyApiResponse = {
   reply?: string;
+  handling_type?: HandlingType;
+  risk_level?: RiskLevel;
   error?: string;
   detail?: string;
 };
@@ -102,6 +116,8 @@ type WorkflowItem = {
   original: string;
   reply: string;
   status: WorkflowStatus;
+  handlingType: HandlingType;
+  riskLevel: RiskLevel;
   createdAt: string;
   canMutate: boolean;
 };
@@ -298,6 +314,70 @@ function workflowStatusBadgeClass(status: WorkflowStatus) {
       return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
     default:
       return "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-900/50 dark:text-sky-200 dark:ring-sky-800";
+  }
+}
+
+function normalizeHandlingType(value?: string | null): HandlingType {
+  if (
+    value === "auto_ready" ||
+    value === "needs_review" ||
+    value === "needs_approval"
+  ) {
+    return value;
+  }
+
+  return "needs_approval";
+}
+
+function normalizeRiskLevel(value?: string | null): RiskLevel {
+  if (value === "low" || value === "normal" || value === "high") {
+    return value;
+  }
+
+  return "normal";
+}
+
+function handlingTypeLabel(value: HandlingType) {
+  switch (value) {
+    case "auto_ready":
+      return "바로 답변 가능";
+    case "needs_review":
+      return "사장님 확인 필요";
+    default:
+      return "승인 필수";
+  }
+}
+
+function riskLevelLabel(value: RiskLevel) {
+  switch (value) {
+    case "low":
+      return "낮음";
+    case "high":
+      return "높음";
+    default:
+      return "보통";
+  }
+}
+
+function handlingTypeBadgeClass(value: HandlingType) {
+  switch (value) {
+    case "auto_ready":
+      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+    case "needs_review":
+      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800";
+    default:
+      return "bg-purple-100 text-purple-800 ring-1 ring-purple-200 dark:bg-purple-900/50 dark:text-purple-200 dark:ring-purple-800";
+  }
+}
+
+function riskLevelBadgeClass(value: RiskLevel) {
+  switch (value) {
+    case "low":
+      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+    case "high":
+      return "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800";
+    default:
+      return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700";
   }
 }
 
@@ -1770,17 +1850,72 @@ export default function Home() {
   }
 
   async function handleDeleteWorkflowItem(item: WorkflowItem) {
-    if (item.type === "review") {
-      await handleDeleteReview(Number(item.id));
+    const id = String(item.id ?? "").trim();
+
+    if (!id) {
+      setWorkflowError("삭제에 실패했습니다.");
       return;
     }
 
-    if (item.type === "cs") {
-      await handleDeleteCsMessage(Number(item.id));
-      return;
-    }
+    if (!window.confirm("이 항목을 삭제할까요?")) return;
 
-    goToTabSection("manage", "missing-infos");
+    const endpoint =
+      item.type === "review"
+        ? `/api/reviews/${id}`
+        : item.type === "cs"
+          ? `/api/cs-messages/${id}`
+          : `/api/missing-infos/${id}`;
+
+    setWorkflowUpdatingKey(item.key);
+    setWorkflowError("");
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as DeleteApiResponse;
+
+      if (!response.ok || data.success === false) {
+        setWorkflowError(data.error ?? "삭제에 실패했습니다.");
+        return;
+      }
+
+      if (item.type === "review") {
+        setHistory((currentItems) =>
+          currentItems.filter((currentItem) => String(currentItem.id) !== id),
+        );
+      } else if (item.type === "cs") {
+        setCsMessages((currentItems) =>
+          currentItems.filter((currentItem) => String(currentItem.id) !== id),
+        );
+      } else {
+        setMissingInfos((currentItems) =>
+          currentItems.filter((currentItem) => String(currentItem.id) !== id),
+        );
+        setMissingInfoAnswers((currentAnswers) => {
+          const nextAnswers = { ...currentAnswers };
+          delete nextAnswers[id];
+          return nextAnswers;
+        });
+        setMissingInfoTargetFields((currentFields) => {
+          const nextFields = { ...currentFields };
+          delete nextFields[id];
+          return nextFields;
+        });
+      }
+
+      await Promise.allSettled([
+        loadHistory(),
+        loadCsMessages(),
+        loadMissingInfos(),
+        loadInsights(),
+      ]);
+    } catch {
+      setWorkflowError("삭제에 실패했습니다.");
+    } finally {
+      setWorkflowUpdatingKey(null);
+    }
   }
 
   async function handleCopyText(
@@ -1862,6 +1997,8 @@ export default function Home() {
       original: item.review,
       reply: item.reply,
       status: normalizeWorkflowStatus(item.status),
+      handlingType: normalizeHandlingType(item.handling_type),
+      riskLevel: normalizeRiskLevel(item.risk_level),
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -1874,6 +2011,8 @@ export default function Home() {
       original: item.customer_message,
       reply: item.reply,
       status: normalizeWorkflowStatus(item.status),
+      handlingType: normalizeHandlingType(item.handling_type),
+      riskLevel: normalizeRiskLevel(item.risk_level),
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -1886,6 +2025,8 @@ export default function Home() {
       original: item.source_message || item.question,
       reply: item.reason,
       status: "needs_review" as const,
+      handlingType: "needs_review" as const,
+      riskLevel: "normal" as const,
       createdAt: item.created_at,
       canMutate: false,
     }));
@@ -3594,9 +3735,9 @@ export default function Home() {
                 AI CS 처리함
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                AI가 작성한 답변 초안을 모아두는 처리함입니다. 사장님이
-                확인 후 승인하거나 수정할 수 있어요. 플랫폼 연동 후에는
-                이곳에서 실제 답변 등록까지 이어질 예정입니다.
+                AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
+                사장님 확인이 필요한지 함께 판단합니다. 플랫폼 연동 후에는 이
+                판단을 기준으로 자동 처리와 승인 처리를 나눌 수 있습니다.
               </p>
             </div>
             <button
@@ -3699,11 +3840,18 @@ export default function Home() {
                 {visibleWorkflowItems.map((item) => {
                       const isEditing = editingWorkflowKey === item.key;
                       const isUpdating = workflowUpdatingKey === item.key;
+                      const needsAttention =
+                        item.handlingType === "needs_review" ||
+                        item.riskLevel === "high";
 
                       return (
                         <article
                           key={item.key}
-                          className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                          className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-900 ${
+                            needsAttention
+                              ? "border-amber-300 ring-1 ring-amber-200 dark:border-amber-800 dark:ring-amber-900/60"
+                              : "border-zinc-200 dark:border-zinc-800"
+                          }`}
                         >
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
@@ -3716,6 +3864,20 @@ export default function Home() {
                                 )}`}
                               >
                                 {workflowStatusLabel(item.status)}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${handlingTypeBadgeClass(
+                                  item.handlingType,
+                                )}`}
+                              >
+                                {handlingTypeLabel(item.handlingType)}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${riskLevelBadgeClass(
+                                  item.riskLevel,
+                                )}`}
+                              >
+                                위험도: {riskLevelLabel(item.riskLevel)}
                               </span>
                             </div>
                             <time
@@ -3770,6 +3932,18 @@ export default function Home() {
                               )}
                             </div>
                           </div>
+
+                          {item.handlingType === "auto_ready" ? (
+                            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                              AI가 바로 답변 가능하다고 판단했습니다.
+                            </p>
+                          ) : null}
+
+                          {needsAttention ? (
+                            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                              사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.
+                            </p>
+                          ) : null}
 
                           <div className="mt-4 flex flex-wrap gap-2">
                             {isEditing ? (
@@ -3837,6 +4011,7 @@ export default function Home() {
                                     void handleDeleteWorkflowItem(item)
                                   }
                                   disabled={
+                                    isUpdating ||
                                     (item.type === "review" &&
                                       deletingReviewId === item.id) ||
                                     (item.type === "cs" &&

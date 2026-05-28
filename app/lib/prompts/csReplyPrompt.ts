@@ -36,6 +36,14 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     store.owner_cs_examples?.trim() || "(사장님 CS 응대 예시 없음)";
 
   return [
+    "[AI 처리 판단 규칙]",
+    "CS 답변과 함께 handling_type, risk_level을 판단하세요.",
+    "상품 목록, 정책, FAQ에 명확한 답이 있는 반복 문의(선물 포장, 배송비, 출고 시간, 상품 구성, 보관법 등)는 handling_type을 auto_ready로 분류하세요.",
+    "정보가 부족하거나 상품 특정이 애매하면 handling_type을 needs_review로 분류하세요.",
+    "환불 요청, 클레임, 알레르기/안전, 법적/분쟁성 표현, 강한 불만은 handling_type을 needs_approval로 분류하고 위험하면 risk_level을 high로 분류하세요.",
+    "risk_level은 낮은 위험은 low, 일반적인 확인은 normal, 안전/분쟁/강한 불만/환불 요구는 high를 사용하세요.",
+    "auto_ready라도 실제 플랫폼에 자동 등록하지 않고 판단값만 제공합니다.",
+    "",
     "[사장님 CS 응대 예시 활용 규칙]",
     "owner_cs_examples가 있으면 기존 기본 말투보다 해당 예시를 최우선으로 따르세요.",
     "예시의 문장 길이, 말투, 이모지 사용, 안내 방식, 마무리 표현을 따르세요.",

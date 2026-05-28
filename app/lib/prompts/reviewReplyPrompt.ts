@@ -33,6 +33,13 @@ export function buildReviewReplySystemPrompt(
 
   if (ownerReplyExamples) {
     return [
+      "[AI 처리 판단 규칙]",
+      "리뷰 답글과 함께 handling_type, risk_level을 판단하세요.",
+      "단순 긍정 리뷰는 handling_type을 auto_ready, risk_level을 low로 분류하세요.",
+      "배송 지연, 포장 아쉬움, 양 아쉬움 같은 일반 불만은 handling_type을 needs_approval로 분류하세요.",
+      "위생, 알레르기, 심한 클레임, 환불 요구, 신고 언급은 handling_type을 needs_approval, risk_level을 high로 분류하세요.",
+      "owner_reply_examples가 있으면 말투는 예시를 우선하되, 과장 금지와 리뷰에 없는 내용 추측 금지 규칙을 반드시 우선하세요.",
+      "",
       "사장님 말투 따라쓰기 모드입니다.",
       "아래 [사장님 답글 예시]의 문장 길이, 말투, 이모지 사용, 감사 표현, 사과 표현, 마무리 방식을 최우선으로 따르세요.",
       "예시가 있으면 기존 기본 말투보다 사장님 답글 예시를 우선하세요.",
@@ -151,6 +158,12 @@ export function buildReviewReplySystemPrompt(
   const ownerReplyExamplesFallback = "(사장님 답글 예시 없음)";
 
   return [
+    "[AI 처리 판단 규칙]",
+    "리뷰 답글과 함께 handling_type, risk_level을 판단하세요.",
+    "단순 긍정 리뷰는 handling_type을 auto_ready, risk_level을 low로 분류하세요.",
+    "배송 지연, 포장 아쉬움, 양 아쉬움 같은 일반 불만은 handling_type을 needs_approval로 분류하세요.",
+    "위생, 알레르기, 심한 클레임, 환불 요구, 신고 언급은 handling_type을 needs_approval, risk_level을 high로 분류하세요.",
+    "",
     '사장님 답글 예시가 없으므로 내부 기본 말투인 "친절하고 자연스럽게"로 리뷰 답글을 작성하세요.',
     "리뷰에 특정 상품명이나 메뉴명이 직접 언급된 경우에만 상품 목록에서 관련 맥락을 참고하세요.",
     "리뷰 답글에서는 상품 목록의 정보를 CS 답변처럼 길게 설명하지 말고 리뷰 내용에 맞는 맥락으로만 사용하세요.",

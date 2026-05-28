@@ -128,11 +128,28 @@ export async function POST(request: Request) {
       reply: result.reply,
       sentiment: result.sentiment,
       status: "pending",
+      handling_type: result.handlingType,
+      risk_level: result.riskLevel,
     }));
 
     let { error: saveError } = await auth.supabase.from("reviews").insert(
       reviewRows,
     );
+
+    if (saveError && /(handling_type|risk_level)/i.test(saveError.message)) {
+      console.warn(
+        "reviews handling columns are missing. Run: alter table reviews add column if not exists handling_type text default 'needs_approval'; alter table reviews add column if not exists risk_level text default 'normal';",
+      );
+      const fallbackRows = results.map((result) => ({
+        user_id: auth.userId,
+        review: result.review,
+        reply: result.reply,
+        sentiment: result.sentiment,
+        status: "pending",
+      }));
+      const fallback = await auth.supabase.from("reviews").insert(fallbackRows);
+      saveError = fallback.error;
+    }
 
     if (saveError && /status/i.test(saveError.message)) {
       const fallbackRows = results.map((result) => ({
@@ -152,7 +169,13 @@ export async function POST(request: Request) {
       );
     }
 
-    return Response.json({ results });
+    return Response.json({
+      results: results.map((result) => ({
+        ...result,
+        handling_type: result.handlingType,
+        risk_level: result.riskLevel,
+      })),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown OpenAI API error.";
