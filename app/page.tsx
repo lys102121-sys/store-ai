@@ -2657,7 +2657,11 @@ export default function Home() {
             {pendingMissingInfoCount > 0 ? (
               <button
                 type="button"
-                onClick={() => goToTabSection("manage", "missing-infos")}
+                onClick={() => {
+                  setSelectedWorkflowStatus("needs_review");
+                  setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+                  goToTabSection("manage", "ai-cs-inbox");
+                }}
                 className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
               >
                 확인 필요한 정보 보기
@@ -3738,6 +3742,8 @@ export default function Home() {
                 AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
                 사장님 확인이 필요한지 함께 판단합니다. 플랫폼 연동 후에는 이
                 판단을 기준으로 자동 처리와 승인 처리를 나눌 수 있습니다.
+                확인 필요한 정보, 주의 필요한 리뷰, 최근 문의와 리뷰 답글은
+                이제 AI CS 처리함에서 상태별로 관리할 수 있습니다.
               </p>
             </div>
             <button
@@ -3813,7 +3819,7 @@ export default function Home() {
               }
               onAction={() =>
                 selectedWorkflowColumn.status === "needs_review"
-                  ? goToTabSection("manage", "missing-infos")
+                  ? goToTabSection("store", "store-info")
                   : goToTabSection("answer", "cs-reply")
               }
             />
@@ -4079,7 +4085,7 @@ export default function Home() {
         <section
           id="cs-history"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "manage" ? "order-[43]" : "hidden"
+            "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -4188,7 +4194,7 @@ export default function Home() {
         <section
           id="missing-infos"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "manage" ? "order-[41]" : "hidden"
+            "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -4365,7 +4371,7 @@ export default function Home() {
 
         <section
           className={`${cardClass} scroll-mt-32 border-red-200/70 dark:border-red-900/50 ${
-            activeTab === "manage" ? "order-[42]" : "hidden"
+            "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -4689,7 +4695,7 @@ export default function Home() {
         <section
           id="review-history"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "manage" ? "order-[44]" : "hidden"
+            "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
