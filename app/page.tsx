@@ -5126,6 +5126,15 @@ export default function Home() {
                             </p>
                           ) : null}
 
+                          {item.sourcePlatform !== "manual" &&
+                          item.platformStatus === "posted" ? (
+                            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                              승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
+                              실제 플랫폼 API 등록은 연동 단계에서 연결될
+                              예정입니다.
+                            </p>
+                          ) : null}
+
                           {needsAttention ? (
                             <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
                               사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.

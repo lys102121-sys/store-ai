@@ -59,7 +59,8 @@ export async function PATCH(
     );
   }
 
-  const payload: { reply?: string; status?: string } = {};
+  const payload: { reply?: string; status?: string; platform_status?: string } =
+    {};
 
   if (body.reply !== undefined) {
     if (typeof body.reply !== "string") {
@@ -86,6 +87,34 @@ export async function PATCH(
     payload.status = body.status;
   }
 
+  if (payload.status === "completed") {
+    const { data: existingCsMessage, error: existingCsMessageError } =
+      await auth.supabase
+        .from("cs_messages")
+        .select("source_platform")
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .maybeSingle();
+
+    if (existingCsMessageError) {
+      if (!/source_platform/i.test(existingCsMessageError.message)) {
+        return Response.json(
+          {
+            error: "Failed to load CS message platform source.",
+            detail: existingCsMessageError.message,
+          },
+          { status: 500 },
+        );
+      }
+    } else {
+      payload.platform_status =
+        existingCsMessage?.source_platform &&
+        existingCsMessage.source_platform !== "manual"
+          ? "posted"
+          : "local";
+    }
+  }
+
   if (Object.keys(payload).length === 0) {
     return Response.json(
       { error: "At least one of 'reply' or 'status' is required." },
@@ -109,9 +138,11 @@ export async function PATCH(
         error.message,
       )
     ) {
+      const legacyPayload = { ...payload };
+      delete legacyPayload.platform_status;
       const fallback = await auth.supabase
         .from("cs_messages")
-        .update(payload)
+        .update(legacyPayload)
         .eq("id", id)
         .eq("user_id", auth.userId)
         .select(
