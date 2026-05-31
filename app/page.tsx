@@ -218,6 +218,21 @@ type PlatformCredentialsApiResponse = {
   detail?: string;
 };
 
+type CoupangConnectionTestApiResponse = {
+  success?: boolean;
+  status?: string;
+  last_tested_at?: string;
+  error?: string;
+  detail?: string;
+};
+
+type CoupangMockInquiriesApiResponse = {
+  inserted?: number;
+  message?: string;
+  error?: string;
+  detail?: string;
+};
+
 type CoupangCredentialDraft = {
   vendorId: string;
   accessKey: string;
@@ -338,6 +353,12 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getCoupangConnectionStatusLabel(status?: string) {
+  if (status === "connected") return "연결됨";
+  if (status === "error") return "연결 오류";
+  return "연결 전";
 }
 
 function sentimentLabel(sentiment: string) {
@@ -1218,6 +1239,18 @@ export default function Home() {
   const [coupangCredentialsError, setCoupangCredentialsError] = useState("");
   const [coupangCredentialsMessage, setCoupangCredentialsMessage] =
     useState("");
+  const [coupangConnectionTesting, setCoupangConnectionTesting] =
+    useState(false);
+  const [coupangConnectionTestError, setCoupangConnectionTestError] =
+    useState("");
+  const [coupangConnectionTestMessage, setCoupangConnectionTestMessage] =
+    useState("");
+  const [coupangMockInquiriesLoading, setCoupangMockInquiriesLoading] =
+    useState(false);
+  const [coupangMockInquiriesError, setCoupangMockInquiriesError] =
+    useState("");
+  const [coupangMockInquiriesMessage, setCoupangMockInquiriesMessage] =
+    useState("");
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -1541,6 +1574,12 @@ export default function Home() {
         setCoupangCredentialsSaving(false);
         setCoupangCredentialsError("");
         setCoupangCredentialsMessage("");
+        setCoupangConnectionTesting(false);
+        setCoupangConnectionTestError("");
+        setCoupangConnectionTestMessage("");
+        setCoupangMockInquiriesLoading(false);
+        setCoupangMockInquiriesError("");
+        setCoupangMockInquiriesMessage("");
       });
 
       return () => {
@@ -2791,6 +2830,89 @@ export default function Home() {
       setCoupangCredentialsError("쿠팡 연동 설정 저장에 실패했습니다.");
     } finally {
       setCoupangCredentialsSaving(false);
+    }
+  }
+
+  async function handleTestCoupangConnection() {
+    if (!authUser) {
+      setCoupangConnectionTestMessage("");
+      setCoupangConnectionTestError("로그인이 필요합니다");
+      return;
+    }
+
+    setCoupangConnectionTesting(true);
+    setCoupangConnectionTestMessage("");
+    setCoupangConnectionTestError("");
+
+    try {
+      const response = await fetch("/api/integrations/coupang/test", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as CoupangConnectionTestApiResponse;
+
+      if (!response.ok || !data.success) {
+        setCoupangConnectionTestError(
+          "쿠팡 연결 테스트에 실패했습니다. vendorId/accessKey/secretKey를 확인해 주세요.",
+        );
+        await loadPlatformCredentials();
+        return;
+      }
+
+      setCoupangCredential((currentCredential) =>
+        currentCredential
+          ? {
+              ...currentCredential,
+              status: data.status ?? "connected",
+              last_tested_at:
+                data.last_tested_at ?? currentCredential.last_tested_at,
+            }
+          : currentCredential,
+      );
+      setCoupangConnectionTestMessage("쿠팡 연결 테스트에 성공했습니다.");
+    } catch {
+      setCoupangConnectionTestError(
+        "쿠팡 연결 테스트에 실패했습니다. vendorId/accessKey/secretKey를 확인해 주세요.",
+      );
+      await loadPlatformCredentials();
+    } finally {
+      setCoupangConnectionTesting(false);
+    }
+  }
+
+  async function handleLoadCoupangMockInquiries() {
+    if (!authUser) {
+      setCoupangMockInquiriesMessage("");
+      setCoupangMockInquiriesError("로그인이 필요합니다");
+      return;
+    }
+
+    setCoupangMockInquiriesLoading(true);
+    setCoupangMockInquiriesMessage("");
+    setCoupangMockInquiriesError("");
+
+    try {
+      const response = await fetch("/api/integrations/coupang/mock-inquiries", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
+
+      if (!response.ok || !data.inserted) {
+        setCoupangMockInquiriesError(
+          "쿠팡 샘플 문의 불러오기에 실패했습니다.",
+        );
+        return;
+      }
+
+      setCoupangMockInquiriesMessage(
+        "쿠팡 샘플 문의가 AI CS 처리함에 추가되었습니다.",
+      );
+      await Promise.all([loadCsMessages(), loadMissingInfos()]);
+    } catch {
+      setCoupangMockInquiriesError("쿠팡 샘플 문의 불러오기에 실패했습니다.");
+    } finally {
+      setCoupangMockInquiriesLoading(false);
     }
   }
 
@@ -4232,6 +4354,11 @@ export default function Home() {
               const draft = integrationDrafts[platform.id];
               const isRegistered = Boolean(request);
               const isSaving = savingIntegrationPlatform === platform.id;
+              const canTestCoupangConnection = Boolean(
+                coupangCredential?.vendor_id &&
+                  coupangCredential.access_key &&
+                  coupangCredential.has_secret_key,
+              );
 
               return (
                 <article
@@ -4320,6 +4447,33 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                            쿠팡 Open API 연결 상태
+                          </p>
+                          {coupangCredential?.last_tested_at ? (
+                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                              마지막 테스트:{" "}
+                              {formatDate(coupangCredential.last_tested_at)}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            coupangCredential?.status === "connected"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                              : coupangCredential?.status === "error"
+                                ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
+                                : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                          }`}
+                        >
+                          {getCoupangConnectionStatusLabel(
+                            coupangCredential?.status,
+                          )}
+                        </span>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -4332,6 +4486,82 @@ export default function Home() {
                           ? "연동 설정 닫기"
                           : "연동 설정 열기"}
                       </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          !canTestCoupangConnection ||
+                          coupangCredentialsLoading ||
+                          coupangCredentialsSaving ||
+                          coupangConnectionTesting
+                        }
+                        onClick={() => void handleTestCoupangConnection()}
+                        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                      >
+                        {coupangConnectionTesting
+                          ? "연결 테스트 중..."
+                          : "연결 테스트"}
+                      </button>
+
+                      {!canTestCoupangConnection ? (
+                        <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          vendorId, accessKey, secretKey를 저장하면 연결 테스트를 할
+                          수 있습니다.
+                        </p>
+                      ) : null}
+
+                      {coupangConnectionTestMessage ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                          role="status"
+                        >
+                          {coupangConnectionTestMessage}
+                        </p>
+                      ) : null}
+
+                      {coupangConnectionTestError ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                          role="alert"
+                        >
+                          {coupangConnectionTestError}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
+                        <p className="text-xs leading-5 text-sky-900 dark:text-sky-100">
+                          실제 쿠팡 API 키가 없어도 샘플 문의로 AI CS 처리함 흐름을
+                          테스트할 수 있습니다.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={coupangMockInquiriesLoading}
+                          onClick={() => void handleLoadCoupangMockInquiries()}
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                        >
+                          {coupangMockInquiriesLoading
+                            ? "샘플 문의 불러오는 중..."
+                            : "샘플 문의 불러오기"}
+                        </button>
+
+                        {coupangMockInquiriesMessage ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            role="status"
+                          >
+                            {coupangMockInquiriesMessage}
+                          </p>
+                        ) : null}
+
+                        {coupangMockInquiriesError ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {coupangMockInquiriesError}
+                          </p>
+                        ) : null}
+                      </div>
 
                       {isCoupangSettingsOpen ? (
                         <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/70 dark:bg-zinc-950">
