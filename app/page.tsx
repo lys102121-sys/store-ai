@@ -197,6 +197,34 @@ type IntegrationsApiResponse = {
   detail?: string;
 };
 
+type PlatformCredential = {
+  id: string;
+  user_id: string;
+  platform: string;
+  vendor_id: string | null;
+  access_key: string | null;
+  wing_id: string | null;
+  status: string;
+  last_tested_at: string | null;
+  created_at: string;
+  updated_at: string;
+  has_secret_key: boolean;
+};
+
+type PlatformCredentialsApiResponse = {
+  credentials?: PlatformCredential[];
+  credential?: PlatformCredential;
+  error?: string;
+  detail?: string;
+};
+
+type CoupangCredentialDraft = {
+  vendorId: string;
+  accessKey: string;
+  secretKey: string;
+  wingId: string;
+};
+
 type StoreSettings = {
   user_id: string | null;
   store_name: string | null;
@@ -749,6 +777,15 @@ function createEmptyIntegrationDrafts(): IntegrationDrafts {
   };
 }
 
+function createEmptyCoupangCredentialDraft(): CoupangCredentialDraft {
+  return {
+    vendorId: "",
+    accessKey: "",
+    secretKey: "",
+    wingId: "",
+  };
+}
+
 function isIntegrationPlatform(value: string): value is IntegrationPlatform {
   return integrationPlatforms.some((platform) => platform.id === value);
 }
@@ -1169,6 +1206,18 @@ export default function Home() {
   const [integrationsMessage, setIntegrationsMessage] = useState("");
   const [savingIntegrationPlatform, setSavingIntegrationPlatform] =
     useState<IntegrationPlatform | null>(null);
+  const [coupangCredential, setCoupangCredential] =
+    useState<PlatformCredential | null>(null);
+  const [coupangCredentialDraft, setCoupangCredentialDraft] =
+    useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
+  const [isCoupangSettingsOpen, setIsCoupangSettingsOpen] = useState(false);
+  const [coupangCredentialsLoading, setCoupangCredentialsLoading] =
+    useState(false);
+  const [coupangCredentialsSaving, setCoupangCredentialsSaving] =
+    useState(false);
+  const [coupangCredentialsError, setCoupangCredentialsError] = useState("");
+  const [coupangCredentialsMessage, setCoupangCredentialsMessage] =
+    useState("");
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -1437,6 +1486,41 @@ export default function Home() {
     }
   }, []);
 
+  const loadPlatformCredentials = useCallback(async () => {
+    setCoupangCredentialsLoading(true);
+    setCoupangCredentialsError("");
+
+    try {
+      const response = await fetch("/api/integrations/credentials", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as PlatformCredentialsApiResponse;
+
+      if (!response.ok) {
+        setCoupangCredentialsError(
+          data.error ?? "쿠팡 연동 설정을 불러오지 못했습니다.",
+        );
+        setCoupangCredential(null);
+        return;
+      }
+
+      const credential =
+        data.credentials?.find((item) => item.platform === "coupang") ?? null;
+      setCoupangCredential(credential);
+      setCoupangCredentialDraft({
+        vendorId: credential?.vendor_id ?? "",
+        accessKey: credential?.access_key ?? "",
+        secretKey: "",
+        wingId: credential?.wing_id ?? "",
+      });
+    } catch {
+      setCoupangCredentialsError("쿠팡 연동 설정을 불러오지 못했습니다.");
+      setCoupangCredential(null);
+    } finally {
+      setCoupangCredentialsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isActive = true;
 
@@ -1450,6 +1534,13 @@ export default function Home() {
         setIntegrationsError("");
         setIntegrationsMessage("");
         setSavingIntegrationPlatform(null);
+        setCoupangCredential(null);
+        setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
+        setIsCoupangSettingsOpen(false);
+        setCoupangCredentialsLoading(false);
+        setCoupangCredentialsSaving(false);
+        setCoupangCredentialsError("");
+        setCoupangCredentialsMessage("");
       });
 
       return () => {
@@ -1460,12 +1551,13 @@ export default function Home() {
     void Promise.resolve().then(() => {
       if (!isActive) return;
       void loadIntegrationRequests();
+      void loadPlatformCredentials();
     });
 
     return () => {
       isActive = false;
     };
-  }, [authUser, loadIntegrationRequests]);
+  }, [authUser, loadIntegrationRequests, loadPlatformCredentials]);
 
   useEffect(() => {
     let isActive = true;
@@ -2606,6 +2698,16 @@ export default function Home() {
     }));
   }
 
+  function updateCoupangCredentialDraft(
+    field: keyof CoupangCredentialDraft,
+    value: string,
+  ) {
+    setCoupangCredentialDraft((currentDraft) => ({
+      ...currentDraft,
+      [field]: value,
+    }));
+  }
+
   async function handleRequestIntegration(platform: IntegrationPlatform) {
     if (!authUser) {
       setIntegrationsMessage("");
@@ -2645,6 +2747,50 @@ export default function Home() {
       setIntegrationsError("연동 희망 등록에 실패했습니다.");
     } finally {
       setSavingIntegrationPlatform(null);
+    }
+  }
+
+  async function handleSaveCoupangCredentials() {
+    if (!authUser) {
+      setCoupangCredentialsMessage("");
+      setCoupangCredentialsError("로그인이 필요합니다");
+      return;
+    }
+
+    setCoupangCredentialsSaving(true);
+    setCoupangCredentialsMessage("");
+    setCoupangCredentialsError("");
+
+    try {
+      const response = await fetch("/api/integrations/credentials", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          vendor_id: coupangCredentialDraft.vendorId,
+          access_key: coupangCredentialDraft.accessKey,
+          secret_key: coupangCredentialDraft.secretKey,
+          wing_id: coupangCredentialDraft.wingId,
+        }),
+      });
+      const data = (await response.json()) as PlatformCredentialsApiResponse;
+
+      if (!response.ok || !data.credential) {
+        setCoupangCredentialsError("쿠팡 연동 설정 저장에 실패했습니다.");
+        return;
+      }
+
+      setCoupangCredential(data.credential);
+      setCoupangCredentialDraft((currentDraft) => ({
+        ...currentDraft,
+        secretKey: "",
+      }));
+      setCoupangCredentialsMessage("쿠팡 연동 설정이 저장되었습니다.");
+    } catch {
+      setCoupangCredentialsError("쿠팡 연동 설정 저장에 실패했습니다.");
+    } finally {
+      setCoupangCredentialsSaving(false);
     }
   }
 
@@ -4171,6 +4317,165 @@ export default function Home() {
                         ? "등록 중..."
                         : "연동 희망 등록"}
                   </button>
+
+                  {platform.id === "coupang" ? (
+                    <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsCoupangSettingsOpen((isOpen) => !isOpen)
+                        }
+                        className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-indigo-300 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-800 dark:bg-zinc-950 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                        aria-expanded={isCoupangSettingsOpen}
+                      >
+                        {isCoupangSettingsOpen
+                          ? "연동 설정 닫기"
+                          : "연동 설정 열기"}
+                      </button>
+
+                      {isCoupangSettingsOpen ? (
+                        <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/70 dark:bg-zinc-950">
+                          <h4 className="text-sm font-semibold">
+                            쿠팡 연동 설정
+                          </h4>
+                          <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                            쿠팡 Open API 연동을 위해 필요한 정보입니다. 실제 운영
+                            전에는 secretKey를 암호화 저장하도록 개선할 예정입니다.
+                          </p>
+
+                          <div className="mt-4 space-y-4">
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_vendor_id"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                vendorId
+                              </label>
+                              <input
+                                id="coupang_vendor_id"
+                                type="text"
+                                value={coupangCredentialDraft.vendorId}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "vendorId",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_access_key"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                accessKey
+                              </label>
+                              <input
+                                id="coupang_access_key"
+                                type="text"
+                                value={coupangCredentialDraft.accessKey}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "accessKey",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_secret_key"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                secretKey
+                              </label>
+                              <input
+                                id="coupang_secret_key"
+                                type="password"
+                                value={coupangCredentialDraft.secretKey}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "secretKey",
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder={
+                                  coupangCredential?.has_secret_key
+                                    ? "저장된 secretKey가 있습니다. 변경하려면 새로 입력하세요."
+                                    : ""
+                                }
+                                autoComplete="new-password"
+                                className={inputClass}
+                              />
+                              {coupangCredential?.has_secret_key ? (
+                                <p className="text-xs leading-5 text-emerald-700 dark:text-emerald-300">
+                                  저장된 secretKey가 있습니다. 변경하려면 새로
+                                  입력하세요.
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_wing_id"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                wingId
+                              </label>
+                              <input
+                                id="coupang_wing_id"
+                                type="text"
+                                value={coupangCredentialDraft.wingId}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "wingId",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+                          </div>
+
+                          {coupangCredentialsMessage ? (
+                            <p
+                              className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                              role="status"
+                            >
+                              {coupangCredentialsMessage}
+                            </p>
+                          ) : null}
+
+                          {coupangCredentialsError ? (
+                            <p
+                              className="mt-4 text-sm font-medium text-red-700 dark:text-red-300"
+                              role="alert"
+                            >
+                              {coupangCredentialsError}
+                            </p>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            disabled={
+                              coupangCredentialsLoading ||
+                              coupangCredentialsSaving
+                            }
+                            onClick={() => void handleSaveCoupangCredentials()}
+                            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                          >
+                            {coupangCredentialsSaving
+                              ? "저장 중..."
+                              : "설정 저장"}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
