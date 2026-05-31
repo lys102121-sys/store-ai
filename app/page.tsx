@@ -125,6 +125,14 @@ type DeleteApiResponse = {
 };
 
 type WorkflowStatus = "pending" | "needs_review" | "completed" | "answered";
+type WorkflowPlatformFilter =
+  | "all"
+  | "manual"
+  | "smartstore"
+  | "coupang"
+  | "baemin"
+  | "yogiyo"
+  | "coupangeats";
 
 type WorkflowItemType = "cs" | "review" | "missing_info";
 
@@ -1044,6 +1052,8 @@ export default function Home() {
   const [editingWorkflowReply, setEditingWorkflowReply] = useState("");
   const [selectedWorkflowStatus, setSelectedWorkflowStatus] =
     useState<WorkflowStatus>("needs_review");
+  const [selectedWorkflowPlatform, setSelectedWorkflowPlatform] =
+    useState<WorkflowPlatformFilter>("all");
   const [visibleWorkflowCount, setVisibleWorkflowCount] =
     useState(WORKFLOW_PAGE_SIZE);
 
@@ -1335,6 +1345,7 @@ export default function Home() {
         setEditingWorkflowKey(null);
         setEditingWorkflowReply("");
         setSelectedWorkflowStatus("needs_review");
+        setSelectedWorkflowPlatform("all");
         setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
         setMissingInfos([]);
         setMissingInfosError("");
@@ -2158,13 +2169,35 @@ export default function Home() {
     );
   }, [csMessages, history, missingInfos]);
 
-  const workflowPendingItems = workflowItems.filter(
+  const workflowPlatformFilters = [
+    { id: "all" as const, label: "전체" },
+    { id: "manual" as const, label: "수동 입력" },
+    { id: "smartstore" as const, label: "스마트스토어" },
+    { id: "coupang" as const, label: "쿠팡" },
+    { id: "baemin" as const, label: "배민" },
+    { id: "yogiyo" as const, label: "요기요" },
+    { id: "coupangeats" as const, label: "쿠팡이츠" },
+  ].map((filter) => ({
+    ...filter,
+    count:
+      filter.id === "all"
+        ? workflowItems.length
+        : workflowItems.filter((item) => item.sourcePlatform === filter.id)
+            .length,
+  }));
+  const platformFilteredWorkflowItems =
+    selectedWorkflowPlatform === "all"
+      ? workflowItems
+      : workflowItems.filter(
+          (item) => item.sourcePlatform === selectedWorkflowPlatform,
+        );
+  const workflowPendingItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "pending",
   );
-  const workflowNeedsReviewItems = workflowItems.filter(
+  const workflowNeedsReviewItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "needs_review",
   );
-  const workflowCompletedItems = workflowItems.filter(
+  const workflowCompletedItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "completed" || item.status === "answered",
   );
   const workflowColumns = [
@@ -3910,6 +3943,10 @@ export default function Home() {
                 확인 필요한 정보, 주의 필요한 리뷰, 최근 문의와 리뷰 답글은
                 이제 AI CS 처리함에서 상태별로 관리할 수 있습니다.
               </p>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-indigo-700 dark:text-indigo-300">
+                플랫폼 연동 후에는 배민, 요기요, 쿠팡이츠, 스마트스토어 문의와
+                리뷰를 이곳에서 함께 관리할 수 있습니다.
+              </p>
             </div>
             <button
               type="button"
@@ -3925,6 +3962,49 @@ export default function Home() {
             >
               새로고침
             </button>
+          </div>
+
+          <div className="mb-5">
+            <p className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+              플랫폼 출처
+            </p>
+            <div className="overflow-x-auto pb-1">
+              <div className="flex min-w-max gap-2">
+                {workflowPlatformFilters.map((filter) => {
+                  const isSelected = selectedWorkflowPlatform === filter.id;
+
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedWorkflowPlatform(filter.id);
+                        setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+                        setEditingWorkflowKey(null);
+                        setEditingWorkflowReply("");
+                      }}
+                      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition ${
+                        isSelected
+                          ? "border-indigo-500 bg-indigo-600 text-white shadow-sm dark:border-indigo-400 dark:bg-indigo-500"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <span>{filter.label}</span>
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                          isSelected
+                            ? "bg-white/20 text-white"
+                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300"
+                        }`}
+                      >
+                        {filter.count.toLocaleString("ko-KR")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="mb-5 overflow-x-auto">
