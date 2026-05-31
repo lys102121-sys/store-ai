@@ -1245,6 +1245,8 @@ export default function Home() {
     useState("");
   const [coupangConnectionTestMessage, setCoupangConnectionTestMessage] =
     useState("");
+  const [coupangInquiryImportMessage, setCoupangInquiryImportMessage] =
+    useState("");
   const [coupangMockInquiriesLoading, setCoupangMockInquiriesLoading] =
     useState(false);
   const [coupangMockInquiriesError, setCoupangMockInquiriesError] =
@@ -1577,6 +1579,7 @@ export default function Home() {
         setCoupangConnectionTesting(false);
         setCoupangConnectionTestError("");
         setCoupangConnectionTestMessage("");
+        setCoupangInquiryImportMessage("");
         setCoupangMockInquiriesLoading(false);
         setCoupangMockInquiriesError("");
         setCoupangMockInquiriesMessage("");
@@ -2843,6 +2846,7 @@ export default function Home() {
     setCoupangConnectionTesting(true);
     setCoupangConnectionTestMessage("");
     setCoupangConnectionTestError("");
+    setCoupangInquiryImportMessage("");
 
     try {
       const response = await fetch("/api/integrations/coupang/test", {
@@ -2878,6 +2882,14 @@ export default function Home() {
     } finally {
       setCoupangConnectionTesting(false);
     }
+  }
+
+  function handlePrepareCoupangInquiryImport() {
+    if (coupangCredential?.status !== "connected") return;
+
+    setCoupangInquiryImportMessage(
+      "쿠팡 문의 가져오기 기능은 다음 단계에서 실제 API와 연결될 예정입니다.",
+    );
   }
 
   async function handleLoadCoupangMockInquiries() {
@@ -4359,6 +4371,8 @@ export default function Home() {
                   coupangCredential.access_key &&
                   coupangCredential.has_secret_key,
               );
+              const isCoupangConnected =
+                coupangCredential?.status === "connected";
 
               return (
                 <article
@@ -4474,6 +4488,15 @@ export default function Home() {
                         </span>
                       </div>
 
+                      <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                        <h4 className="text-sm font-semibold">쿠팡 연동 흐름</h4>
+                        <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                          연결 테스트가 성공하면 쿠팡 문의를 불러오고, AI가 답변
+                          초안과 위험도를 판단한 뒤 AI CS 처리함에 등록합니다.
+                          사장님이 승인하면 플랫폼 등록 완료 상태로 관리됩니다.
+                        </p>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -4525,6 +4548,31 @@ export default function Home() {
                           role="alert"
                         >
                           {coupangConnectionTestError}
+                        </p>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        disabled={!isCoupangConnected}
+                        onClick={handlePrepareCoupangInquiryImport}
+                        className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                      >
+                        쿠팡 문의 가져오기
+                      </button>
+
+                      {!isCoupangConnected ? (
+                        <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          쿠팡 연결 테스트가 완료되면 실제 문의 가져오기를 사용할
+                          수 있습니다.
+                        </p>
+                      ) : null}
+
+                      {coupangInquiryImportMessage ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                          role="status"
+                        >
+                          {coupangInquiryImportMessage}
                         </p>
                       ) : null}
 
