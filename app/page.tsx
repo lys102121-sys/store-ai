@@ -163,7 +163,39 @@ type UpdateWorkflowItemResponse = {
   detail?: string;
 };
 
-type DashboardTab = "start" | "store" | "answer" | "manage";
+type DashboardTab = "start" | "store" | "integrations" | "answer" | "manage";
+
+type IntegrationPlatform =
+  | "baemin"
+  | "yogiyo"
+  | "coupangeats"
+  | "smartstore"
+  | "coupang";
+
+type PlatformIntegrationRequest = {
+  id: string;
+  user_id: string;
+  platform: IntegrationPlatform | string;
+  status: string;
+  store_url: string | null;
+  memo: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type IntegrationDraft = {
+  storeUrl: string;
+  memo: string;
+};
+
+type IntegrationDrafts = Record<IntegrationPlatform, IntegrationDraft>;
+
+type IntegrationsApiResponse = {
+  integrations?: PlatformIntegrationRequest[];
+  integration?: PlatformIntegrationRequest;
+  error?: string;
+  detail?: string;
+};
 
 type StoreSettings = {
   user_id: string | null;
@@ -670,6 +702,57 @@ const copyButtonClass =
 
 const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
+const integrationPlatforms: ReadonlyArray<{
+  id: IntegrationPlatform;
+  name: string;
+  description: string;
+}> = [
+  {
+    id: "baemin",
+    name: "배민",
+    description:
+      "배민 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+  },
+  {
+    id: "yogiyo",
+    name: "요기요",
+    description:
+      "요기요 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+  },
+  {
+    id: "coupangeats",
+    name: "쿠팡이츠",
+    description:
+      "쿠팡이츠 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+  },
+  {
+    id: "smartstore",
+    name: "스마트스토어",
+    description:
+      "스마트스토어 상품 문의와 리뷰 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+  },
+  {
+    id: "coupang",
+    name: "쿠팡",
+    description:
+      "쿠팡 상품 문의와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+  },
+];
+
+function createEmptyIntegrationDrafts(): IntegrationDrafts {
+  return {
+    baemin: { storeUrl: "", memo: "" },
+    yogiyo: { storeUrl: "", memo: "" },
+    coupangeats: { storeUrl: "", memo: "" },
+    smartstore: { storeUrl: "", memo: "" },
+    coupang: { storeUrl: "", memo: "" },
+  };
+}
+
+function isIntegrationPlatform(value: string): value is IntegrationPlatform {
+  return integrationPlatforms.some((platform) => platform.id === value);
+}
+
 const businessTypeInputGuides = {
   "배달 음식점": [
     "대표 메뉴명",
@@ -1075,6 +1158,17 @@ export default function Home() {
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState("");
+  const [integrationRequests, setIntegrationRequests] = useState<
+    PlatformIntegrationRequest[]
+  >([]);
+  const [integrationDrafts, setIntegrationDrafts] = useState<IntegrationDrafts>(
+    createEmptyIntegrationDrafts,
+  );
+  const [integrationsLoading, setIntegrationsLoading] = useState(false);
+  const [integrationsError, setIntegrationsError] = useState("");
+  const [integrationsMessage, setIntegrationsMessage] = useState("");
+  const [savingIntegrationPlatform, setSavingIntegrationPlatform] =
+    useState<IntegrationPlatform | null>(null);
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -1300,6 +1394,78 @@ export default function Home() {
       setMissingInfosLoading(false);
     }
   }, []);
+
+  const loadIntegrationRequests = useCallback(async () => {
+    setIntegrationsLoading(true);
+    setIntegrationsError("");
+
+    try {
+      const response = await fetch("/api/integrations", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as IntegrationsApiResponse;
+
+      if (!response.ok) {
+        setIntegrationsError(
+          data.error ?? "연동 희망 목록을 불러오지 못했습니다.",
+        );
+        setIntegrationRequests([]);
+        return;
+      }
+
+      const integrations = data.integrations ?? [];
+      setIntegrationRequests(integrations);
+      setIntegrationDrafts((currentDrafts) => {
+        const nextDrafts = { ...currentDrafts };
+
+        for (const integration of integrations) {
+          if (!isIntegrationPlatform(integration.platform)) continue;
+
+          nextDrafts[integration.platform] = {
+            storeUrl: integration.store_url ?? "",
+            memo: integration.memo ?? "",
+          };
+        }
+
+        return nextDrafts;
+      });
+    } catch {
+      setIntegrationsError("연동 희망 목록을 불러오지 못했습니다.");
+      setIntegrationRequests([]);
+    } finally {
+      setIntegrationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!authUser) {
+      void Promise.resolve().then(() => {
+        if (!isActive) return;
+
+        setIntegrationRequests([]);
+        setIntegrationDrafts(createEmptyIntegrationDrafts());
+        setIntegrationsLoading(false);
+        setIntegrationsError("");
+        setIntegrationsMessage("");
+        setSavingIntegrationPlatform(null);
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }
+
+    void Promise.resolve().then(() => {
+      if (!isActive) return;
+      void loadIntegrationRequests();
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [authUser, loadIntegrationRequests]);
 
   useEffect(() => {
     let isActive = true;
@@ -2361,6 +2527,7 @@ export default function Home() {
   const dashboardTabs = [
     { id: "start", label: "시작하기" },
     { id: "store", label: "가게 설정" },
+    { id: "integrations", label: "플랫폼 연동" },
     { id: "answer", label: "답변 작성" },
     { id: "manage", label: "운영 관리" },
   ] as const satisfies ReadonlyArray<{ id: DashboardTab; label: string }>;
@@ -2422,6 +2589,62 @@ export default function Home() {
       );
     } finally {
       setAuthActionLoading(false);
+    }
+  }
+
+  function updateIntegrationDraft(
+    platform: IntegrationPlatform,
+    field: keyof IntegrationDraft,
+    value: string,
+  ) {
+    setIntegrationDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [platform]: {
+        ...currentDrafts[platform],
+        [field]: value,
+      },
+    }));
+  }
+
+  async function handleRequestIntegration(platform: IntegrationPlatform) {
+    if (!authUser) {
+      setIntegrationsMessage("");
+      setIntegrationsError("로그인이 필요합니다");
+      return;
+    }
+
+    setSavingIntegrationPlatform(platform);
+    setIntegrationsMessage("");
+    setIntegrationsError("");
+
+    try {
+      const draft = integrationDrafts[platform];
+      const response = await fetch("/api/integrations", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          platform,
+          store_url: draft.storeUrl,
+          memo: draft.memo,
+        }),
+      });
+      const data = (await response.json()) as IntegrationsApiResponse;
+
+      if (!response.ok || !data.integration) {
+        setIntegrationsError("연동 희망 등록에 실패했습니다.");
+        return;
+      }
+
+      setIntegrationsMessage(
+        "연동 희망이 등록되었습니다. 해당 플랫폼 연동이 준비되면 우선 안내드릴게요.",
+      );
+      await loadIntegrationRequests();
+    } catch {
+      setIntegrationsError("연동 희망 등록에 실패했습니다.");
+    } finally {
+      setSavingIntegrationPlatform(null);
     }
   }
 
@@ -2609,7 +2832,7 @@ export default function Home() {
           aria-label="대시보드 탭"
           className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
         >
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {dashboardTabs.map((tab) => {
               const isSelected = activeTab === tab.id;
 
@@ -3805,6 +4028,159 @@ export default function Home() {
               {storeError}
             </div>
           ) : null}
+        </section>
+
+        <section
+          id="platform-integrations"
+          className={`${cardClass} ${
+            activeTab === "integrations" ? "order-[20]" : "hidden"
+          }`}
+        >
+          <div className="max-w-3xl">
+            <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
+              플랫폼 연동
+            </p>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              연동 희망 플랫폼을 알려주세요
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              앞으로 배민, 요기요, 쿠팡이츠, 스마트스토어, 쿠팡 등에 들어온
+              문의와 리뷰를 AI CS 처리함에서 함께 관리할 수 있도록 연동을 준비
+              중입니다.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              현재는 연동 희망 플랫폼을 등록하는 단계이며, 계정 비밀번호나 API
+              키는 입력받지 않습니다.
+            </p>
+          </div>
+
+          {!authUser ? (
+            <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+              연동 희망을 등록하려면 로그인이 필요합니다.
+            </div>
+          ) : null}
+
+          {integrationsMessage ? (
+            <div
+              className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+              role="status"
+            >
+              {integrationsMessage}
+            </div>
+          ) : null}
+
+          {integrationsError ? (
+            <div
+              className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+              role="alert"
+            >
+              {integrationsError}
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {integrationPlatforms.map((platform) => {
+              const request = integrationRequests.find(
+                (integration) => integration.platform === platform.id,
+              );
+              const draft = integrationDrafts[platform.id];
+              const isRegistered = Boolean(request);
+              const isSaving = savingIntegrationPlatform === platform.id;
+
+              return (
+                <article
+                  key={platform.id}
+                  className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-950/50"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold">{platform.name}</h3>
+                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
+                        연동 준비 중
+                      </span>
+                    </div>
+                    {isRegistered ? (
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        희망 등록됨
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                    {platform.description}
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor={`${platform.id}_store_url`}
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        가게/스토어 링크 또는 이름
+                      </label>
+                      <input
+                        id={`${platform.id}_store_url`}
+                        type="text"
+                        value={draft.storeUrl}
+                        disabled={isRegistered}
+                        onChange={(event) =>
+                          updateIntegrationDraft(
+                            platform.id,
+                            "storeUrl",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="선택 입력"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor={`${platform.id}_memo`}
+                        className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                      >
+                        연동 관련 메모
+                      </label>
+                      <textarea
+                        id={`${platform.id}_memo`}
+                        value={draft.memo}
+                        disabled={isRegistered}
+                        onChange={(event) =>
+                          updateIntegrationDraft(
+                            platform.id,
+                            "memo",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="선택 입력"
+                        className={textareaClass}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isRegistered || isSaving || integrationsLoading}
+                    onClick={() => void handleRequestIntegration(platform.id)}
+                    className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                  >
+                    {isRegistered
+                      ? "등록 완료"
+                      : isSaving
+                        ? "등록 중..."
+                        : "연동 희망 등록"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-sm leading-6 text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100">
+            플랫폼 연동이 연결되면 각 플랫폼에서 들어온 문의와 리뷰가 AI CS
+            처리함에 자동으로 모이고, AI가 답변 가능 여부와 위험도를 판단해
+            사장님 확인이 필요한 항목을 구분할 예정입니다.
+          </div>
         </section>
 
         {activeTab === "answer" && needsStoreInfo ? (
