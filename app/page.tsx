@@ -233,6 +233,13 @@ type CoupangMockInquiriesApiResponse = {
   detail?: string;
 };
 
+type CoupangMockReviewsApiResponse = {
+  inserted?: number;
+  message?: string;
+  error?: string;
+  detail?: string;
+};
+
 type CoupangCredentialDraft = {
   vendorId: string;
   accessKey: string;
@@ -1253,6 +1260,11 @@ export default function Home() {
     useState("");
   const [coupangMockInquiriesMessage, setCoupangMockInquiriesMessage] =
     useState("");
+  const [coupangMockReviewsLoading, setCoupangMockReviewsLoading] =
+    useState(false);
+  const [coupangMockReviewsError, setCoupangMockReviewsError] = useState("");
+  const [coupangMockReviewsMessage, setCoupangMockReviewsMessage] =
+    useState("");
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -1583,6 +1595,9 @@ export default function Home() {
         setCoupangMockInquiriesLoading(false);
         setCoupangMockInquiriesError("");
         setCoupangMockInquiriesMessage("");
+        setCoupangMockReviewsLoading(false);
+        setCoupangMockReviewsError("");
+        setCoupangMockReviewsMessage("");
       });
 
       return () => {
@@ -2925,6 +2940,40 @@ export default function Home() {
       setCoupangMockInquiriesError("쿠팡 샘플 문의 불러오기에 실패했습니다.");
     } finally {
       setCoupangMockInquiriesLoading(false);
+    }
+  }
+
+  async function handleLoadCoupangMockReviews() {
+    if (!authUser) {
+      setCoupangMockReviewsMessage("");
+      setCoupangMockReviewsError("로그인이 필요합니다");
+      return;
+    }
+
+    setCoupangMockReviewsLoading(true);
+    setCoupangMockReviewsMessage("");
+    setCoupangMockReviewsError("");
+
+    try {
+      const response = await fetch("/api/integrations/coupang/mock-reviews", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as CoupangMockReviewsApiResponse;
+
+      if (!response.ok || !data.inserted) {
+        setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
+        return;
+      }
+
+      setCoupangMockReviewsMessage(
+        "쿠팡 샘플 리뷰가 AI CS 처리함에 추가되었습니다.",
+      );
+      await Promise.all([loadHistory(), loadInsights()]);
+    } catch {
+      setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
+    } finally {
+      setCoupangMockReviewsLoading(false);
     }
   }
 
@@ -4607,6 +4656,41 @@ export default function Home() {
                             role="alert"
                           >
                             {coupangMockInquiriesError}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
+                        <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
+                          실제 쿠팡 리뷰 API 연동 전에도 샘플 리뷰로 AI 리뷰 답글
+                          처리 흐름을 테스트할 수 있습니다.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={coupangMockReviewsLoading}
+                          onClick={() => void handleLoadCoupangMockReviews()}
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
+                        >
+                          {coupangMockReviewsLoading
+                            ? "샘플 리뷰 불러오는 중..."
+                            : "샘플 리뷰 불러오기"}
+                        </button>
+
+                        {coupangMockReviewsMessage ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            role="status"
+                          >
+                            {coupangMockReviewsMessage}
+                          </p>
+                        ) : null}
+
+                        {coupangMockReviewsError ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {coupangMockReviewsError}
                           </p>
                         ) : null}
                       </div>
