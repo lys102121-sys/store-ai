@@ -1,15 +1,15 @@
 import { createMockPlatformReviewsResponse } from "@/app/lib/mockPlatformReviews";
 
 const mockReviews = [
-  "상품이 깔끔하게 포장되어 왔고 마음에 들어요.",
-  "배송은 조금 늦었지만 상품은 괜찮았습니다.",
-  "사용 후 피부가 가렵고 붉어졌어요.",
+  "음식이 따뜻하게 와서 맛있게 먹었어요.",
+  "맛은 좋았는데 배달이 조금 늦었어요.",
+  "먹고 배가 아팠어요. 음식이 상한 건 아닌지 걱정돼요.",
 ] as const;
 
 export async function POST(request: Request) {
   return createMockPlatformReviewsResponse(request, {
-    platform: "coupang",
-    platformName: "쿠팡",
+    platform: "baemin",
+    platformName: "배민",
     reviews: mockReviews,
   });
 }

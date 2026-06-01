@@ -175,6 +175,8 @@ type IntegrationPlatform =
   | "smartstore"
   | "coupang";
 
+type DeliveryMockReviewPlatform = "baemin" | "yogiyo" | "coupangeats";
+
 type PlatformIntegrationRequest = {
   id: string;
   user_id: string;
@@ -244,7 +246,7 @@ type CoupangMockInquiriesApiResponse = {
   detail?: string;
 };
 
-type CoupangMockReviewsApiResponse = {
+type MockReviewsApiResponse = {
   inserted?: number;
   message?: string;
   error?: string;
@@ -829,6 +831,12 @@ function isIntegrationPlatform(value: string): value is IntegrationPlatform {
   return integrationPlatforms.some((platform) => platform.id === value);
 }
 
+function isDeliveryMockReviewPlatform(
+  value: IntegrationPlatform,
+): value is DeliveryMockReviewPlatform {
+  return value === "baemin" || value === "yogiyo" || value === "coupangeats";
+}
+
 const businessTypeInputGuides = {
   "배달 음식점": [
     "대표 메뉴명",
@@ -1280,6 +1288,16 @@ export default function Home() {
   const [coupangMockReviewsError, setCoupangMockReviewsError] = useState("");
   const [coupangMockReviewsMessage, setCoupangMockReviewsMessage] =
     useState("");
+  const [
+    deliveryMockReviewsLoadingPlatform,
+    setDeliveryMockReviewsLoadingPlatform,
+  ] = useState<DeliveryMockReviewPlatform | null>(null);
+  const [deliveryMockReviewsErrors, setDeliveryMockReviewsErrors] = useState<
+    Partial<Record<DeliveryMockReviewPlatform, string>>
+  >({});
+  const [deliveryMockReviewsMessages, setDeliveryMockReviewsMessages] = useState<
+    Partial<Record<DeliveryMockReviewPlatform, string>>
+  >({});
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -1615,6 +1633,9 @@ export default function Home() {
         setCoupangMockReviewsLoading(false);
         setCoupangMockReviewsError("");
         setCoupangMockReviewsMessage("");
+        setDeliveryMockReviewsLoadingPlatform(null);
+        setDeliveryMockReviewsErrors({});
+        setDeliveryMockReviewsMessages({});
       });
 
       return () => {
@@ -3051,7 +3072,7 @@ export default function Home() {
         method: "POST",
         headers: await getAuthenticatedRequestHeaders(),
       });
-      const data = (await response.json()) as CoupangMockReviewsApiResponse;
+      const data = (await response.json()) as MockReviewsApiResponse;
 
       if (!response.ok || !data.inserted) {
         setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
@@ -3066,6 +3087,65 @@ export default function Home() {
       setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
     } finally {
       setCoupangMockReviewsLoading(false);
+    }
+  }
+
+  async function handleLoadDeliveryMockReviews(
+    platform: DeliveryMockReviewPlatform,
+    platformName: string,
+  ) {
+    if (!authUser) {
+      setDeliveryMockReviewsMessages((current) => ({
+        ...current,
+        [platform]: "",
+      }));
+      setDeliveryMockReviewsErrors((current) => ({
+        ...current,
+        [platform]: "로그인이 필요합니다",
+      }));
+      return;
+    }
+
+    setDeliveryMockReviewsLoadingPlatform(platform);
+    setDeliveryMockReviewsMessages((current) => ({
+      ...current,
+      [platform]: "",
+    }));
+    setDeliveryMockReviewsErrors((current) => ({
+      ...current,
+      [platform]: "",
+    }));
+
+    try {
+      const response = await fetch(
+        `/api/integrations/${platform}/mock-reviews`,
+        {
+          method: "POST",
+          headers: await getAuthenticatedRequestHeaders(),
+        },
+      );
+      const data = (await response.json()) as MockReviewsApiResponse;
+
+      if (!response.ok || !data.inserted) {
+        setDeliveryMockReviewsErrors((current) => ({
+          ...current,
+          [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
+        }));
+        return;
+      }
+
+      setDeliveryMockReviewsMessages((current) => ({
+        ...current,
+        [platform]: `${platformName} 샘플 리뷰가 AI CS 처리함에 추가되었습니다.`,
+      }));
+      await Promise.all([loadHistory(), loadInsights()]);
+    } catch {
+      setDeliveryMockReviewsErrors((current) => ({
+        ...current,
+        [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
+      }));
+    } finally {
+      setDeliveryMockReviewsLoadingPlatform(null);
     }
   }
 
@@ -4514,6 +4594,8 @@ export default function Home() {
               );
               const isCoupangConnected =
                 coupangCredential?.status === "connected";
+              const deliveryMockReviewPlatform =
+                isDeliveryMockReviewPlatform(platform.id) ? platform.id : null;
 
               return (
                 <article
@@ -4599,6 +4681,63 @@ export default function Home() {
                         ? "등록 중..."
                         : "연동 희망 등록"}
                   </button>
+
+                  {deliveryMockReviewPlatform ? (
+                    <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                      <div className="rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
+                        <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
+                          실제 API 연동 전에도 샘플 리뷰로 AI 리뷰 답글 처리 흐름을
+                          테스트할 수 있습니다.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={deliveryMockReviewsLoadingPlatform !== null}
+                          onClick={() =>
+                            void handleLoadDeliveryMockReviews(
+                              deliveryMockReviewPlatform,
+                              platform.name,
+                            )
+                          }
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
+                        >
+                          {deliveryMockReviewsLoadingPlatform ===
+                          deliveryMockReviewPlatform
+                            ? "샘플 리뷰 불러오는 중..."
+                            : "샘플 리뷰 불러오기"}
+                        </button>
+
+                        {deliveryMockReviewsMessages[
+                          deliveryMockReviewPlatform
+                        ] ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            role="status"
+                          >
+                            {
+                              deliveryMockReviewsMessages[
+                                deliveryMockReviewPlatform
+                              ]
+                            }
+                          </p>
+                        ) : null}
+
+                        {deliveryMockReviewsErrors[
+                          deliveryMockReviewPlatform
+                        ] ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {
+                              deliveryMockReviewsErrors[
+                                deliveryMockReviewPlatform
+                              ]
+                            }
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
