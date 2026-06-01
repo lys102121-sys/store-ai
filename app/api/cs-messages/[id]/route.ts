@@ -91,13 +91,17 @@ export async function PATCH(
     const { data: existingCsMessage, error: existingCsMessageError } =
       await auth.supabase
         .from("cs_messages")
-        .select("source_platform")
+        .select("source_platform, external_id, platform_status")
         .eq("id", id)
         .eq("user_id", auth.userId)
         .maybeSingle();
 
     if (existingCsMessageError) {
-      if (!/source_platform/i.test(existingCsMessageError.message)) {
+      if (
+        !/(source_platform|external_id|platform_status)/i.test(
+          existingCsMessageError.message,
+        )
+      ) {
         return Response.json(
           {
             error: "Failed to load CS message platform source.",
@@ -107,6 +111,25 @@ export async function PATCH(
         );
       }
     } else {
+      const externalId =
+        typeof existingCsMessage?.external_id === "string"
+          ? existingCsMessage.external_id.trim()
+          : "";
+      const requiresCoupangReplyRegistration =
+        existingCsMessage?.source_platform === "coupang" &&
+        externalId &&
+        !externalId.startsWith("mock-coupang");
+
+      if (requiresCoupangReplyRegistration) {
+        return Response.json(
+          {
+            error:
+              "Coupang inquiries must be completed through the Coupang reply registration API.",
+          },
+          { status: 409 },
+        );
+      }
+
       payload.platform_status =
         existingCsMessage?.source_platform &&
         existingCsMessage.source_platform !== "manual"

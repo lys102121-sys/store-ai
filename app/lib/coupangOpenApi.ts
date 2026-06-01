@@ -63,6 +63,37 @@ export function createCoupangOnlineInquiryPath(vendorId: string) {
   return `/v2/providers/openapi/apis/api/v5/vendors/${encodeURIComponent(vendorId)}/onlineInquiries`;
 }
 
+export function createCoupangOnlineInquiryReplyPath(
+  vendorId: string,
+  inquiryId: string,
+) {
+  // 쿠팡 문서 확인 후 조정 필요: 실제 상품 문의 답변 등록 endpoint를 확인한다.
+  return `/v2/providers/openapi/apis/api/v5/vendors/${encodeURIComponent(vendorId)}/onlineInquiries/${encodeURIComponent(inquiryId)}/replies`;
+}
+
+export function createCoupangOnlineInquiryReplyBody({
+  inquiryId,
+  reply,
+  wingId,
+}: {
+  inquiryId: string;
+  reply: string;
+  wingId: string;
+}) {
+  const normalizedReply = reply.replace(/\r\n/g, "\n").trim();
+
+  if (!inquiryId || !normalizedReply || !wingId) {
+    throw new Error("Coupang inquiry reply parameters are missing.");
+  }
+
+  // 쿠팡 문서 확인 후 body field 조정 필요: answer/replyBy 필드명을 확인한다.
+  return {
+    inquiryId,
+    answer: normalizedReply,
+    replyBy: wingId,
+  };
+}
+
 export function createCoupangOnlineInquiryQuery({
   vendorId,
   days = 1,

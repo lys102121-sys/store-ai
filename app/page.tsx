@@ -159,6 +159,9 @@ const WORKFLOW_PAGE_SIZE = 5;
 type UpdateWorkflowItemResponse = {
   review?: ReviewHistoryItem;
   csMessage?: CsMessageHistoryItem;
+  success?: boolean;
+  mock?: boolean;
+  message?: string;
   error?: string;
   detail?: string;
 };
@@ -2246,24 +2249,49 @@ export default function Home() {
     setWorkflowUpdatingKey(item.key);
     setWorkflowError("");
 
+    const shouldRegisterCoupangReply =
+      item.type === "cs" &&
+      payload.status === "completed" &&
+      item.sourcePlatform === "coupang" &&
+      (item.platformStatus === "synced" ||
+        item.platformStatus === "failed") &&
+      Boolean(item.externalId?.trim());
+
     try {
-      const endpoint =
-        item.type === "review"
+      const endpoint = shouldRegisterCoupangReply
+        ? "/api/integrations/coupang/reply"
+        : item.type === "review"
           ? `/api/reviews/${item.id}`
           : `/api/cs-messages/${item.id}`;
       const response = await fetch(endpoint, {
-        method: "PATCH",
+        method: shouldRegisterCoupangReply ? "POST" : "PATCH",
         headers: await getAuthenticatedRequestHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(
+          shouldRegisterCoupangReply
+            ? { csMessageId: String(item.id) }
+            : payload,
+        ),
       });
       const data = (await response.json()) as UpdateWorkflowItemResponse;
 
-      if (!response.ok) {
+      if (!response.ok || data.success === false) {
         setWorkflowError(
-          data.error ?? "처리 항목을 업데이트하지 못했습니다.",
+          shouldRegisterCoupangReply
+            ? data.message ??
+                data.error ??
+                "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+            : data.error ?? "처리 항목을 업데이트하지 못했습니다.",
         );
+
+        if (shouldRegisterCoupangReply) {
+          await Promise.allSettled([
+            loadHistory(),
+            loadCsMessages(),
+            loadInsights(),
+          ]);
+        }
         return;
       }
 
@@ -2272,8 +2300,18 @@ export default function Home() {
       setEditingWorkflowReply("");
     } catch {
       setWorkflowError(
-        "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
+        shouldRegisterCoupangReply
+          ? "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+          : "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
       );
+
+      if (shouldRegisterCoupangReply) {
+        await Promise.allSettled([
+          loadHistory(),
+          loadCsMessages(),
+          loadInsights(),
+        ]);
+      }
     } finally {
       setWorkflowUpdatingKey(null);
     }
