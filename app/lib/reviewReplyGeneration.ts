@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { buildReviewAiReason } from "@/app/lib/aiDecisionReason";
 import {
   buildReviewReplySystemPrompt,
   type ReviewReplyPromptStore,
@@ -15,6 +16,7 @@ export type ReviewReplyGenerationResult = {
   sentiment: Sentiment;
   handlingType: HandlingType;
   riskLevel: RiskLevel;
+  aiReason: string;
 };
 
 const healthSafetyPattern =
@@ -231,11 +233,22 @@ export async function generateReviewReplyWithSentiment(
   ]);
   const hasHealthSafetyIssue = hasHealthSafetySignal(review);
 
+  const handlingType = hasHealthSafetyIssue
+    ? "needs_approval"
+    : decision.handlingType;
+  const riskLevel = hasHealthSafetyIssue ? "high" : decision.riskLevel;
+
   return {
     review,
     reply: decision.reply,
     sentiment,
-    handlingType: hasHealthSafetyIssue ? "needs_approval" : decision.handlingType,
-    riskLevel: hasHealthSafetyIssue ? "high" : decision.riskLevel,
+    handlingType,
+    riskLevel,
+    aiReason: buildReviewAiReason({
+      review,
+      sentiment,
+      handlingType,
+      riskLevel,
+    }),
   };
 }

@@ -1,4 +1,8 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
@@ -425,16 +429,32 @@ export async function POST(request: Request) {
   }
 
   for (const regeneratedReply of regeneratedReplies) {
-    const { error: csMessageUpdateError } = await auth.supabase
+    let { error: csMessageUpdateError } = await auth.supabase
       .from("cs_messages")
       .update({
         reply: regeneratedReply.decision.reply,
         status: "pending",
         handling_type: regeneratedReply.decision.handlingType,
         risk_level: regeneratedReply.decision.riskLevel,
+        ai_reason: regeneratedReply.decision.aiReason,
       })
       .eq("id", regeneratedReply.id)
       .eq("user_id", auth.userId);
+
+    if (isMissingAiReasonColumnError(csMessageUpdateError)) {
+      warnMissingAiReasonColumns();
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .update({
+          reply: regeneratedReply.decision.reply,
+          status: "pending",
+          handling_type: regeneratedReply.decision.handlingType,
+          risk_level: regeneratedReply.decision.riskLevel,
+        })
+        .eq("id", regeneratedReply.id)
+        .eq("user_id", auth.userId);
+      csMessageUpdateError = fallback.error;
+    }
 
     if (csMessageUpdateError) {
       return Response.json(

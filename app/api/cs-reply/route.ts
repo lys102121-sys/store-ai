@@ -1,6 +1,11 @@
 import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   applyOperationalInfoGuard,
@@ -27,6 +32,7 @@ type CsReplyDecision = {
   reply: string;
   handlingType: HandlingType;
   riskLevel: RiskLevel;
+  aiReason?: string;
 };
 
 type ExistingMissingInfoRow = {
@@ -563,6 +569,12 @@ export async function POST(request: Request) {
       customerMessage,
       storeRow,
     );
+    const aiReason = buildCsAiReason({
+      customerMessage,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      missingOperationalInfo,
+    });
     const shouldCreateMissingInfo = shouldSaveMissingInfo(
       reply,
       customerMessage,
@@ -588,6 +600,7 @@ export async function POST(request: Request) {
         status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
+        ai_reason: aiReason,
         source_platform: "manual",
         external_id: null,
         external_url: null,
@@ -610,6 +623,24 @@ export async function POST(request: Request) {
         status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
+      });
+
+      csMessageSaveError = fallback.error;
+    }
+
+    if (isMissingAiReasonColumnError(csMessageSaveError)) {
+      warnMissingAiReasonColumns();
+      const fallback = await auth.supabase.from("cs_messages").insert({
+        user_id: auth.userId,
+        customer_message: customerMessage,
+        reply,
+        status,
+        handling_type: decision.handlingType,
+        risk_level: decision.riskLevel,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
       });
 
       csMessageSaveError = fallback.error;
@@ -670,6 +701,7 @@ export async function POST(request: Request) {
       status,
       handling_type: decision.handlingType,
       risk_level: decision.riskLevel,
+      ai_reason: aiReason,
     });
   } catch (error) {
     const message =

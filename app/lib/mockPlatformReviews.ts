@@ -1,5 +1,11 @@
 import OpenAI from "openai";
 
+import { buildReviewAiReason } from "@/app/lib/aiDecisionReason";
+import {
+  isMissingAiReasonColumnError,
+  withoutAiReason,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 import {
@@ -89,6 +95,14 @@ export async function createMockPlatformReviewsResponse(
         riskLevel: hasHealthSafetyIssue
           ? ("high" as const)
           : generated.riskLevel,
+        aiReason: buildReviewAiReason({
+          review,
+          sentiment: generated.sentiment,
+          handlingType: hasHealthSafetyIssue
+            ? "needs_approval"
+            : generated.handlingType,
+          riskLevel: hasHealthSafetyIssue ? "high" : generated.riskLevel,
+        }),
       });
     }
 
@@ -112,6 +126,7 @@ export async function createMockPlatformReviewsResponse(
         status,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
+        ai_reason: result.aiReason,
         source_platform: platform,
         external_id: `mock-${platform}-review-${timestamp}-${index + 1}`,
         external_url: null,
@@ -119,9 +134,16 @@ export async function createMockPlatformReviewsResponse(
       };
     });
 
-    const { error: insertError } = await auth.supabase
+    let { error: insertError } = await auth.supabase
       .from("reviews")
       .insert(rows);
+
+    if (isMissingAiReasonColumnError(insertError)) {
+      warnMissingAiReasonColumns();
+      const fallbackRows = rows.map(withoutAiReason);
+      const fallback = await auth.supabase.from("reviews").insert(fallbackRows);
+      insertError = fallback.error;
+    }
 
     if (insertError) {
       return Response.json(

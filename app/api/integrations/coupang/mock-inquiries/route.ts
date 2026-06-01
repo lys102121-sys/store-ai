@@ -1,7 +1,16 @@
 import OpenAI from "openai";
 
+import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import {
+  isMissingAiReasonColumnError,
+  withoutAiReason,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
-import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
+import {
+  applyOperationalInfoGuard,
+  findMissingOperationalInfo,
+} from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
@@ -170,7 +179,15 @@ async function generateMockReply(
     throw new Error("Failed to generate a mock CS reply.");
   }
 
-  return decision;
+  return {
+    ...decision,
+    aiReason: buildCsAiReason({
+      customerMessage,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      missingOperationalInfo: findMissingOperationalInfo(customerMessage, store),
+    }),
+  };
 }
 
 export async function POST(request: Request) {
@@ -235,6 +252,7 @@ export async function POST(request: Request) {
         status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
+        ai_reason: decision.aiReason,
         source_platform: "coupang",
         external_id: `mock-coupang-${timestamp}-${index + 1}`,
         external_url: null,
@@ -242,9 +260,18 @@ export async function POST(request: Request) {
       };
     });
 
-    const { error: insertError } = await auth.supabase
+    let { error: insertError } = await auth.supabase
       .from("cs_messages")
       .insert(rows);
+
+    if (isMissingAiReasonColumnError(insertError)) {
+      warnMissingAiReasonColumns();
+      const fallbackRows = rows.map(withoutAiReason);
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .insert(fallbackRows);
+      insertError = fallback.error;
+    }
 
     if (insertError) {
       return Response.json(

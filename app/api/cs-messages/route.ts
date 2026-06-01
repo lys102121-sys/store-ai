@@ -1,4 +1,8 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -10,12 +14,26 @@ export async function GET(request: Request) {
   const primary = await auth.supabase
     .from("cs_messages")
     .select(
-      "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
+      "id, customer_message, reply, status, handling_type, risk_level, ai_reason, source_platform, external_id, external_url, platform_status, created_at",
     )
     .eq("user_id", auth.userId)
     .order("created_at", { ascending: false });
   let data: unknown[] | null = primary.data;
   let error = primary.error;
+
+  if (isMissingAiReasonColumnError(error)) {
+    warnMissingAiReasonColumns();
+    const fallback = await auth.supabase
+      .from("cs_messages")
+      .select(
+        "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
+      )
+      .eq("user_id", auth.userId)
+      .order("created_at", { ascending: false });
+
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (
     error &&

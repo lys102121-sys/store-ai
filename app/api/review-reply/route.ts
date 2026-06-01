@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   generateReviewReplyWithSentiment,
@@ -102,6 +106,7 @@ export async function POST(request: Request) {
         status,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
+        ai_reason: result.aiReason,
         source_platform: "manual",
         external_id: null,
         external_url: null,
@@ -125,6 +130,25 @@ export async function POST(request: Request) {
         status,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
+      });
+
+      reviewSaveError = fallback.error;
+    }
+
+    if (isMissingAiReasonColumnError(reviewSaveError)) {
+      warnMissingAiReasonColumns();
+      const fallback = await auth.supabase.from("reviews").insert({
+        user_id: auth.userId,
+        review: result.review,
+        reply: result.reply,
+        sentiment: result.sentiment,
+        status,
+        handling_type: result.handlingType,
+        risk_level: result.riskLevel,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
       });
 
       reviewSaveError = fallback.error;
@@ -171,6 +195,7 @@ export async function POST(request: Request) {
       status,
       handling_type: result.handlingType,
       risk_level: result.riskLevel,
+      ai_reason: result.aiReason,
     });
   } catch (error) {
     const message =

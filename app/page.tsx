@@ -26,6 +26,7 @@ type ReviewHistoryItem = {
   status?: WorkflowStatus | null;
   handling_type?: HandlingType | null;
   risk_level?: RiskLevel | null;
+  ai_reason?: string | null;
   source_platform?: SourcePlatform | null;
   external_id?: string | null;
   external_url?: string | null;
@@ -40,6 +41,7 @@ type CsMessageHistoryItem = {
   status?: WorkflowStatus | null;
   handling_type?: HandlingType | null;
   risk_level?: RiskLevel | null;
+  ai_reason?: string | null;
   source_platform?: SourcePlatform | null;
   external_id?: string | null;
   external_url?: string | null;
@@ -64,6 +66,7 @@ type ReviewApiResponse = {
   status?: WorkflowStatus;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
+  ai_reason?: string;
   error?: string;
   detail?: string;
 };
@@ -76,6 +79,8 @@ type BatchReviewReplyResult = {
   riskLevel?: RiskLevel;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
+  aiReason?: string;
+  ai_reason?: string;
   status?: WorkflowStatus;
 };
 
@@ -90,6 +95,7 @@ type CsReplyApiResponse = {
   status?: WorkflowStatus;
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
+  ai_reason?: string;
   error?: string;
   detail?: string;
 };
@@ -151,6 +157,7 @@ type WorkflowItem = {
   externalId: string | null;
   externalUrl: string | null;
   platformStatus: PlatformStatus;
+  aiReason: string;
   createdAt: string;
   canMutate: boolean;
   missingInfo?: MissingInfoItem;
@@ -2675,6 +2682,7 @@ export default function Home() {
       externalId: item.external_id ?? null,
       externalUrl: item.external_url ?? null,
       platformStatus: item.platform_status ?? "local",
+      aiReason: item.ai_reason?.trim() ?? "",
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2693,6 +2701,7 @@ export default function Home() {
       externalId: item.external_id ?? null,
       externalUrl: item.external_url ?? null,
       platformStatus: item.platform_status ?? "local",
+      aiReason: item.ai_reason?.trim() ?? "",
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2711,6 +2720,7 @@ export default function Home() {
       externalId: null,
       externalUrl: null,
       platformStatus: "local",
+      aiReason: item.reason,
       createdAt: item.created_at,
       canMutate: false,
       missingInfo: item,
@@ -5850,6 +5860,13 @@ export default function Home() {
                             <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
                               AI가 바로 답변 가능하다고 판단했습니다.
                             </p>
+                          ) : null}
+
+                          {item.aiReason ? (
+                            <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                              <p className="font-semibold">AI 판단 이유</p>
+                              <p className="mt-1">{item.aiReason}</p>
+                            </div>
                           ) : null}
 
                           {isAutoCompleted ? (

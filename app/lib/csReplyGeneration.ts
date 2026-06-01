@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 
+import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
+import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
@@ -18,6 +20,7 @@ export type CsReplyDecision = {
   reply: string;
   handlingType: CsReplyHandlingType;
   riskLevel: CsReplyRiskLevel;
+  aiReason: string;
 };
 
 const healthSafetyPattern =
@@ -49,7 +52,7 @@ function parseCsReplyDecision(
         : null;
 
     return reply && handlingType && riskLevel
-      ? { reply, handlingType, riskLevel }
+      ? { reply, handlingType, riskLevel, aiReason: "" }
       : null;
   } catch {
     return null;
@@ -130,6 +133,10 @@ export async function generateCsReplyDecision({
   }
 
   const hasHealthSafetyIssue = healthSafetyPattern.test(customerMessage);
+  const missingOperationalInfo = findMissingOperationalInfo(
+    customerMessage,
+    store,
+  );
   const initialDecision: CsReplyDecision = {
     reply: sanitizeCustomerReply(parsedDecision.reply),
     handlingType: hasHealthSafetyIssue
@@ -138,6 +145,7 @@ export async function generateCsReplyDecision({
     riskLevel: hasHealthSafetyIssue
       ? ("high" as const)
       : parsedDecision.riskLevel,
+    aiReason: "",
   };
   const decision =
     (!hasHealthSafetyIssue &&
@@ -152,5 +160,13 @@ export async function generateCsReplyDecision({
     throw new Error("Failed to generate a CS reply.");
   }
 
-  return decision;
+  return {
+    ...decision,
+    aiReason: buildCsAiReason({
+      customerMessage,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      missingOperationalInfo,
+    }),
+  };
 }

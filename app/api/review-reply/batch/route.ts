@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 import {
@@ -144,6 +148,7 @@ export async function POST(request: Request) {
       status: result.status,
       handling_type: result.handlingType,
       risk_level: result.riskLevel,
+      ai_reason: result.aiReason,
       source_platform: "manual",
       external_id: null,
       external_url: null,
@@ -153,6 +158,25 @@ export async function POST(request: Request) {
     let { error: saveError } = await auth.supabase.from("reviews").insert(
       reviewRows,
     );
+
+    if (isMissingAiReasonColumnError(saveError)) {
+      warnMissingAiReasonColumns();
+      const fallbackRows = resultsWithStatus.map((result) => ({
+        user_id: auth.userId,
+        review: result.review,
+        reply: result.reply,
+        sentiment: result.sentiment,
+        status: result.status,
+        handling_type: result.handlingType,
+        risk_level: result.riskLevel,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
+      }));
+      const fallback = await auth.supabase.from("reviews").insert(fallbackRows);
+      saveError = fallback.error;
+    }
 
     if (
       saveError &&
@@ -214,6 +238,7 @@ export async function POST(request: Request) {
         ...result,
         handling_type: result.handlingType,
         risk_level: result.riskLevel,
+        ai_reason: result.aiReason,
       })),
     });
   } catch (error) {

@@ -1,4 +1,8 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  isMissingAiReasonColumnError,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 
 const validStatuses = new Set(["pending", "needs_review", "completed", "answered"]);
 
@@ -151,11 +155,28 @@ export async function PATCH(
     .eq("id", id)
     .eq("user_id", auth.userId)
     .select(
-      "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
+      "id, customer_message, reply, status, handling_type, risk_level, ai_reason, source_platform, external_id, external_url, platform_status, created_at",
     )
     .single();
 
   if (error) {
+    if (isMissingAiReasonColumnError(error)) {
+      warnMissingAiReasonColumns();
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .select(
+          "id, customer_message, reply, status, handling_type, risk_level, source_platform, external_id, external_url, platform_status, created_at",
+        )
+        .single();
+
+      if (!fallback.error) {
+        return Response.json({ csMessage: fallback.data });
+      }
+    }
+
     if (
       /(source_platform|external_id|external_url|platform_status)/i.test(
         error.message,

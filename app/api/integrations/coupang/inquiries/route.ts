@@ -1,6 +1,12 @@
 import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import {
+  isMissingAiReasonColumnError,
+  withoutAiReason,
+  warnMissingAiReasonColumns,
+} from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   applyOperationalInfoGuard,
@@ -159,7 +165,15 @@ async function generateInquiryReply(
     throw new Error("Failed to generate a Coupang inquiry reply.");
   }
 
-  return decision;
+  return {
+    ...decision,
+    aiReason: buildCsAiReason({
+      customerMessage: inquiry.content,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      missingOperationalInfo: findMissingOperationalInfo(inquiry.content, store),
+    }),
+  };
 }
 
 function buildMissingInfo(
@@ -487,6 +501,7 @@ export async function POST(request: Request) {
         status,
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
+        ai_reason: decision.aiReason,
         source_platform: "coupang",
         external_id: inquiry.externalId,
         external_url: null,
@@ -504,9 +519,18 @@ export async function POST(request: Request) {
     }
 
     if (rows.length > 0) {
-      const { error: insertError } = await auth.supabase
+      let { error: insertError } = await auth.supabase
         .from("cs_messages")
         .insert(rows);
+
+      if (isMissingAiReasonColumnError(insertError)) {
+        warnMissingAiReasonColumns();
+        const fallbackRows = rows.map(withoutAiReason);
+        const fallback = await auth.supabase
+          .from("cs_messages")
+          .insert(fallbackRows);
+        insertError = fallback.error;
+      }
 
       if (insertError) {
         return Response.json(
