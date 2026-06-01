@@ -2,32 +2,14 @@ import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   COUPANG_OPEN_API_HOST,
   createCoupangAuthorization,
+  createCoupangOnlineInquiryPath,
+  createCoupangOnlineInquiryQuery,
 } from "@/app/lib/coupangOpenApi";
 
 export const runtime = "nodejs";
 
 const COUPANG_CONNECTION_ERROR =
   "Coupang connection test failed. Check vendorId, accessKey, and secretKey.";
-
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function createInquiryQuery(vendorId: string) {
-  const inquiryEndAt = new Date();
-  const inquiryStartAt = new Date(inquiryEndAt);
-  inquiryStartAt.setUTCDate(inquiryStartAt.getUTCDate() - 1);
-
-  // 쿠팡 문서 확인 후 query parameter 조정 필요
-  return new URLSearchParams({
-    inquiryStartAt: formatDate(inquiryStartAt),
-    inquiryEndAt: formatDate(inquiryEndAt),
-    vendorId,
-    answeredType: "ALL",
-    pageSize: "10",
-    pageNum: "1",
-  }).toString();
-}
 
 function truncateForLog(value: string) {
   return value.length > 500 ? `${value.slice(0, 500)}...` : value;
@@ -65,8 +47,11 @@ export async function POST(request: Request) {
   }
 
   const method = "GET";
-  const path = `/v2/providers/openapi/apis/api/v5/vendors/${encodeURIComponent(vendorId)}/onlineInquiries`;
-  const query = createInquiryQuery(vendorId);
+  const path = createCoupangOnlineInquiryPath(vendorId);
+  const query = createCoupangOnlineInquiryQuery({
+    vendorId,
+    pageSize: 10,
+  });
   let authorization: string;
 
   try {

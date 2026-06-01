@@ -226,6 +226,14 @@ type CoupangConnectionTestApiResponse = {
   detail?: string;
 };
 
+type CoupangInquiryImportApiResponse = {
+  imported?: number;
+  skipped?: number;
+  message?: string;
+  error?: string;
+  detail?: string;
+};
+
 type CoupangMockInquiriesApiResponse = {
   inserted?: number;
   message?: string;
@@ -1252,6 +1260,10 @@ export default function Home() {
     useState("");
   const [coupangConnectionTestMessage, setCoupangConnectionTestMessage] =
     useState("");
+  const [coupangInquiryImportLoading, setCoupangInquiryImportLoading] =
+    useState(false);
+  const [coupangInquiryImportError, setCoupangInquiryImportError] =
+    useState("");
   const [coupangInquiryImportMessage, setCoupangInquiryImportMessage] =
     useState("");
   const [coupangMockInquiriesLoading, setCoupangMockInquiriesLoading] =
@@ -1591,6 +1603,8 @@ export default function Home() {
         setCoupangConnectionTesting(false);
         setCoupangConnectionTestError("");
         setCoupangConnectionTestMessage("");
+        setCoupangInquiryImportLoading(false);
+        setCoupangInquiryImportError("");
         setCoupangInquiryImportMessage("");
         setCoupangMockInquiriesLoading(false);
         setCoupangMockInquiriesError("");
@@ -2861,6 +2875,7 @@ export default function Home() {
     setCoupangConnectionTesting(true);
     setCoupangConnectionTestMessage("");
     setCoupangConnectionTestError("");
+    setCoupangInquiryImportError("");
     setCoupangInquiryImportMessage("");
 
     try {
@@ -2899,12 +2914,51 @@ export default function Home() {
     }
   }
 
-  function handlePrepareCoupangInquiryImport() {
+  async function handleImportCoupangInquiries() {
+    if (!authUser) {
+      setCoupangInquiryImportMessage("");
+      setCoupangInquiryImportError("로그인이 필요합니다");
+      return;
+    }
+
     if (coupangCredential?.status !== "connected") return;
 
-    setCoupangInquiryImportMessage(
-      "쿠팡 문의 가져오기 기능은 다음 단계에서 실제 API와 연결될 예정입니다.",
-    );
+    setCoupangInquiryImportLoading(true);
+    setCoupangInquiryImportMessage("");
+    setCoupangInquiryImportError("");
+
+    try {
+      const response = await fetch("/api/integrations/coupang/inquiries", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as CoupangInquiryImportApiResponse;
+
+      if (!response.ok || data.imported === undefined) {
+        setCoupangInquiryImportError(
+          "쿠팡 문의 가져오기에 실패했습니다. 쿠팡 연결 설정을 확인해 주세요.",
+        );
+        await loadPlatformCredentials();
+        return;
+      }
+
+      setCoupangInquiryImportMessage(
+        `쿠팡 문의를 AI CS 처리함에 추가했습니다. 새 문의 ${data.imported}개, 중복 제외 ${data.skipped ?? 0}개`,
+      );
+      await Promise.all([
+        loadCsMessages(),
+        loadMissingInfos(),
+        loadInsights(),
+        loadPlatformCredentials(),
+      ]);
+    } catch {
+      setCoupangInquiryImportError(
+        "쿠팡 문의 가져오기에 실패했습니다. 쿠팡 연결 설정을 확인해 주세요.",
+      );
+      await loadPlatformCredentials();
+    } finally {
+      setCoupangInquiryImportLoading(false);
+    }
   }
 
   async function handleLoadCoupangMockInquiries() {
@@ -4602,11 +4656,15 @@ export default function Home() {
 
                       <button
                         type="button"
-                        disabled={!isCoupangConnected}
-                        onClick={handlePrepareCoupangInquiryImport}
+                        disabled={
+                          !isCoupangConnected || coupangInquiryImportLoading
+                        }
+                        onClick={() => void handleImportCoupangInquiries()}
                         className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
                       >
-                        쿠팡 문의 가져오기
+                        {coupangInquiryImportLoading
+                          ? "쿠팡 문의 가져오는 중..."
+                          : "쿠팡 문의 가져오기"}
                       </button>
 
                       {!isCoupangConnected ? (
@@ -4622,6 +4680,15 @@ export default function Home() {
                           role="status"
                         >
                           {coupangInquiryImportMessage}
+                        </p>
+                      ) : null}
+
+                      {coupangInquiryImportError ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                          role="alert"
+                        >
+                          {coupangInquiryImportError}
                         </p>
                       ) : null}
 

@@ -1,0 +1,513 @@
+import OpenAI from "openai";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  COUPANG_OPEN_API_HOST,
+  createCoupangAuthorization,
+  createCoupangOnlineInquiryPath,
+  createCoupangOnlineInquiryQuery,
+  parseCoupangOnlineInquiries,
+  type CoupangOnlineInquiry,
+} from "@/app/lib/coupangOpenApi";
+import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
+import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+
+export const runtime = "nodejs";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
+type RiskLevel = "low" | "normal" | "high";
+
+type CsReplyDecision = {
+  reply: string;
+  handlingType: HandlingType;
+  riskLevel: RiskLevel;
+};
+
+const healthSafetyPattern =
+  /알레르기|알러지|두드러기|발진|붉어|복통|식중독|상한\s*것\s*같다|이상\s*반응|호흡|병원|아프다|먹고\s*탈|피부\s*반응|가려/;
+
+function truncateForLog(value: string) {
+  return value.length > 500 ? `${value.slice(0, 500)}...` : value;
+}
+
+function parseCsReplyDecision(
+  output: string | undefined,
+): CsReplyDecision | null {
+  if (!output) return null;
+
+  try {
+    const parsed = JSON.parse(output) as {
+      reply?: unknown;
+      handling_type?: unknown;
+      risk_level?: unknown;
+    };
+    const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
+    const handlingType =
+      parsed.handling_type === "auto_ready" ||
+      parsed.handling_type === "needs_review" ||
+      parsed.handling_type === "needs_approval"
+        ? parsed.handling_type
+        : null;
+    const riskLevel =
+      parsed.risk_level === "low" ||
+      parsed.risk_level === "normal" ||
+      parsed.risk_level === "high"
+        ? parsed.risk_level
+        : null;
+
+    return reply && handlingType && riskLevel
+      ? { reply, handlingType, riskLevel }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeCustomerReply(reply: string) {
+  return reply
+    .replaceAll("등록된 정보", "확인 가능한 내용")
+    .replaceAll("사장님 확인", "확인")
+    .replaceAll("데이터", "내용")
+    .replaceAll("AI", "")
+    .trim();
+}
+
+function hasMissingInfoSignal(reply: string) {
+  return /정확한\s*안내를\s*위해\s*확인|확인\s*후\s*(다시\s*)?(말씀|안내)|정확한\s*확인\s*후\s*안내/.test(
+    reply,
+  );
+}
+
+async function generateInquiryReply(
+  inquiry: CoupangOnlineInquiry,
+  store: CsReplyPromptStore,
+) {
+  const productContext = inquiry.productName
+    ? `문의 상품명: ${inquiry.productName}\n`
+    : "";
+  const completion = await openai.responses.create({
+    model: "gpt-4o-mini",
+    input: [
+      {
+        role: "system",
+        content: buildCsReplySystemPrompt(store),
+      },
+      {
+        role: "user",
+        content: `${productContext}고객 문의:\n${inquiry.content}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "cs_reply_decision",
+        schema: {
+          type: "object",
+          properties: {
+            reply: { type: "string" },
+            handling_type: {
+              type: "string",
+              enum: ["auto_ready", "needs_review", "needs_approval"],
+            },
+            risk_level: {
+              type: "string",
+              enum: ["low", "normal", "high"],
+            },
+          },
+          required: ["reply", "handling_type", "risk_level"],
+          additionalProperties: false,
+        },
+        strict: true,
+      },
+    },
+  });
+
+  const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
+  if (!parsedDecision) {
+    throw new Error("Failed to generate a Coupang inquiry reply.");
+  }
+
+  const hasHealthSafetyIssue = healthSafetyPattern.test(inquiry.content);
+  const decision = {
+    reply: sanitizeCustomerReply(parsedDecision.reply),
+    handlingType: hasHealthSafetyIssue
+      ? ("needs_approval" as const)
+      : parsedDecision.handlingType,
+    riskLevel: hasHealthSafetyIssue
+      ? ("high" as const)
+      : parsedDecision.riskLevel,
+  };
+
+  if (!decision.reply) {
+    throw new Error("Failed to generate a Coupang inquiry reply.");
+  }
+
+  return decision;
+}
+
+function buildMissingInfo(inquiry: CoupangOnlineInquiry) {
+  const productName = inquiry.productName
+    ? ` '${inquiry.productName}'`
+    : "";
+
+  return {
+    question: `${productName} 상품 문의에 답변하기 위해 필요한 정보를 등록해 주세요.`.trim(),
+    reason:
+      "쿠팡에서 가져온 문의에 정확히 답변하려면 상품 또는 정책 정보를 추가로 확인해야 합니다.",
+  };
+}
+
+async function saveMissingInfo({
+  supabase,
+  userId,
+  inquiry,
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  inquiry: CoupangOnlineInquiry;
+}) {
+  const missingInfo = buildMissingInfo(inquiry);
+  const { data: existingRows, error: existingError } = await supabase
+    .from("missing_infos")
+    .select("id, source_message, source_messages, inquiry_count")
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .eq("topic", "general")
+    .eq("question", missingInfo.question)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (existingError) {
+    console.error("Failed to load existing missing info.", existingError);
+    return;
+  }
+
+  const existing = existingRows?.[0];
+  if (existing) {
+    const sourceMessages = Array.isArray(existing.source_messages)
+      ? existing.source_messages.filter(
+          (message): message is string => typeof message === "string",
+        )
+      : [];
+    if (
+      typeof existing.source_message === "string" &&
+      !sourceMessages.includes(existing.source_message)
+    ) {
+      sourceMessages.unshift(existing.source_message);
+    }
+    if (!sourceMessages.includes(inquiry.content)) {
+      sourceMessages.push(inquiry.content);
+    }
+
+    const { error } = await supabase
+      .from("missing_infos")
+      .update({
+        source_messages: sourceMessages,
+        inquiry_count: (existing.inquiry_count ?? 1) + 1,
+      })
+      .eq("id", existing.id)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Failed to update missing info.", error);
+    }
+    return;
+  }
+
+  const { error } = await supabase.from("missing_infos").insert({
+    user_id: userId,
+    question: missingInfo.question,
+    reason: missingInfo.reason,
+    source_message: inquiry.content,
+    source_messages: [inquiry.content],
+    status: "pending",
+    topic: "general",
+    inquiry_count: 1,
+  });
+
+  if (error) {
+    console.error("Failed to save missing info.", error);
+  }
+}
+
+async function updateCredentialStatus(
+  supabase: SupabaseClient,
+  userId: string,
+  status: "connected" | "error",
+) {
+  const updatedAt = new Date().toISOString();
+  await supabase
+    .from("platform_credentials")
+    .update({
+      status,
+      last_tested_at: updatedAt,
+      updated_at: updatedAt,
+    })
+    .eq("user_id", userId)
+    .eq("platform", "coupang");
+}
+
+export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
+  if ("response" in auth) {
+    return auth.response;
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return Response.json(
+      { error: "OPENAI_API_KEY is not configured." },
+      { status: 500 },
+    );
+  }
+
+  const { data: credential, error: credentialError } = await auth.supabase
+    .from("platform_credentials")
+    .select("vendor_id, access_key, secret_key")
+    .eq("user_id", auth.userId)
+    .eq("platform", "coupang")
+    .maybeSingle();
+
+  if (credentialError) {
+    return Response.json(
+      { error: "Failed to read Coupang credentials.", detail: credentialError.message },
+      { status: 500 },
+    );
+  }
+
+  const vendorId = credential?.vendor_id?.trim();
+  const accessKey = credential?.access_key?.trim();
+  const secretKey = credential?.secret_key?.trim();
+
+  if (!vendorId || !accessKey || !secretKey) {
+    return Response.json(
+      { error: "Coupang credentials are incomplete." },
+      { status: 400 },
+    );
+  }
+
+  const { data: store, error: storeError } = await auth.supabase
+    .from("stores")
+    .select(
+      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at",
+    )
+    .eq("user_id", auth.userId)
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (storeError) {
+    return Response.json(
+      { error: "Failed to load store.", detail: storeError.message },
+      { status: 500 },
+    );
+  }
+
+  if (!store) {
+    return Response.json(
+      { error: "No store found. Save store settings first, then try again." },
+      { status: 400 },
+    );
+  }
+
+  const method = "GET";
+  const path = createCoupangOnlineInquiryPath(vendorId);
+  const query = createCoupangOnlineInquiryQuery({
+    vendorId,
+    days: 1,
+    pageSize: 20,
+  });
+  let authorization: string;
+
+  try {
+    authorization = createCoupangAuthorization({
+      method,
+      path,
+      query,
+      accessKey,
+      secretKey,
+    });
+  } catch (error) {
+    await updateCredentialStatus(auth.supabase, auth.userId, "error");
+    return Response.json(
+      {
+        error: "Failed to create Coupang HMAC signature.",
+        detail: error instanceof Error ? error.message : undefined,
+      },
+      { status: 500 },
+    );
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  let coupangInquiriesFetched = false;
+
+  try {
+    const response = await fetch(`${COUPANG_OPEN_API_HOST}${path}?${query}`, {
+      method,
+      headers: {
+        Authorization: authorization,
+        "Content-Type": "application/json",
+        "X-Requested-By": vendorId,
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const responseBody = truncateForLog(await response.text());
+      console.error("Failed to fetch Coupang inquiries.", {
+        status: response.status,
+        responseBody,
+      });
+      await updateCredentialStatus(auth.supabase, auth.userId, "error");
+      return Response.json(
+        { error: "Failed to fetch Coupang inquiries.", detail: `HTTP ${response.status}` },
+        { status: 502 },
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = (await response.json()) as unknown;
+    } catch {
+      await updateCredentialStatus(auth.supabase, auth.userId, "error");
+      return Response.json(
+        { error: "Failed to parse Coupang inquiry response." },
+        { status: 502 },
+      );
+    }
+
+    let inquiries: CoupangOnlineInquiry[];
+    try {
+      inquiries = parseCoupangOnlineInquiries(payload);
+    } catch (error) {
+      console.error("Failed to parse Coupang inquiries.", {
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+      await updateCredentialStatus(auth.supabase, auth.userId, "error");
+      return Response.json(
+        {
+          error: "Failed to parse Coupang inquiry response.",
+          detail: error instanceof Error ? error.message : undefined,
+        },
+        { status: 502 },
+      );
+    }
+    coupangInquiriesFetched = true;
+
+    const uniqueInquiries = [
+      ...new Map(inquiries.map((item) => [item.externalId, item])).values(),
+    ];
+    const externalIds = uniqueInquiries.map((item) => item.externalId);
+    let existingExternalIds = new Set<string>();
+
+    if (externalIds.length > 0) {
+      const { data: existingRows, error: existingError } = await auth.supabase
+        .from("cs_messages")
+        .select("external_id")
+        .eq("user_id", auth.userId)
+        .eq("source_platform", "coupang")
+        .in("external_id", externalIds);
+
+      if (existingError) {
+        return Response.json(
+          { error: "Failed to check existing Coupang inquiries.", detail: existingError.message },
+          { status: 500 },
+        );
+      }
+
+      existingExternalIds = new Set(
+        (existingRows ?? []).flatMap((row) =>
+          typeof row.external_id === "string" ? [row.external_id] : [],
+        ),
+      );
+    }
+
+    const newInquiries = uniqueInquiries.filter(
+      (item) => !existingExternalIds.has(item.externalId),
+    );
+    const storeRow = store as CsReplyPromptStore;
+    const rows = [];
+
+    for (const inquiry of newInquiries) {
+      const decision = await generateInquiryReply(inquiry, storeRow);
+      const shouldCreateMissingInfo =
+        decision.handlingType === "needs_review" ||
+        hasMissingInfoSignal(decision.reply);
+      const status =
+        storeRow.auto_complete_low_risk_cs &&
+        decision.handlingType === "auto_ready" &&
+        decision.riskLevel === "low" &&
+        !shouldCreateMissingInfo
+          ? "completed"
+          : shouldCreateMissingInfo
+            ? "needs_review"
+            : "pending";
+
+      rows.push({
+        user_id: auth.userId,
+        customer_message: inquiry.content,
+        reply: decision.reply,
+        status,
+        handling_type: decision.handlingType,
+        risk_level: decision.riskLevel,
+        source_platform: "coupang",
+        external_id: inquiry.externalId,
+        external_url: null,
+        platform_status: "synced",
+      });
+
+      if (shouldCreateMissingInfo) {
+        await saveMissingInfo({
+          supabase: auth.supabase,
+          userId: auth.userId,
+          inquiry,
+        });
+      }
+    }
+
+    if (rows.length > 0) {
+      const { error: insertError } = await auth.supabase
+        .from("cs_messages")
+        .insert(rows);
+
+      if (insertError) {
+        return Response.json(
+          { error: "Failed to save Coupang inquiries.", detail: insertError.message },
+          { status: 500 },
+        );
+      }
+    }
+
+    await updateCredentialStatus(auth.supabase, auth.userId, "connected");
+
+    return Response.json({
+      imported: rows.length,
+      skipped: inquiries.length - rows.length,
+      message: "쿠팡 문의를 AI CS 처리함에 추가했습니다.",
+    });
+  } catch (error) {
+    console.error("Coupang inquiry import failed.", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+    if (!coupangInquiriesFetched) {
+      await updateCredentialStatus(auth.supabase, auth.userId, "error");
+    }
+    return Response.json(
+      {
+        error: coupangInquiriesFetched
+          ? "Failed to process Coupang inquiries."
+          : "Failed to fetch Coupang inquiries.",
+      },
+      { status: coupangInquiriesFetched ? 500 : 502 },
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
