@@ -3,6 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
+  applyOperationalInfoGuard,
+  findMissingOperationalInfo,
+} from "@/app/lib/csOperationalInfo";
+import {
   COUPANG_OPEN_API_HOST,
   createCoupangAuthorization,
   createCoupangOnlineInquiryPath,
@@ -133,7 +137,7 @@ async function generateInquiryReply(
   }
 
   const hasHealthSafetyIssue = healthSafetyPattern.test(inquiry.content);
-  const decision = {
+  const initialDecision = {
     reply: sanitizeCustomerReply(parsedDecision.reply),
     handlingType: hasHealthSafetyIssue
       ? ("needs_approval" as const)
@@ -142,6 +146,14 @@ async function generateInquiryReply(
       ? ("high" as const)
       : parsedDecision.riskLevel,
   };
+  const decision =
+    (!hasHealthSafetyIssue &&
+      applyOperationalInfoGuard({
+        customerMessage: inquiry.content,
+        reply: initialDecision.reply,
+        store,
+      })) ||
+    initialDecision;
 
   if (!decision.reply) {
     throw new Error("Failed to generate a Coupang inquiry reply.");
@@ -150,7 +162,22 @@ async function generateInquiryReply(
   return decision;
 }
 
-function buildMissingInfo(inquiry: CoupangOnlineInquiry) {
+function buildMissingInfo(
+  inquiry: CoupangOnlineInquiry,
+  store: CsReplyPromptStore,
+) {
+  const missingOperationalInfo = findMissingOperationalInfo(
+    inquiry.content,
+    store,
+  );
+  if (missingOperationalInfo) {
+    return {
+      question: missingOperationalInfo.question,
+      reason: missingOperationalInfo.reason,
+      topic: missingOperationalInfo.topic,
+    };
+  }
+
   const productName = inquiry.productName
     ? ` '${inquiry.productName}'`
     : "";
@@ -159,6 +186,7 @@ function buildMissingInfo(inquiry: CoupangOnlineInquiry) {
     question: `${productName} 상품 문의에 답변하기 위해 필요한 정보를 등록해 주세요.`.trim(),
     reason:
       "쿠팡에서 가져온 문의에 정확히 답변하려면 상품 또는 정책 정보를 추가로 확인해야 합니다.",
+    topic: "general",
   };
 }
 
@@ -166,18 +194,20 @@ async function saveMissingInfo({
   supabase,
   userId,
   inquiry,
+  store,
 }: {
   supabase: SupabaseClient;
   userId: string;
   inquiry: CoupangOnlineInquiry;
+  store: CsReplyPromptStore;
 }) {
-  const missingInfo = buildMissingInfo(inquiry);
+  const missingInfo = buildMissingInfo(inquiry, store);
   const { data: existingRows, error: existingError } = await supabase
     .from("missing_infos")
     .select("id, source_message, source_messages, inquiry_count")
     .eq("user_id", userId)
     .eq("status", "pending")
-    .eq("topic", "general")
+    .eq("topic", missingInfo.topic)
     .eq("question", missingInfo.question)
     .order("created_at", { ascending: false })
     .limit(1);
@@ -226,7 +256,7 @@ async function saveMissingInfo({
     source_message: inquiry.content,
     source_messages: [inquiry.content],
     status: "pending",
-    topic: "general",
+    topic: missingInfo.topic,
     inquiry_count: 1,
   });
 
@@ -468,6 +498,7 @@ export async function POST(request: Request) {
           supabase: auth.supabase,
           userId: auth.userId,
           inquiry,
+          store: storeRow,
         });
       }
     }

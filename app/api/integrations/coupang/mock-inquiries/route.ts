@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
@@ -147,7 +148,7 @@ async function generateMockReply(
 
   const hasHealthSafetyIssue = healthSafetyPattern.test(customerMessage);
   const needsReview = needsStoreConfirmation(customerMessage, store);
-  const decision: CsReplyDecision = {
+  const initialDecision: CsReplyDecision = {
     reply: sanitizeCustomerReply(parsedDecision.reply),
     handlingType: hasHealthSafetyIssue
       ? "needs_approval"
@@ -156,6 +157,14 @@ async function generateMockReply(
         : parsedDecision.handlingType,
     riskLevel: hasHealthSafetyIssue ? "high" : parsedDecision.riskLevel,
   };
+  const decision =
+    (!hasHealthSafetyIssue &&
+      applyOperationalInfoGuard({
+        customerMessage,
+        reply: initialDecision.reply,
+        store,
+      })) ||
+    initialDecision;
 
   if (!decision.reply) {
     throw new Error("Failed to generate a mock CS reply.");

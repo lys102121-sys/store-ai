@@ -1,4 +1,6 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
+import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
 type RequestBody = {
   missingInfoId?: unknown;
@@ -23,22 +25,27 @@ type MissingInfoTopic =
   | "shipping_fee"
   | "shipping_schedule"
   | "refund_exchange"
+  | "pricing"
+  | "stock"
+  | "business_hours"
+  | "reservation"
   | "general";
 
 type MissingInfoRow = {
   id: string;
   question: string | null;
   source_message: string | null;
+  source_messages: unknown;
   topic: string | null;
 };
 
-type StoreRow = {
+type StoreRow = CsReplyPromptStore & {
   id: number | string;
-  product_details: string | null;
-  product_caution: string | null;
-  shipping_policy: string | null;
-  refund_policy: string | null;
-  extra_faq: string | null;
+};
+
+type PendingCsMessageRow = {
+  id: number | string;
+  customer_message: string | null;
 };
 
 const allowedTargetFields: TargetField[] = [
@@ -62,6 +69,26 @@ function appendAdditionalInfo(currentValue: string | null, answer: string) {
 }
 
 function classifyMissingInfoTopic(text: string): MissingInfoTopic {
+  if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
+    return "shipping_fee";
+  }
+
+  if (/가격|얼마|몇\s*원/.test(text)) {
+    return "pricing";
+  }
+
+  if (/재고|남은\s*수량|품절|매진/.test(text)) {
+    return "stock";
+  }
+
+  if (/영업|운영\s*시간|오픈|마감/.test(text)) {
+    return "business_hours";
+  }
+
+  if (/예약/.test(text)) {
+    return "reservation";
+  }
+
   if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
     return "gift_wrapping";
   }
@@ -86,10 +113,6 @@ function classifyMissingInfoTopic(text: string): MissingInfoTopic {
     return "product_composition";
   }
 
-  if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
-    return "shipping_fee";
-  }
-
   if (/출고|배송일|언제 배송|발송/.test(text)) {
     return "shipping_schedule";
   }
@@ -111,6 +134,66 @@ function getMissingInfoTopic(missingInfo: MissingInfoRow) {
   return classifyMissingInfoTopic(
     `${missingInfo.question ?? ""}\n${missingInfo.source_message ?? ""}`,
   );
+}
+
+function normalizeSourceMessages(missingInfo: MissingInfoRow) {
+  const messages = Array.isArray(missingInfo.source_messages)
+    ? missingInfo.source_messages.filter(
+        (message): message is string => typeof message === "string",
+      )
+    : [];
+
+  if (
+    missingInfo.source_message &&
+    !messages.includes(missingInfo.source_message)
+  ) {
+    messages.unshift(missingInfo.source_message);
+  }
+
+  return messages;
+}
+
+function normalizeComparableText(value: string) {
+  return value.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+}
+
+function getComparableTokens(value: string) {
+  return new Set(
+    value
+      .toLowerCase()
+      .split(/[^0-9a-z가-힣]+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 2),
+  );
+}
+
+function isSimilarMessage(candidate: string, references: string[]) {
+  const normalizedCandidate = normalizeComparableText(candidate);
+  const candidateTokens = getComparableTokens(candidate);
+
+  return references.some((reference) => {
+    const normalizedReference = normalizeComparableText(reference);
+
+    if (
+      normalizedCandidate === normalizedReference ||
+      (Math.min(normalizedCandidate.length, normalizedReference.length) >= 8 &&
+        (normalizedCandidate.includes(normalizedReference) ||
+          normalizedReference.includes(normalizedCandidate)))
+    ) {
+      return true;
+    }
+
+    const referenceTokens = getComparableTokens(reference);
+    const overlapCount = [...candidateTokens].filter((token) =>
+      referenceTokens.has(token),
+    ).length;
+
+    return (
+      overlapCount >= 2 ||
+      (overlapCount === 1 &&
+        Math.min(candidateTokens.size, referenceTokens.size) === 1)
+    );
+  });
 }
 
 export async function POST(request: Request) {
@@ -153,7 +236,7 @@ export async function POST(request: Request) {
 
   const { data: missingInfo, error: missingInfoError } = await auth.supabase
     .from("missing_infos")
-    .select("id, question, source_message, topic")
+    .select("id, question, source_message, source_messages, topic")
     .eq("id", missingInfoId)
     .eq("user_id", auth.userId)
     .eq("status", "pending")
@@ -200,7 +283,7 @@ export async function POST(request: Request) {
   const { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "id, product_details, product_caution, shipping_policy, refund_policy, extra_faq",
+      "id, user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
@@ -224,30 +307,21 @@ export async function POST(request: Request) {
 
   const storeRow = store as StoreRow;
   const updatedAt = new Date().toISOString();
+  const updatedTargetValue = appendAdditionalInfo(
+    storeRow[targetField],
+    answer,
+  );
   const storeUpdate = {
-    [targetField]: appendAdditionalInfo(storeRow[targetField], answer),
+    [targetField]: updatedTargetValue,
     updated_at: updatedAt,
   };
-
-  const { error: storeUpdateError } = await auth.supabase
-    .from("stores")
-    .update(storeUpdate)
-    .eq("id", storeRow.id)
-    .eq("user_id", auth.userId);
-
-  if (storeUpdateError) {
-    return Response.json(
-      { error: "Failed to update store.", detail: storeUpdateError.message },
-      { status: 500 },
-    );
-  }
-
   let resolvedIds = [missingInfoId];
+  let relatedInfos = [missingInfoRow];
 
   if (resolvedTopic !== "general") {
     const { data: pendingInfos, error: pendingInfosError } = await auth.supabase
       .from("missing_infos")
-      .select("id, question, source_message, topic")
+      .select("id, question, source_message, source_messages, topic")
       .eq("user_id", auth.userId)
       .eq("status", "pending");
 
@@ -261,7 +335,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const relatedInfos = ((pendingInfos ?? []) as MissingInfoRow[]).filter(
+    relatedInfos = ((pendingInfos ?? []) as MissingInfoRow[]).filter(
       (info) => getMissingInfoTopic(info) === resolvedTopic,
     );
 
@@ -278,6 +352,99 @@ export async function POST(request: Request) {
           .eq("user_id", auth.userId),
       ),
     );
+  }
+
+  const referenceMessages = [
+    missingInfoRow.question ?? "",
+    ...relatedInfos.flatMap(normalizeSourceMessages),
+  ].filter(Boolean);
+  const { data: pendingCsMessages, error: pendingCsMessagesError } =
+    await auth.supabase
+      .from("cs_messages")
+      .select("id, customer_message")
+      .eq("user_id", auth.userId)
+      .in("status", ["pending", "needs_review"]);
+
+  if (pendingCsMessagesError) {
+    return Response.json(
+      {
+        error: "Failed to load related CS messages.",
+        detail: pendingCsMessagesError.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  const relatedCsMessages = (
+    (pendingCsMessages ?? []) as PendingCsMessageRow[]
+  ).filter(
+    (message) =>
+      message.customer_message &&
+      isSimilarMessage(message.customer_message, referenceMessages),
+  );
+  const updatedStoreRow = {
+    ...storeRow,
+    [targetField]: updatedTargetValue,
+    updated_at: updatedAt,
+  };
+  let regeneratedReplies: {
+    id: number | string;
+    decision: Awaited<ReturnType<typeof generateCsReplyDecision>>;
+  }[];
+
+  try {
+    regeneratedReplies = await Promise.all(
+      relatedCsMessages.map(async (message) => ({
+        id: message.id,
+        decision: await generateCsReplyDecision({
+          customerMessage: message.customer_message ?? "",
+          store: updatedStoreRow,
+        }),
+      })),
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        error: "Failed to regenerate related CS replies.",
+        detail: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+  const { error: storeUpdateError } = await auth.supabase
+    .from("stores")
+    .update(storeUpdate)
+    .eq("id", storeRow.id)
+    .eq("user_id", auth.userId);
+
+  if (storeUpdateError) {
+    return Response.json(
+      { error: "Failed to update store.", detail: storeUpdateError.message },
+      { status: 500 },
+    );
+  }
+
+  for (const regeneratedReply of regeneratedReplies) {
+    const { error: csMessageUpdateError } = await auth.supabase
+      .from("cs_messages")
+      .update({
+        reply: regeneratedReply.decision.reply,
+        status: "pending",
+        handling_type: regeneratedReply.decision.handlingType,
+        risk_level: regeneratedReply.decision.riskLevel,
+      })
+      .eq("id", regeneratedReply.id)
+      .eq("user_id", auth.userId);
+
+    if (csMessageUpdateError) {
+      return Response.json(
+        {
+          error: "Failed to update related CS message.",
+          detail: csMessageUpdateError.message,
+        },
+        { status: 500 },
+      );
+    }
   }
 
   const { error: missingInfoUpdateError } = await auth.supabase
@@ -297,5 +464,8 @@ export async function POST(request: Request) {
     );
   }
 
-  return Response.json({ success: true });
+  return Response.json({
+    success: true,
+    updatedCsMessages: regeneratedReplies.length,
+  });
 }

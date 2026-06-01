@@ -2,6 +2,11 @@ import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  applyOperationalInfoGuard,
+  findMissingOperationalInfo,
+  type MissingOperationalInfo,
+} from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 
@@ -42,6 +47,10 @@ type MissingInfoTopic =
   | "shipping_fee"
   | "shipping_schedule"
   | "refund_exchange"
+  | "pricing"
+  | "stock"
+  | "business_hours"
+  | "reservation"
   | "general";
 
 const healthSafetyPattern =
@@ -92,6 +101,26 @@ function parseCsReplyDecision(output: string | undefined): CsReplyDecision | nul
 }
 
 function classifyMissingInfoTopic(text: string): MissingInfoTopic {
+  if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
+    return "shipping_fee";
+  }
+
+  if (/가격|얼마|몇\s*원/.test(text)) {
+    return "pricing";
+  }
+
+  if (/재고|남은\s*수량|품절|매진/.test(text)) {
+    return "stock";
+  }
+
+  if (/영업|운영\s*시간|오픈|마감/.test(text)) {
+    return "business_hours";
+  }
+
+  if (/예약/.test(text)) {
+    return "reservation";
+  }
+
   if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
     return "gift_wrapping";
   }
@@ -114,10 +143,6 @@ function classifyMissingInfoTopic(text: string): MissingInfoTopic {
 
   if (/구성|용량|몇 인분|수량/.test(text)) {
     return "product_composition";
-  }
-
-  if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
-    return "shipping_fee";
   }
 
   if (/출고|배송일|언제 배송|발송/.test(text)) {
@@ -202,8 +227,10 @@ function shouldSaveMissingInfo(
   reply: string,
   customerMessage: string,
   store: StoreRow,
+  missingOperationalInfo: MissingOperationalInfo | null,
 ) {
   return (
+    Boolean(missingOperationalInfo) ||
     hasMissingInfoSignal(reply) ||
     (isGiftWrapQuestion(customerMessage) && !hasGiftWrapInfo(store))
   );
@@ -307,8 +334,18 @@ async function saveOrUpdateMissingInfo({
   }
 }
 
-function buildMissingInfo(customerMessage: string) {
+function buildMissingInfo(
+  customerMessage: string,
+  missingOperationalInfo: MissingOperationalInfo | null,
+) {
   const normalizedMessage = customerMessage.replace(/\s+/g, " ").trim();
+
+  if (missingOperationalInfo) {
+    return {
+      question: missingOperationalInfo.question,
+      reason: missingOperationalInfo.reason,
+    };
+  }
 
   if (isGiftWrapQuestion(normalizedMessage)) {
     return {
@@ -491,7 +528,7 @@ export async function POST(request: Request) {
 
     const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
     const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
-    const decision = parsedDecision
+    const initialDecision = parsedDecision
       ? {
           ...parsedDecision,
           handlingType: hasHealthSafetyIssue
@@ -502,6 +539,15 @@ export async function POST(request: Request) {
             : parsedDecision.riskLevel,
         }
       : null;
+    const operationalGuard =
+      initialDecision && !hasHealthSafetyIssue
+        ? applyOperationalInfoGuard({
+            customerMessage,
+            reply: initialDecision.reply,
+            store: storeRow,
+          })
+        : null;
+    const decision = operationalGuard ?? initialDecision;
     const reply = decision
       ? sanitizeCustomerReply(decision.reply).trim()
       : "";
@@ -513,10 +559,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const missingOperationalInfo = findMissingOperationalInfo(
+      customerMessage,
+      storeRow,
+    );
     const shouldCreateMissingInfo = shouldSaveMissingInfo(
       reply,
       customerMessage,
       storeRow,
+      missingOperationalInfo,
     );
     const status =
       storeRow.auto_complete_low_risk_cs &&
@@ -596,10 +647,13 @@ export async function POST(request: Request) {
     }
 
     if (shouldCreateMissingInfo) {
-      const missingInfo = buildMissingInfo(customerMessage);
-      const topic = classifyMissingInfoTopic(
-        `${customerMessage}\n${missingInfo.question}`,
+      const missingInfo = buildMissingInfo(
+        customerMessage,
+        missingOperationalInfo,
       );
+      const topic =
+        missingOperationalInfo?.topic ??
+        classifyMissingInfoTopic(`${customerMessage}\n${missingInfo.question}`);
 
       await saveOrUpdateMissingInfo({
         supabase: auth.supabase,

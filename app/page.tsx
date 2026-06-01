@@ -114,6 +114,7 @@ type MissingInfosListResponse = {
 
 type ResolveMissingInfoResponse = {
   success?: boolean;
+  updatedCsMessages?: number;
   error?: string;
   detail?: string;
 };
@@ -152,6 +153,7 @@ type WorkflowItem = {
   platformStatus: PlatformStatus;
   createdAt: string;
   canMutate: boolean;
+  missingInfo?: MissingInfoItem;
 };
 
 const WORKFLOW_PAGE_SIZE = 5;
@@ -472,6 +474,68 @@ function normalizeRiskLevel(value?: string | null): RiskLevel {
   }
 
   return "normal";
+}
+
+function normalizeInquiryText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.,!?;:'"()[\]{}<>~`·…。，！？、]/g, "");
+}
+
+function areInquiryTextsSimilar(left: string, right: string) {
+  const normalizedLeft = normalizeInquiryText(left);
+  const normalizedRight = normalizeInquiryText(right);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+
+  return (
+    Math.min(normalizedLeft.length, normalizedRight.length) >= 8 &&
+    (normalizedLeft.includes(normalizedRight) ||
+      normalizedRight.includes(normalizedLeft))
+  );
+}
+
+function doesMissingInfoRepresentCsMessage(
+  missingInfoItem: WorkflowItem,
+  csMessageItem: WorkflowItem,
+) {
+  if (
+    missingInfoItem.type !== "missing_info" ||
+    !missingInfoItem.missingInfo ||
+    csMessageItem.type !== "cs"
+  ) {
+    return false;
+  }
+
+  const missingInfo = missingInfoItem.missingInfo;
+  const relatedMessages = [
+    missingInfo.source_message,
+    ...(missingInfo.source_messages ?? []),
+  ].filter(Boolean);
+
+  if (
+    relatedMessages.some((message) =>
+      areInquiryTextsSimilar(message, csMessageItem.original),
+    )
+  ) {
+    return true;
+  }
+
+  if (areInquiryTextsSimilar(missingInfo.question, csMessageItem.original)) {
+    return true;
+  }
+
+  const createdAtGap = Math.abs(
+    new Date(missingInfo.created_at).getTime() -
+      new Date(csMessageItem.createdAt).getTime(),
+  );
+
+  return (
+    createdAtGap <= 5 * 60 * 1000 &&
+    areInquiryTextsSimilar(missingInfoItem.original, csMessageItem.original)
+  );
 }
 
 function handlingTypeLabel(value: HandlingType) {
@@ -2156,12 +2220,14 @@ export default function Home() {
 
     if (!answer) {
       setMissingInfosError("반영할 답변을 입력해 주세요.");
+      setWorkflowError("반영할 답변을 입력해 주세요.");
       setMissingInfoResolveMessage("");
       return;
     }
 
     setMissingInfoResolvingId(missingInfoId);
     setMissingInfosError("");
+    setWorkflowError("");
     setMissingInfoResolveMessage("");
 
     try {
@@ -2180,9 +2246,10 @@ export default function Home() {
       const data = (await response.json()) as ResolveMissingInfoResponse;
 
       if (!response.ok || !data.success) {
-        setMissingInfosError(
-          data.error ?? "가게 정보에 반영하지 못했습니다.",
-        );
+        const errorMessage =
+          data.error ?? "정보 저장 또는 답변 반영에 실패했습니다.";
+        setMissingInfosError(errorMessage);
+        setWorkflowError(errorMessage);
         return;
       }
 
@@ -2207,12 +2274,18 @@ export default function Home() {
         removeStoreDraft(authUser.id);
       }
 
-      setMissingInfoResolveMessage("가게 정보에 반영되었습니다");
-      void loadMissingInfos();
-    } catch {
-      setMissingInfosError(
-        "네트워크 오류로 가게 정보에 반영하지 못했습니다.",
+      setMissingInfoResolveMessage(
+        "정보가 저장되었고 관련 문의 답변에 반영되었습니다.",
       );
+      await Promise.allSettled([
+        loadMissingInfos(),
+        loadCsMessages(),
+        loadInsights(),
+      ]);
+    } catch {
+      const errorMessage = "정보 저장 또는 답변 반영에 실패했습니다.";
+      setMissingInfosError(errorMessage);
+      setWorkflowError(errorMessage);
     } finally {
       setMissingInfoResolvingId(null);
     }
@@ -2640,6 +2713,7 @@ export default function Home() {
       platformStatus: "local",
       createdAt: item.created_at,
       canMutate: false,
+      missingInfo: item,
     }));
 
     return [...reviewItems, ...csItems, ...missingInfoItems].sort(
@@ -2681,8 +2755,18 @@ export default function Home() {
       item.riskLevel === "low" &&
       Boolean(item.reply.trim()),
   );
+  const visibleMissingInfoItems = platformFilteredWorkflowItems.filter(
+    (item) => item.type === "missing_info",
+  );
   const workflowNeedsReviewItems = platformFilteredWorkflowItems.filter(
-    (item) => item.status === "needs_review",
+    (item) =>
+      item.status === "needs_review" &&
+      !(
+        item.type === "cs" &&
+        visibleMissingInfoItems.some((missingInfoItem) =>
+          doesMissingInfoRepresentCsMessage(missingInfoItem, item),
+        )
+      ),
   );
   const workflowCompletedItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "completed" || item.status === "answered",
@@ -5484,6 +5568,12 @@ export default function Home() {
             </div>
           ) : null}
 
+          {missingInfoResolveMessage ? (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {missingInfoResolveMessage}
+            </div>
+          ) : null}
+
           {historyLoading || csMessagesLoading || missingInfosLoading ? (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               AI CS 처리 항목을 불러오는 중...
@@ -5612,39 +5702,148 @@ export default function Home() {
                               </p>
                             </div>
 
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
-                              <div className="mb-2 flex items-center justify-between gap-3">
-                                <p className="font-medium text-zinc-800 dark:text-zinc-200">
-                                  AI 답변 초안
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleCopyText(
-                                      item.reply,
-                                      "답변이 복사되었습니다",
-                                    )
-                                  }
-                                  className={copyButtonClass}
-                                >
-                                  복사
-                                </button>
-                              </div>
+                            {item.type === "missing_info" && item.missingInfo ? (
+                              <>
+                                <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                  <p className="mb-1 font-medium text-amber-800 dark:text-amber-200">
+                                    확인 필요한 질문
+                                  </p>
+                                  <p className="whitespace-pre-wrap leading-6 text-zinc-800 dark:text-zinc-200">
+                                    {item.missingInfo.question}
+                                  </p>
+                                </div>
+                                {item.missingInfo.source_messages &&
+                                item.missingInfo.source_messages.length > 0 ? (
+                                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                    <p className="mb-2 font-medium text-zinc-800 dark:text-zinc-200">
+                                      관련 문의 예시
+                                    </p>
+                                    <ul className="space-y-1.5 text-zinc-700 dark:text-zinc-300">
+                                      {item.missingInfo.source_messages
+                                        .slice(0, 3)
+                                        .map((message) => (
+                                          <li key={message} className="flex gap-2">
+                                            <span aria-hidden> - </span>
+                                            <span className="whitespace-pre-wrap leading-6">
+                                              {message}
+                                            </span>
+                                          </li>
+                                        ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
+                                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                  <label
+                                    htmlFor={`workflow_missing_info_answer_${item.id}`}
+                                    className="mb-2 block font-medium text-zinc-800 dark:text-zinc-200"
+                                  >
+                                    답변 입력
+                                  </label>
+                                  <textarea
+                                    id={`workflow_missing_info_answer_${item.id}`}
+                                    value={missingInfoAnswers[String(item.id)] ?? ""}
+                                    onChange={(event) => {
+                                      const nextValue = event.target.value;
+                                      setMissingInfoAnswers((currentAnswers) => ({
+                                        ...currentAnswers,
+                                        [String(item.id)]: nextValue,
+                                      }));
+                                    }}
+                                    placeholder="예: 선물 포장 가능합니다. 주문 시 요청사항에 남겨주세요."
+                                    className="min-h-24 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 dark:border-zinc-700 dark:bg-zinc-900"
+                                  />
+                                  <label
+                                    htmlFor={`workflow_missing_info_target_${item.id}`}
+                                    className="mb-2 mt-3 block font-medium text-zinc-800 dark:text-zinc-200"
+                                  >
+                                    저장 위치
+                                  </label>
+                                  <select
+                                    id={`workflow_missing_info_target_${item.id}`}
+                                    value={
+                                      missingInfoTargetFields[String(item.id)] ??
+                                      "extra_faq"
+                                    }
+                                    onChange={(event) => {
+                                      const nextValue = event.target.value;
+                                      setMissingInfoTargetFields(
+                                        (currentFields) => ({
+                                          ...currentFields,
+                                          [String(item.id)]: nextValue,
+                                        }),
+                                      );
+                                    }}
+                                    className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-amber-500 dark:border-zinc-700 dark:bg-zinc-900"
+                                  >
+                                    <option value="extra_faq">
+                                      기타 FAQ/포장·옵션
+                                    </option>
+                                    <option value="product_details">
+                                      상품 정보
+                                    </option>
+                                    <option value="product_caution">
+                                      주의사항/사용법
+                                    </option>
+                                    <option value="shipping_policy">
+                                      배송 정책
+                                    </option>
+                                    <option value="refund_policy">
+                                      환불 정책
+                                    </option>
+                                  </select>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleResolveMissingInfo(
+                                        String(item.id),
+                                      )
+                                    }
+                                    disabled={
+                                      missingInfoResolvingId === String(item.id)
+                                    }
+                                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-amber-700 px-4 text-sm font-medium text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                  >
+                                    {missingInfoResolvingId === String(item.id)
+                                      ? "반영 중..."
+                                      : "저장하고 답변에 반영"}
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                <div className="mb-2 flex items-center justify-between gap-3">
+                                  <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                                    AI 답변 초안
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleCopyText(
+                                        item.reply,
+                                        "답변이 복사되었습니다",
+                                      )
+                                    }
+                                    className={copyButtonClass}
+                                  >
+                                    복사
+                                  </button>
+                                </div>
 
-                              {isEditing ? (
-                                <textarea
-                                  value={editingWorkflowReply}
-                                  onChange={(event) =>
-                                    setEditingWorkflowReply(event.target.value)
-                                  }
-                                  className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900"
-                                />
-                              ) : (
-                                <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
-                                  {item.reply}
-                                </p>
-                              )}
-                            </div>
+                                {isEditing ? (
+                                  <textarea
+                                    value={editingWorkflowReply}
+                                    onChange={(event) =>
+                                      setEditingWorkflowReply(event.target.value)
+                                    }
+                                    className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900"
+                                  />
+                                ) : (
+                                  <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
+                                    {item.reply}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {item.handlingType === "auto_ready" ? (
@@ -5685,7 +5884,18 @@ export default function Home() {
                           ) : null}
 
                           <div className="mt-4 flex flex-wrap gap-2">
-                            {isEditing ? (
+                            {item.type === "missing_info" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleDeleteWorkflowItem(item)
+                                }
+                                disabled={isUpdating}
+                                className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                              >
+                                삭제
+                              </button>
+                            ) : isEditing ? (
                               <>
                                 <button
                                   type="button"
@@ -5782,7 +5992,7 @@ export default function Home() {
                             )}
                           </div>
 
-                          {!item.canMutate ? (
+                          {!item.canMutate && item.type !== "missing_info" ? (
                             <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
                               missing_infos에서 온 확인 필요 항목입니다. 아래
                               확인 필요 정보 섹션에서 내용을 보강해 주세요.
@@ -6110,7 +6320,7 @@ export default function Home() {
                       >
                         {missingInfoResolvingId === item.id
                           ? "반영 중..."
-                          : "가게 정보에 반영"}
+                          : "저장하고 답변에 반영"}
                       </button>
                     </div>
                   </div>
