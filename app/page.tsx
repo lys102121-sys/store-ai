@@ -539,6 +539,10 @@ function sourcePlatformLabel(value?: string | null) {
   }
 }
 
+function isDemoExternalId(value?: string | null) {
+  return value?.startsWith("mock-") ?? false;
+}
+
 function platformStatusLabel(value?: string | null) {
   switch (value) {
     case "local":
@@ -4686,8 +4690,8 @@ export default function Home() {
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
                       <div className="rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
                         <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
-                          실제 API 연동 전에도 샘플 리뷰로 AI 리뷰 답글 처리 흐름을
-                          테스트할 수 있습니다.
+                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
+                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
                         <button
                           type="button"
@@ -5004,8 +5008,8 @@ export default function Home() {
 
                       <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
                         <p className="text-xs leading-5 text-sky-900 dark:text-sky-100">
-                          실제 쿠팡 API 키가 없어도 샘플 문의로 AI CS 처리함 흐름을
-                          테스트할 수 있습니다.
+                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
+                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
                         <button
                           type="button"
@@ -5039,8 +5043,8 @@ export default function Home() {
 
                       <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
                         <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
-                          실제 쿠팡 리뷰 API 연동 전에도 샘플 리뷰로 AI 리뷰 답글
-                          처리 흐름을 테스트할 수 있습니다.
+                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
+                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
                         <button
                           type="button"
@@ -5235,6 +5239,10 @@ export default function Home() {
               <p className="mt-2 max-w-3xl text-xs leading-5 text-indigo-700 dark:text-indigo-300">
                 플랫폼 연동 후에는 배민, 요기요, 쿠팡이츠, 스마트스토어 문의와
                 리뷰를 이곳에서 함께 관리할 수 있습니다.
+                <span className="mt-1 block">
+                  플랫폼 연동 탭에서 불러온 샘플 데이터에는 ‘데모 데이터’ 배지가
+                  표시됩니다.
+                </span>
               </p>
             </div>
             <button
@@ -5391,6 +5399,7 @@ export default function Home() {
                       const needsAttention =
                         item.handlingType === "needs_review" ||
                         item.riskLevel === "high";
+                      const isDemoData = isDemoExternalId(item.externalId);
 
                       return (
                         <article
@@ -5409,6 +5418,11 @@ export default function Home() {
                               <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
                                 {sourcePlatformLabel(item.sourcePlatform)}
                               </span>
+                              {isDemoData ? (
+                                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
+                                  데모 데이터
+                                </span>
+                              ) : null}
                               <span
                                 className={`rounded-full px-2.5 py-1 text-xs font-medium ${platformStatusBadgeClass(
                                   item.platformStatus,
@@ -5504,7 +5518,16 @@ export default function Home() {
                             </p>
                           ) : null}
 
-                          {item.sourcePlatform !== "manual" &&
+                          {isDemoData ? (
+                            <p className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
+                              {item.platformStatus === "posted"
+                                ? "샘플 데이터가 플랫폼 등록 완료 상태로 처리되었습니다. 실제 플랫폼 API 등록은 실연동 단계에서 연결됩니다."
+                                : "이 항목은 실제 플랫폼에서 가져온 데이터가 아니라, 연동 흐름을 체험하기 위한 샘플 데이터입니다."}
+                            </p>
+                          ) : null}
+
+                          {!isDemoData &&
+                          item.sourcePlatform !== "manual" &&
                           item.platformStatus === "posted" ? (
                             <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                               승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
