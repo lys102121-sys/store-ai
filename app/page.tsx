@@ -1214,6 +1214,11 @@ export default function Home() {
   const [copyMessage, setCopyMessage] = useState("");
   const [copyError, setCopyError] = useState("");
   const [workflowError, setWorkflowError] = useState("");
+  const [workflowBulkApprovalResult, setWorkflowBulkApprovalResult] = useState<{
+    message: string;
+    hasFailures: boolean;
+  } | null>(null);
+  const [workflowBulkApproving, setWorkflowBulkApproving] = useState(false);
   const [workflowUpdatingKey, setWorkflowUpdatingKey] = useState<string | null>(
     null,
   );
@@ -2265,15 +2270,10 @@ export default function Home() {
     }
   }
 
-  async function handleUpdateWorkflowItem(
+  async function requestWorkflowItemUpdate(
     item: WorkflowItem,
     payload: { reply?: string; status?: WorkflowStatus },
   ) {
-    if (!item.canMutate || item.type === "missing_info") return;
-
-    setWorkflowUpdatingKey(item.key);
-    setWorkflowError("");
-
     const shouldRegisterCoupangReply =
       item.type === "cs" &&
       payload.status === "completed" &&
@@ -2302,15 +2302,48 @@ export default function Home() {
       const data = (await response.json()) as UpdateWorkflowItemResponse;
 
       if (!response.ok || data.success === false) {
-        setWorkflowError(
-          shouldRegisterCoupangReply
+        return {
+          success: false,
+          shouldRefreshAfterFailure: shouldRegisterCoupangReply,
+          error: shouldRegisterCoupangReply
             ? data.message ??
                 data.error ??
                 "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
             : data.error ?? "처리 항목을 업데이트하지 못했습니다.",
+        };
+      }
+
+      return { success: true, shouldRefreshAfterFailure: false };
+    } catch {
+      return {
+        success: false,
+        shouldRefreshAfterFailure: shouldRegisterCoupangReply,
+        error: shouldRegisterCoupangReply
+          ? "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+          : "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
+      };
+    }
+  }
+
+  async function handleUpdateWorkflowItem(
+    item: WorkflowItem,
+    payload: { reply?: string; status?: WorkflowStatus },
+  ) {
+    if (!item.canMutate || item.type === "missing_info") return;
+
+    setWorkflowUpdatingKey(item.key);
+    setWorkflowError("");
+    setWorkflowBulkApprovalResult(null);
+
+    try {
+      const result = await requestWorkflowItemUpdate(item, payload);
+
+      if (!result.success) {
+        setWorkflowError(
+          result.error ?? "처리 항목을 업데이트하지 못했습니다.",
         );
 
-        if (shouldRegisterCoupangReply) {
+        if (result.shouldRefreshAfterFailure) {
           await Promise.allSettled([
             loadHistory(),
             loadCsMessages(),
@@ -2323,22 +2356,76 @@ export default function Home() {
       await Promise.all([loadHistory(), loadCsMessages(), loadInsights()]);
       setEditingWorkflowKey(null);
       setEditingWorkflowReply("");
-    } catch {
-      setWorkflowError(
-        shouldRegisterCoupangReply
-          ? "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
-          : "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
-      );
-
-      if (shouldRegisterCoupangReply) {
-        await Promise.allSettled([
-          loadHistory(),
-          loadCsMessages(),
-          loadInsights(),
-        ]);
-      }
     } finally {
       setWorkflowUpdatingKey(null);
+    }
+  }
+
+  async function handleBulkApproveSafeWorkflowItems() {
+    if (safeWorkflowApprovalItems.length === 0) {
+      setWorkflowError("");
+      setWorkflowBulkApprovalResult({
+        message: "현재 필터에서 일괄 승인 가능한 안전 항목이 없습니다.",
+        hasFailures: false,
+      });
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "바로 답변 가능하고 위험도 낮음으로 판단된 항목만 일괄 승인합니다. 진행할까요?",
+      )
+    ) {
+      return;
+    }
+
+    setWorkflowBulkApproving(true);
+    setWorkflowError("");
+    setWorkflowBulkApprovalResult(null);
+    let successCount = 0;
+    let failureCount = 0;
+
+    try {
+      for (const item of safeWorkflowApprovalItems) {
+        const result = await requestWorkflowItemUpdate(item, {
+          status: "completed",
+        });
+
+        if (result.success) {
+          successCount += 1;
+        } else {
+          failureCount += 1;
+        }
+      }
+
+      await Promise.allSettled([
+        loadHistory(),
+        loadCsMessages(),
+        loadInsights(),
+      ]);
+      setWorkflowBulkApprovalResult({
+        message:
+          failureCount === 0
+            ? `안전 항목 ${successCount}건을 승인 완료했습니다.`
+            : `${successCount}건은 승인 완료했고, ${failureCount}건은 처리하지 못했습니다.`,
+        hasFailures: failureCount > 0,
+      });
+      setEditingWorkflowKey(null);
+      setEditingWorkflowReply("");
+    } catch {
+      await Promise.allSettled([
+        loadHistory(),
+        loadCsMessages(),
+        loadInsights(),
+      ]);
+      setWorkflowBulkApprovalResult({
+        message: `${successCount}건은 승인 완료했고, ${
+          safeWorkflowApprovalItems.length - successCount
+        }건은 처리하지 못했습니다.`,
+        hasFailures: true,
+      });
+    } finally {
+      setWorkflowBulkApproving(false);
     }
   }
 
@@ -2585,6 +2672,14 @@ export default function Home() {
         );
   const workflowPendingItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "pending",
+  );
+  const safeWorkflowApprovalItems = workflowPendingItems.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      item.canMutate &&
+      item.handlingType === "auto_ready" &&
+      item.riskLevel === "low" &&
+      Boolean(item.reply.trim()),
   );
   const workflowNeedsReviewItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "needs_review",
@@ -5279,6 +5374,7 @@ export default function Home() {
                         setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
                         setEditingWorkflowKey(null);
                         setEditingWorkflowReply("");
+                        setWorkflowBulkApprovalResult(null);
                       }}
                       className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition ${
                         isSelected
@@ -5318,6 +5414,7 @@ export default function Home() {
                       setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
                       setEditingWorkflowKey(null);
                       setEditingWorkflowReply("");
+                      setWorkflowBulkApprovalResult(null);
                     }}
                     className={`rounded-xl border px-3 py-3 text-left transition ${
                       isSelected
@@ -5337,6 +5434,49 @@ export default function Home() {
               })}
             </div>
           </div>
+
+          {selectedWorkflowStatus === "pending" ? (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                    안전 항목 일괄 승인
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                    일괄 승인은 AI가 바로 답변 가능하고 위험도 낮음으로 판단한
+                    항목만 처리합니다. 확인 필요 또는 위험 항목은 제외됩니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleBulkApproveSafeWorkflowItems()}
+                  disabled={
+                    workflowBulkApproving ||
+                    workflowUpdatingKey !== null ||
+                    editingWorkflowKey !== null
+                  }
+                  className="inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500 sm:w-auto"
+                >
+                  {workflowBulkApproving
+                    ? "안전 항목 일괄 승인 중..."
+                    : `안전 항목 ${safeWorkflowApprovalItems.length}건 일괄 승인`}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {workflowBulkApprovalResult ? (
+            <div
+              className={`mb-5 rounded-xl border px-4 py-3 text-sm ${
+                workflowBulkApprovalResult.hasFailures
+                  ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+              }`}
+              role="status"
+            >
+              {workflowBulkApprovalResult.message}
+            </div>
+          ) : null}
 
           {workflowError ? (
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
@@ -5387,7 +5527,9 @@ export default function Home() {
               <div className="grid gap-4 lg:grid-cols-2">
                 {visibleWorkflowItems.map((item) => {
                       const isEditing = editingWorkflowKey === item.key;
-                      const isUpdating = workflowUpdatingKey === item.key;
+                      const isUpdating =
+                        workflowBulkApproving ||
+                        workflowUpdatingKey === item.key;
                       const isAutoCompleted =
                         (item.status === "completed" ||
                           item.status === "answered") &&
