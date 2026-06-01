@@ -4591,15 +4591,6 @@ export default function Home() {
                         </span>
                       </div>
 
-                      <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-                        <h4 className="text-sm font-semibold">쿠팡 연동 흐름</h4>
-                        <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                          연결 테스트가 성공하면 쿠팡 문의를 불러오고, AI가 답변
-                          초안과 위험도를 판단한 뒤 AI CS 처리함에 등록합니다.
-                          사장님이 승인하면 플랫폼 등록 완료 상태로 관리됩니다.
-                        </p>
-                      </div>
-
                       <button
                         type="button"
                         onClick={() =>
@@ -4612,6 +4603,148 @@ export default function Home() {
                           ? "연동 설정 닫기"
                           : "연동 설정 열기"}
                       </button>
+
+                      {isCoupangSettingsOpen ? (
+                        <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/70 dark:bg-zinc-950">
+                          <h4 className="text-sm font-semibold">
+                            쿠팡 연동 설정
+                          </h4>
+                          <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                            쿠팡 Open API 연동을 위해 필요한 정보입니다. 실제 운영
+                            전에는 secretKey를 암호화 저장하도록 개선할 예정입니다.
+                          </p>
+
+                          <div className="mt-4 space-y-4">
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_vendor_id"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                vendorId
+                              </label>
+                              <input
+                                id="coupang_vendor_id"
+                                type="text"
+                                value={coupangCredentialDraft.vendorId}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "vendorId",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_access_key"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                accessKey
+                              </label>
+                              <input
+                                id="coupang_access_key"
+                                type="text"
+                                value={coupangCredentialDraft.accessKey}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "accessKey",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_secret_key"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                secretKey
+                              </label>
+                              <input
+                                id="coupang_secret_key"
+                                type="password"
+                                value={coupangCredentialDraft.secretKey}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "secretKey",
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder={
+                                  coupangCredential?.has_secret_key
+                                    ? "저장된 secretKey가 있습니다. 변경하려면 새로 입력하세요."
+                                    : ""
+                                }
+                                autoComplete="new-password"
+                                className={inputClass}
+                              />
+                              {coupangCredential?.has_secret_key ? (
+                                <p className="text-xs leading-5 text-emerald-700 dark:text-emerald-300">
+                                  저장된 secretKey가 있습니다. 변경하려면 새로
+                                  입력하세요.
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label
+                                htmlFor="coupang_wing_id"
+                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                              >
+                                wingId
+                              </label>
+                              <input
+                                id="coupang_wing_id"
+                                type="text"
+                                value={coupangCredentialDraft.wingId}
+                                onChange={(event) =>
+                                  updateCoupangCredentialDraft(
+                                    "wingId",
+                                    event.target.value,
+                                  )
+                                }
+                                className={inputClass}
+                              />
+                            </div>
+                          </div>
+
+                          {coupangCredentialsMessage ? (
+                            <p
+                              className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                              role="status"
+                            >
+                              {coupangCredentialsMessage}
+                            </p>
+                          ) : null}
+
+                          {coupangCredentialsError ? (
+                            <p
+                              className="mt-4 text-sm font-medium text-red-700 dark:text-red-300"
+                              role="alert"
+                            >
+                              {coupangCredentialsError}
+                            </p>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            disabled={
+                              coupangCredentialsLoading ||
+                              coupangCredentialsSaving
+                            }
+                            onClick={() => void handleSaveCoupangCredentials()}
+                            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                          >
+                            {coupangCredentialsSaving
+                              ? "저장 중..."
+                              : "설정 저장"}
+                          </button>
+                        </div>
+                      ) : null}
 
                       <button
                         type="button"
@@ -4762,147 +4895,16 @@ export default function Home() {
                         ) : null}
                       </div>
 
-                      {isCoupangSettingsOpen ? (
-                        <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/70 dark:bg-zinc-950">
-                          <h4 className="text-sm font-semibold">
-                            쿠팡 연동 설정
-                          </h4>
-                          <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                            쿠팡 Open API 연동을 위해 필요한 정보입니다. 실제 운영
-                            전에는 secretKey를 암호화 저장하도록 개선할 예정입니다.
-                          </p>
-
-                          <div className="mt-4 space-y-4">
-                            <div className="space-y-1.5">
-                              <label
-                                htmlFor="coupang_vendor_id"
-                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                              >
-                                vendorId
-                              </label>
-                              <input
-                                id="coupang_vendor_id"
-                                type="text"
-                                value={coupangCredentialDraft.vendorId}
-                                onChange={(event) =>
-                                  updateCoupangCredentialDraft(
-                                    "vendorId",
-                                    event.target.value,
-                                  )
-                                }
-                                className={inputClass}
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <label
-                                htmlFor="coupang_access_key"
-                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                              >
-                                accessKey
-                              </label>
-                              <input
-                                id="coupang_access_key"
-                                type="text"
-                                value={coupangCredentialDraft.accessKey}
-                                onChange={(event) =>
-                                  updateCoupangCredentialDraft(
-                                    "accessKey",
-                                    event.target.value,
-                                  )
-                                }
-                                className={inputClass}
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <label
-                                htmlFor="coupang_secret_key"
-                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                              >
-                                secretKey
-                              </label>
-                              <input
-                                id="coupang_secret_key"
-                                type="password"
-                                value={coupangCredentialDraft.secretKey}
-                                onChange={(event) =>
-                                  updateCoupangCredentialDraft(
-                                    "secretKey",
-                                    event.target.value,
-                                  )
-                                }
-                                placeholder={
-                                  coupangCredential?.has_secret_key
-                                    ? "저장된 secretKey가 있습니다. 변경하려면 새로 입력하세요."
-                                    : ""
-                                }
-                                autoComplete="new-password"
-                                className={inputClass}
-                              />
-                              {coupangCredential?.has_secret_key ? (
-                                <p className="text-xs leading-5 text-emerald-700 dark:text-emerald-300">
-                                  저장된 secretKey가 있습니다. 변경하려면 새로
-                                  입력하세요.
-                                </p>
-                              ) : null}
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <label
-                                htmlFor="coupang_wing_id"
-                                className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
-                              >
-                                wingId
-                              </label>
-                              <input
-                                id="coupang_wing_id"
-                                type="text"
-                                value={coupangCredentialDraft.wingId}
-                                onChange={(event) =>
-                                  updateCoupangCredentialDraft(
-                                    "wingId",
-                                    event.target.value,
-                                  )
-                                }
-                                className={inputClass}
-                              />
-                            </div>
-                          </div>
-
-                          {coupangCredentialsMessage ? (
-                            <p
-                              className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
-                              role="status"
-                            >
-                              {coupangCredentialsMessage}
-                            </p>
-                          ) : null}
-
-                          {coupangCredentialsError ? (
-                            <p
-                              className="mt-4 text-sm font-medium text-red-700 dark:text-red-300"
-                              role="alert"
-                            >
-                              {coupangCredentialsError}
-                            </p>
-                          ) : null}
-
-                          <button
-                            type="button"
-                            disabled={
-                              coupangCredentialsLoading ||
-                              coupangCredentialsSaving
-                            }
-                            onClick={() => void handleSaveCoupangCredentials()}
-                            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
-                          >
-                            {coupangCredentialsSaving
-                              ? "저장 중..."
-                              : "설정 저장"}
-                          </button>
-                        </div>
-                      ) : null}
+                      <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                        <h4 className="text-sm font-semibold">
+                          쿠팡 연동 흐름
+                        </h4>
+                        <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                          연결 테스트가 성공하면 쿠팡 문의를 불러오고, AI가 답변
+                          초안과 위험도를 판단한 뒤 AI CS 처리함에 등록합니다.
+                          사장님이 승인하면 플랫폼 등록 완료 상태로 관리됩니다.
+                        </p>
+                      </div>
                     </div>
                   ) : null}
                 </article>
