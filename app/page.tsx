@@ -644,6 +644,32 @@ function platformStatusBadgeClass(value?: string | null) {
   }
 }
 
+const aiReasonAttentionPattern =
+  /가격|재고|수량|출고|환불|예약|영업시간|알레르기|알러지|건강|위생|법적|분쟁|클레임|확인 필요|확인이 필요|사장님 확인/;
+
+function truncateSummaryText(value: string, maxLength = 64) {
+  const normalizedValue = value.trim().replace(/\s+/g, " ");
+
+  if (normalizedValue.length <= maxLength) {
+    return normalizedValue;
+  }
+
+  return `${normalizedValue.slice(0, maxLength)}...`;
+}
+
+function workflowAttentionPriority(item: WorkflowItem) {
+  if (item.type === "missing_info") return 70;
+  if (item.riskLevel === "high") return 100;
+  if (item.handlingType === "needs_approval") return 90;
+  if (item.status === "needs_review" || item.handlingType === "needs_review") {
+    return 80;
+  }
+  if (aiReasonAttentionPattern.test(item.aiReason)) return 60;
+  if (item.status === "pending") return 40;
+
+  return 0;
+}
+
 function computeReviewStats(reviews: ReviewHistoryItem[]) {
   const total = reviews.length;
   const positive = reviews.filter((r) => r.sentiment === "positive").length;
@@ -2781,6 +2807,91 @@ export default function Home() {
   const workflowCompletedItems = platformFilteredWorkflowItems.filter(
     (item) => item.status === "completed" || item.status === "answered",
   );
+  const workflowSummaryItems = workflowItems.filter(
+    (item) =>
+      !(
+        item.type === "cs" &&
+        item.status === "needs_review" &&
+        workflowItems.some((missingInfoItem) =>
+          doesMissingInfoRepresentCsMessage(missingInfoItem, item),
+        )
+      ),
+  );
+  const activeWorkflowSummaryItems = workflowSummaryItems.filter(
+    (item) => item.status !== "completed" && item.status !== "answered",
+  );
+  const workflowAttentionItems = [...activeWorkflowSummaryItems]
+    .filter((item) => workflowAttentionPriority(item) > 0)
+    .sort((a, b) => {
+      const priorityGap =
+        workflowAttentionPriority(b) - workflowAttentionPriority(a);
+
+      if (priorityGap !== 0) return priorityGap;
+
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    })
+    .slice(0, 3);
+  const workflowSummaryLoading =
+    historyLoading || csMessagesLoading || missingInfosLoading;
+  const aiCsWorkSummaryItems = [
+    {
+      label: "확인 필요",
+      value: workflowSummaryItems.filter(
+        (item) =>
+          item.status === "needs_review" ||
+          item.handlingType === "needs_review",
+      ).length,
+      description: "AI가 혼자 답하기 어려운 항목",
+      className:
+        "border-amber-200 bg-amber-50/80 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100",
+      valueClassName: "text-amber-700 dark:text-amber-300",
+    },
+    {
+      label: "승인 대기",
+      value: workflowSummaryItems.filter(
+        (item) => item.type !== "missing_info" && item.status === "pending",
+      ).length,
+      description: "사장님 승인 후 완료할 답변",
+      className:
+        "border-sky-200 bg-sky-50/80 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100",
+      valueClassName: "text-sky-700 dark:text-sky-300",
+    },
+    {
+      label: "위험도 높음",
+      value: workflowSummaryItems.filter(
+        (item) => item.type !== "missing_info" && item.riskLevel === "high",
+      ).length,
+      description: "건강, 환불, 강한 클레임 등",
+      className:
+        "border-red-200 bg-red-50/80 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100",
+      valueClassName: "text-red-700 dark:text-red-300",
+    },
+    {
+      label: "자동 완료",
+      value: workflowSummaryItems.filter(
+        (item) =>
+          item.type !== "missing_info" &&
+          (item.status === "completed" || item.status === "answered") &&
+          item.handlingType === "auto_ready" &&
+          item.riskLevel === "low",
+      ).length,
+      description: "낮은 위험도로 자동 완료된 항목",
+      className:
+        "border-emerald-200 bg-emerald-50/80 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100",
+      valueClassName: "text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      label: "플랫폼 연동",
+      value: workflowSummaryItems.filter(
+        (item) =>
+          item.type !== "missing_info" && item.sourcePlatform !== "manual",
+      ).length,
+      description: "외부 플랫폼 출처 항목",
+      className:
+        "border-indigo-200 bg-indigo-50/80 text-indigo-950 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100",
+      valueClassName: "text-indigo-700 dark:text-indigo-300",
+    },
+  ] as const;
   const workflowColumns = [
     {
       status: "needs_review" as const,
@@ -3738,6 +3849,124 @@ export default function Home() {
                 확인 필요한 정보 보기
               </button>
             ) : null}
+          </section>
+        ) : null}
+
+        {activeTab === "manage" && authUser ? (
+          <section
+            className={`${cardClass} order-[40] border-indigo-200/70 bg-gradient-to-br from-white via-white to-indigo-50/70 dark:border-indigo-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/25`}
+          >
+            <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                  AI CS Priority
+                </p>
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  오늘의 AI CS 업무 요약
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  AI가 처리한 문의와 리뷰 중 사장님이 먼저 확인해야 할 항목을
+                  정리했습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollToSection("ai-cs-inbox")}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              >
+                AI CS 처리함에서 확인하기
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {aiCsWorkSummaryItems.map((item) => (
+                <article
+                  key={item.label}
+                  className={`rounded-xl border p-4 ${item.className}`}
+                >
+                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                    {item.label}
+                  </p>
+                  <p
+                    className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight ${item.valueClassName}`}
+                  >
+                    {workflowSummaryLoading
+                      ? "—"
+                      : item.value.toLocaleString("ko-KR")}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    먼저 확인할 항목
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    위험도, 승인 필요 여부, 확인 이유, 오래된 승인 대기 순으로
+                    골랐습니다.
+                  </p>
+                </div>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  최대 3개 표시
+                </span>
+              </div>
+
+              {workflowSummaryLoading ? (
+                <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  AI CS 업무 요약을 불러오는 중...
+                </p>
+              ) : workflowAttentionItems.length === 0 ? (
+                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  현재 먼저 확인해야 할 위험 항목은 없습니다.
+                </p>
+              ) : (
+                <div className="grid gap-3 lg:grid-cols-3">
+                  {workflowAttentionItems.map((item) => (
+                    <article
+                      key={item.key}
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
+                    >
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                          {item.typeLabel}
+                        </span>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                          {sourcePlatformLabel(item.sourcePlatform)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(
+                            item.status,
+                          )}`}
+                        >
+                          {workflowStatusLabel(item.status)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${riskLevelBadgeClass(
+                            item.riskLevel,
+                          )}`}
+                        >
+                          위험도: {riskLevelLabel(item.riskLevel)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium leading-6 text-zinc-800 dark:text-zinc-100">
+                        {truncateSummaryText(item.original)}
+                      </p>
+                      {item.aiReason ? (
+                        <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          {truncateSummaryText(item.aiReason, 82)}
+                        </p>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         ) : null}
 
