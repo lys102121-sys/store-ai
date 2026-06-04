@@ -6,10 +6,15 @@ import {
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  createUsedKnowledgeSnapshot,
+  isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   mapMissingInfoTopicToKnowledgeCategory,
   mergeStoreKnowledgeIntoStore,
   saveStoreKnowledgeItem,
+  selectRelevantStoreKnowledgeItems,
+  type StoreKnowledgeItem,
+  warnMissingUsedKnowledgeColumn,
 } from "@/app/lib/storeKnowledge";
 
 type RequestBody = {
@@ -32,6 +37,7 @@ type MissingInfoTopic =
   | "care_instruction"
   | "material"
   | "product_composition"
+  | "product_option"
   | "shipping_fee"
   | "shipping_schedule"
   | "refund_exchange"
@@ -137,6 +143,34 @@ const inquiryIntentGroups: InquiryIntentGroup[] = [
       "포장 가능",
       "쇼핑백",
       "포장비",
+      "케이크 초",
+      "생일초",
+      "숫자초",
+      "양초",
+      "케이크 칼",
+      "토퍼",
+      "메시지 카드",
+      "메세지 카드",
+      "보냉팩",
+      "아이스팩",
+      "추가 옵션",
+      "부가 옵션",
+      "포함",
+      "동봉",
+      "제공",
+      "증정",
+      "같이 주",
+      "함께 주",
+      "챙겨 주",
+      "넣어 주",
+      "달아 주",
+      "붙여 주",
+      "변경",
+      "조절",
+      "선택",
+      "각인",
+      "커스텀",
+      "맞춤",
     ],
     allowGeneralMatch: true,
   },
@@ -221,6 +255,14 @@ function classifyMissingInfoTopic(text: string): MissingInfoTopic {
 
   if (/예약/.test(text)) {
     return "reservation";
+  }
+
+  if (
+    /케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|케이크\s*칼|토퍼|쇼핑백|메시지\s*카드|메세지\s*카드|보냉팩|아이스팩|추가\s*옵션|부가\s*옵션|포함(?:되나요|돼요|인가요)?|동봉(?:되나요|돼요|인가요)?|제공(?:되나요|돼요|인가요)?|증정(?:되나요|돼요|인가요)?|같이\s*(?:주|주시|오나요)|함께\s*(?:주|주시|오나요)|챙겨\s*주|넣어\s*주|달아\s*주|붙여\s*주|변경\s*(?:되나요|돼요|가능|할\s*수)|조절\s*(?:되나요|돼요|가능|할\s*수)|선택\s*(?:되나요|돼요|가능|할\s*수)|각인\s*(?:되나요|돼요|가능|할\s*수)|커스텀\s*(?:되나요|돼요|가능|할\s*수)|맞춤\s*(?:되나요|돼요|가능|할\s*수)/.test(
+      text,
+    )
+  ) {
+    return "product_option";
   }
 
   if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
@@ -623,28 +665,64 @@ export async function POST(request: Request) {
     [targetField]: updatedTargetValue,
     updated_at: updatedAt,
   };
-  const storeKnowledgeItems = await loadStoreKnowledgeItems({
-    supabase: auth.supabase,
-    userId: auth.userId,
-  });
-  const updatedStoreWithKnowledge = mergeStoreKnowledgeIntoStore(
-    updatedStoreRow,
-    storeKnowledgeItems,
-  );
+  const learnedKnowledgeItem: StoreKnowledgeItem = {
+    id: `missing-info-${missingInfoId}`,
+    user_id: auth.userId,
+    store_id: String(storeRow.id),
+    category: mapMissingInfoTopicToKnowledgeCategory(resolvedTopic),
+    question: missingInfoRow.question ?? "고객 문의에 필요한 정보",
+    answer,
+    source_type: "missing_info",
+    source_id: missingInfoId,
+    source_text: referenceMessages[0] ?? missingInfoRow.source_message,
+    confidence: "owner_confirmed",
+    created_at: updatedAt,
+    updated_at: updatedAt,
+  };
+  const storeKnowledgeItems = [
+    learnedKnowledgeItem,
+    ...(await loadStoreKnowledgeItems({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    })),
+  ];
+  const uniqueStoreKnowledgeItems = [
+    ...new Map(
+      storeKnowledgeItems.map((item) => [
+        `${item.category}:${item.question}`,
+        item,
+      ]),
+    ).values(),
+  ];
   let regeneratedReplies: {
     id: number | string;
     decision: Awaited<ReturnType<typeof generateCsReplyDecision>>;
+    usedKnowledgeItems: ReturnType<typeof createUsedKnowledgeSnapshot>;
   }[];
 
   try {
     regeneratedReplies = await Promise.all(
-      relatedCsMessages.map(async (message) => ({
-        id: message.id,
-        decision: await generateCsReplyDecision({
-          customerMessage: message.customer_message ?? "",
-          store: updatedStoreWithKnowledge,
-        }),
-      })),
+      relatedCsMessages.map(async (message) => {
+        const customerMessage = message.customer_message ?? "";
+        const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+          customerMessage,
+          uniqueStoreKnowledgeItems,
+        );
+
+        return {
+          id: message.id,
+          decision: await generateCsReplyDecision({
+            customerMessage,
+            store: mergeStoreKnowledgeIntoStore(
+              updatedStoreRow,
+              relevantStoreKnowledgeItems,
+            ),
+          }),
+          usedKnowledgeItems: createUsedKnowledgeSnapshot(
+            relevantStoreKnowledgeItems,
+          ),
+        };
+      }),
     );
   } catch (error) {
     return Response.json(
@@ -688,9 +766,26 @@ export async function POST(request: Request) {
         handling_type: regeneratedReply.decision.handlingType,
         risk_level: regeneratedReply.decision.riskLevel,
         ai_reason: regeneratedReply.decision.aiReason,
+        used_knowledge_items: regeneratedReply.usedKnowledgeItems,
       })
       .eq("id", regeneratedReply.id)
       .eq("user_id", auth.userId);
+
+    if (isMissingUsedKnowledgeColumnError(csMessageUpdateError)) {
+      warnMissingUsedKnowledgeColumn();
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .update({
+          reply: regeneratedReply.decision.reply,
+          status: "pending",
+          handling_type: regeneratedReply.decision.handlingType,
+          risk_level: regeneratedReply.decision.riskLevel,
+          ai_reason: regeneratedReply.decision.aiReason,
+        })
+        .eq("id", regeneratedReply.id)
+        .eq("user_id", auth.userId);
+      csMessageUpdateError = fallback.error;
+    }
 
     if (isMissingAiReasonColumnError(csMessageUpdateError)) {
       warnMissingAiReasonColumns();

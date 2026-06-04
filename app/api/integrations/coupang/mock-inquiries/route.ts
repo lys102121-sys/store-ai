@@ -14,8 +14,13 @@ import {
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  createUsedKnowledgeSnapshot,
+  isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   mergeStoreKnowledgeIntoStore,
+  selectRelevantStoreKnowledgeItems,
+  warnMissingUsedKnowledgeColumn,
+  withoutUsedKnowledgeItems,
 } from "@/app/lib/storeKnowledge";
 
 const openai = new OpenAI({
@@ -238,18 +243,31 @@ export async function POST(request: Request) {
       supabase: auth.supabase,
       userId: auth.userId,
     });
-    const storeRow = mergeStoreKnowledgeIntoStore(
-      baseStoreRow,
-      storeKnowledgeItems,
-    );
     const decisions = await Promise.all(
-      mockInquiries.map((inquiry) => generateMockReply(inquiry, storeRow)),
+      mockInquiries.map((inquiry) => {
+        const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+          inquiry,
+          storeKnowledgeItems,
+        );
+
+        return generateMockReply(
+          inquiry,
+          mergeStoreKnowledgeIntoStore(baseStoreRow, relevantStoreKnowledgeItems),
+        );
+      }),
     );
     const timestamp = Date.now();
     const rows = decisions.map((decision, index) => {
       const customerMessage = mockInquiries[index];
+      const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+        customerMessage,
+        storeKnowledgeItems,
+      );
+      const usedKnowledgeItems = createUsedKnowledgeSnapshot(
+        relevantStoreKnowledgeItems,
+      );
       const status =
-        storeRow.auto_complete_low_risk_cs &&
+        baseStoreRow.auto_complete_low_risk_cs &&
         decision.handlingType === "auto_ready" &&
         decision.riskLevel === "low"
           ? "completed"
@@ -265,6 +283,7 @@ export async function POST(request: Request) {
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
         ai_reason: decision.aiReason,
+        used_knowledge_items: usedKnowledgeItems,
         source_platform: "coupang",
         external_id: `mock-coupang-${timestamp}-${index + 1}`,
         external_url: null,
@@ -276,9 +295,20 @@ export async function POST(request: Request) {
       .from("cs_messages")
       .insert(rows);
 
+    if (isMissingUsedKnowledgeColumnError(insertError)) {
+      warnMissingUsedKnowledgeColumn();
+      const fallbackRows = rows.map(withoutUsedKnowledgeItems);
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .insert(fallbackRows);
+      insertError = fallback.error;
+    }
+
     if (isMissingAiReasonColumnError(insertError)) {
       warnMissingAiReasonColumns();
-      const fallbackRows = rows.map(withoutAiReason);
+      const fallbackRows = rows
+        .map(withoutUsedKnowledgeItems)
+        .map(withoutAiReason);
       const fallback = await auth.supabase
         .from("cs_messages")
         .insert(fallbackRows);

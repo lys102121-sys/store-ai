@@ -28,6 +28,13 @@ export type StoreKnowledgeItem = {
   updated_at?: string;
 };
 
+export type UsedStoreKnowledgeItem = {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+};
+
 type StoreKnowledgeSaveInput = {
   supabase: SupabaseClient;
   userId: string;
@@ -68,12 +75,23 @@ create index if not exists store_knowledge_items_user_id_category_idx
   on store_knowledge_items (user_id, category);
 `;
 
+export const usedKnowledgeItemsSql =
+  "alter table cs_messages add column if not exists used_knowledge_items jsonb default '[]'::jsonb;";
+
 function isMissingStoreKnowledgeTableError(error: { message: string } | null) {
   return Boolean(error && /store_knowledge_items|schema cache|does not exist/i.test(error.message));
 }
 
 function warnMissingStoreKnowledgeTable() {
   console.warn(`store_knowledge_items table is missing. Run: ${storeKnowledgeSql}`);
+}
+
+export function isMissingUsedKnowledgeColumnError(error: { message: string } | null) {
+  return Boolean(error && /used_knowledge_items/i.test(error.message));
+}
+
+export function warnMissingUsedKnowledgeColumn() {
+  console.warn(`cs_messages used_knowledge_items column is missing. Run: ${usedKnowledgeItemsSql}`);
 }
 
 export function mapMissingInfoTopicToKnowledgeCategory(
@@ -92,6 +110,7 @@ export function mapMissingInfoTopicToKnowledgeCategory(
     case "reservation":
       return "reservation";
     case "gift_wrapping":
+    case "product_option":
       return "packaging";
     case "allergy":
     case "material":
@@ -220,6 +239,202 @@ export async function loadStoreKnowledgeItems({
   }
 
   return (data ?? []) as StoreKnowledgeItem[];
+}
+
+const categoryIntentKeywords: Record<string, string[]> = {
+  pricing: ["가격", "얼마", "금액", "비용", "몇원", "몇 원", "총액", "견적"],
+  shipping: ["배송", "출고", "발송", "도착", "택배", "수령", "오늘 보내"],
+  refund_exchange: ["환불", "취소", "반품", "교환", "돈 돌려"],
+  stock: ["재고", "남아", "품절", "구매 가능", "주문 가능"],
+  reservation: ["예약", "픽업", "방문 수령", "수령 시간", "몇 시"],
+  packaging: [
+    "포장",
+    "선물 포장",
+    "쇼핑백",
+    "포장비",
+    "기프트",
+    "케이크 초",
+    "생일초",
+    "숫자초",
+    "양초",
+    "케이크 칼",
+    "토퍼",
+    "메시지 카드",
+    "메세지 카드",
+    "보냉팩",
+    "아이스팩",
+    "추가 옵션",
+    "부가 옵션",
+    "포함",
+    "동봉",
+    "제공",
+    "증정",
+    "같이 주",
+    "함께 주",
+    "챙겨 주",
+    "넣어 주",
+    "달아 주",
+    "붙여 주",
+    "변경",
+    "조절",
+    "선택",
+    "각인",
+    "커스텀",
+    "맞춤",
+    "충전기",
+    "어댑터",
+    "케이블",
+    "리본",
+    "스티커",
+    "파우치",
+    "설명서",
+    "보증서",
+  ],
+  allergy_ingredient: [
+    "알레르기",
+    "알러지",
+    "성분",
+    "원재료",
+    "두드러기",
+    "피부",
+    "가려움",
+  ],
+  product: ["상품", "구성", "용량", "사이즈", "사용법", "보관"],
+  general: [],
+};
+
+const genericKnowledgeTokens = new Set([
+  "고객",
+  "문의",
+  "답변",
+  "등록",
+  "등록해주세요",
+  "관련",
+  "안내",
+  "정보",
+  "정확",
+  "필요",
+  "가능",
+  "가능한가요",
+  "여부",
+  "궁금",
+  "있나요",
+  "되나요",
+  "상품",
+  "제품",
+]);
+
+function normalizeKnowledgeText(value: string) {
+  return value.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+}
+
+function stripPostposition(value: string) {
+  return value.replace(/(으로|에게|에서|까지|부터|은|는|이|가|을|를|의|에|와|과|도|로|만)$/g, "");
+}
+
+function getKnowledgeTokens(value: string) {
+  return new Set(
+    value
+      .toLowerCase()
+      .split(/[^0-9a-z가-힣]+/)
+      .map((token) => stripPostposition(token.trim()))
+      .filter(
+        (token) =>
+          token.length >= 2 && !genericKnowledgeTokens.has(token),
+      ),
+  );
+}
+
+function getKeywordMatchCount(value: string, keywords: string[]) {
+  const normalizedValue = normalizeKnowledgeText(value);
+
+  return keywords.filter((keyword) =>
+    normalizedValue.includes(normalizeKnowledgeText(keyword)),
+  ).length;
+}
+
+function getTokenOverlapScore(left: string, right: string) {
+  const leftTokens = [...getKnowledgeTokens(left)];
+  const rightTokens = [...getKnowledgeTokens(right)];
+
+  return leftTokens.filter((leftToken) =>
+    rightTokens.some(
+      (rightToken) =>
+        leftToken === rightToken ||
+        (Math.min(leftToken.length, rightToken.length) >= 2 &&
+          (leftToken.includes(rightToken) || rightToken.includes(leftToken))),
+    ),
+  ).length;
+}
+
+function scoreKnowledgeItem(customerMessage: string, item: StoreKnowledgeItem) {
+  const itemText = [item.question, item.answer, item.source_text ?? ""].join("\n");
+  const categoryKeywords = categoryIntentKeywords[item.category] ?? [];
+  const messageKeywordMatches = getKeywordMatchCount(
+    customerMessage,
+    categoryKeywords,
+  );
+  const itemKeywordMatches = getKeywordMatchCount(itemText, categoryKeywords);
+  const tokenOverlapScore = getTokenOverlapScore(customerMessage, itemText);
+  const normalizedMessage = normalizeKnowledgeText(customerMessage);
+  const normalizedQuestion = normalizeKnowledgeText(item.question);
+  const directQuestionMatch =
+    normalizedQuestion.length >= 6 &&
+    (normalizedMessage.includes(normalizedQuestion) ||
+      normalizedQuestion.includes(normalizedMessage));
+
+  let score = tokenOverlapScore * 4;
+
+  if (messageKeywordMatches > 0 && itemKeywordMatches > 0) {
+    score += 5 + Math.min(messageKeywordMatches + itemKeywordMatches, 4);
+  }
+
+  if (directQuestionMatch) {
+    score += 8;
+  }
+
+  return score;
+}
+
+export function selectRelevantStoreKnowledgeItems(
+  customerMessage: string,
+  items: StoreKnowledgeItem[],
+  limit = 3,
+) {
+  return items
+    .map((item) => ({ item, score: scoreKnowledgeItem(customerMessage, item) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+
+      return (
+        new Date(b.item.updated_at ?? 0).getTime() -
+        new Date(a.item.updated_at ?? 0).getTime()
+      );
+    })
+    .slice(0, limit)
+    .map(({ item }) => item);
+}
+
+export function createUsedKnowledgeSnapshot(
+  items: StoreKnowledgeItem[],
+): UsedStoreKnowledgeItem[] {
+  return items
+    .filter((item) => item.id && item.question.trim() && item.answer.trim())
+    .map((item) => ({
+      id: item.id!,
+      category: item.category || "general",
+      question: item.question.trim(),
+      answer: item.answer.trim(),
+    }));
+}
+
+export function withoutUsedKnowledgeItems<
+  T extends { used_knowledge_items?: unknown },
+>(row: T) {
+  const fallbackRow = { ...row };
+  delete fallbackRow.used_knowledge_items;
+  return fallbackRow;
 }
 
 export function formatStoreKnowledgeForPrompt(items: StoreKnowledgeItem[]) {

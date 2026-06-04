@@ -46,6 +46,7 @@ type CsMessageHistoryItem = {
   external_id?: string | null;
   external_url?: string | null;
   platform_status?: PlatformStatus | null;
+  used_knowledge_items?: unknown;
   created_at: string;
 };
 
@@ -74,6 +75,13 @@ type StoreKnowledgeItem = {
   confidence: string;
   created_at: string;
   updated_at: string;
+};
+
+type UsedKnowledgeItem = {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
 };
 
 type ReviewApiResponse = {
@@ -111,6 +119,7 @@ type CsReplyApiResponse = {
   handling_type?: HandlingType;
   risk_level?: RiskLevel;
   ai_reason?: string;
+  used_knowledge_items?: UsedKnowledgeItem[];
   error?: string;
   detail?: string;
 };
@@ -186,6 +195,7 @@ type WorkflowItem = {
   externalUrl: string | null;
   platformStatus: PlatformStatus;
   aiReason: string;
+  usedKnowledgeItems: UsedKnowledgeItem[];
   createdAt: string;
   canMutate: boolean;
   missingInfo?: MissingInfoItem;
@@ -693,6 +703,27 @@ function storeKnowledgeCategoryLabel(value?: string | null) {
     default:
       return "기타 FAQ";
   }
+}
+
+function parseUsedKnowledgeItems(value: unknown): UsedKnowledgeItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const record = item as Record<string, unknown>;
+    const id = typeof record.id === "string" ? record.id : "";
+    const category =
+      typeof record.category === "string" ? record.category : "general";
+    const question =
+      typeof record.question === "string" ? record.question.trim() : "";
+    const answer =
+      typeof record.answer === "string" ? record.answer.trim() : "";
+
+    if (!id || !question || !answer) return [];
+
+    return [{ id, category, question, answer }];
+  });
 }
 
 const aiReasonAttentionPattern =
@@ -2945,6 +2976,7 @@ export default function Home() {
       externalUrl: item.external_url ?? null,
       platformStatus: item.platform_status ?? "local",
       aiReason: item.ai_reason?.trim() ?? "",
+      usedKnowledgeItems: [],
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2964,6 +2996,7 @@ export default function Home() {
       externalUrl: item.external_url ?? null,
       platformStatus: item.platform_status ?? "local",
       aiReason: item.ai_reason?.trim() ?? "",
+      usedKnowledgeItems: parseUsedKnowledgeItems(item.used_knowledge_items),
       createdAt: item.created_at,
       canMutate: true,
     }));
@@ -2983,6 +3016,7 @@ export default function Home() {
       externalUrl: null,
       platformStatus: "local",
       aiReason: item.reason,
+      usedKnowledgeItems: [],
       createdAt: item.created_at,
       canMutate: false,
       missingInfo: item,
@@ -6332,6 +6366,44 @@ export default function Home() {
                             <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
                               <p className="font-semibold">AI 판단 이유</p>
                               <p className="mt-1">{item.aiReason}</p>
+                            </div>
+                          ) : null}
+
+                          {item.usedKnowledgeItems.length > 0 ? (
+                            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100">
+                              <p className="font-semibold">
+                                참고한 가게 지식
+                              </p>
+                              <ul className="mt-2 space-y-2">
+                                {item.usedKnowledgeItems
+                                  .slice(0, 3)
+                                  .map((knowledgeItem) => (
+                                    <li
+                                      key={`${item.key}-${knowledgeItem.id}`}
+                                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
+                                    >
+                                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                                          {storeKnowledgeCategoryLabel(
+                                            knowledgeItem.category,
+                                          )}
+                                        </span>
+                                        <span className="font-medium">
+                                          {truncateSummaryText(
+                                            knowledgeItem.question,
+                                            56,
+                                          )}
+                                        </span>
+                                      </div>
+                                      <p className="text-emerald-800 dark:text-emerald-200">
+                                        {truncateSummaryText(
+                                          knowledgeItem.answer,
+                                          100,
+                                        )}
+                                      </p>
+                                    </li>
+                                  ))}
+                              </ul>
                             </div>
                           ) : null}
 

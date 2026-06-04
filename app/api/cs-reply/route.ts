@@ -15,8 +15,12 @@ import {
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  createUsedKnowledgeSnapshot,
+  isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   mergeStoreKnowledgeIntoStore,
+  selectRelevantStoreKnowledgeItems,
+  warnMissingUsedKnowledgeColumn,
 } from "@/app/lib/storeKnowledge";
 
 const openai = new OpenAI({
@@ -54,6 +58,7 @@ type MissingInfoTopic =
   | "care_instruction"
   | "material"
   | "product_composition"
+  | "product_option"
   | "shipping_fee"
   | "shipping_schedule"
   | "refund_exchange"
@@ -129,6 +134,14 @@ function classifyMissingInfoTopic(text: string): MissingInfoTopic {
 
   if (/예약/.test(text)) {
     return "reservation";
+  }
+
+  if (
+    /케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|케이크\s*칼|토퍼|쇼핑백|메시지\s*카드|메세지\s*카드|보냉팩|아이스팩|추가\s*옵션|부가\s*옵션|포함(?:되나요|돼요|인가요)?|동봉(?:되나요|돼요|인가요)?|제공(?:되나요|돼요|인가요)?|증정(?:되나요|돼요|인가요)?|같이\s*(?:주|주시|오나요)|함께\s*(?:주|주시|오나요)|챙겨\s*주|넣어\s*주|달아\s*주|붙여\s*주|변경\s*(?:되나요|돼요|가능|할\s*수)|조절\s*(?:되나요|돼요|가능|할\s*수)|선택\s*(?:되나요|돼요|가능|할\s*수)|각인\s*(?:되나요|돼요|가능|할\s*수)|커스텀\s*(?:되나요|돼요|가능|할\s*수)|맞춤\s*(?:되나요|돼요|가능|할\s*수)/.test(
+      text,
+    )
+  ) {
+    return "product_option";
   }
 
   if (/선물|포장|선물포장|포장되나요|포장 가능|기프트/.test(text)) {
@@ -357,6 +370,18 @@ function buildMissingInfo(
     };
   }
 
+  if (
+    /케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|케이크\s*칼|토퍼|쇼핑백|메시지\s*카드|메세지\s*카드|보냉팩|아이스팩|추가\s*옵션|부가\s*옵션|포함(?:되나요|돼요|인가요)?|동봉(?:되나요|돼요|인가요)?|제공(?:되나요|돼요|인가요)?|증정(?:되나요|돼요|인가요)?|같이\s*(?:주|주시|오나요)|함께\s*(?:주|주시|오나요)|챙겨\s*주|넣어\s*주|달아\s*주|붙여\s*주|변경\s*(?:되나요|돼요|가능|할\s*수)|조절\s*(?:되나요|돼요|가능|할\s*수)|선택\s*(?:되나요|돼요|가능|할\s*수)|각인\s*(?:되나요|돼요|가능|할\s*수)|커스텀\s*(?:되나요|돼요|가능|할\s*수)|맞춤\s*(?:되나요|돼요|가능|할\s*수)/.test(
+      normalizedMessage,
+    )
+  ) {
+    return {
+      question: "포함, 제공, 추가, 변경, 조절 등 운영 옵션 가능 여부를 알려주세요.",
+      reason:
+        "고객이 운영 옵션 가능 여부를 문의했지만, 현재 등록된 상품 정보에 해당 내용이 없습니다.",
+    };
+  }
+
   if (isGiftWrapQuestion(normalizedMessage)) {
     return {
       question: "선물 포장 가능 여부를 알려주세요.",
@@ -495,9 +520,16 @@ export async function POST(request: Request) {
     supabase: auth.supabase,
     userId: auth.userId,
   });
+  const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+    customerMessage,
+    storeKnowledgeItems,
+  );
+  const usedKnowledgeItems = createUsedKnowledgeSnapshot(
+    relevantStoreKnowledgeItems,
+  );
   const storeRow = mergeStoreKnowledgeIntoStore(
     baseStoreRow,
-    storeKnowledgeItems,
+    relevantStoreKnowledgeItems,
   );
   const systemPrompt = buildCsReplySystemPrompt(storeRow);
 
@@ -613,11 +645,31 @@ export async function POST(request: Request) {
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
         ai_reason: aiReason,
+        used_knowledge_items: usedKnowledgeItems,
         source_platform: "manual",
         external_id: null,
         external_url: null,
         platform_status: "local",
       });
+
+    if (isMissingUsedKnowledgeColumnError(csMessageSaveError)) {
+      warnMissingUsedKnowledgeColumn();
+      const fallback = await auth.supabase.from("cs_messages").insert({
+        user_id: auth.userId,
+        customer_message: customerMessage,
+        reply,
+        status,
+        handling_type: decision.handlingType,
+        risk_level: decision.riskLevel,
+        ai_reason: aiReason,
+        source_platform: "manual",
+        external_id: null,
+        external_url: null,
+        platform_status: "local",
+      });
+
+      csMessageSaveError = fallback.error;
+    }
 
     if (
       csMessageSaveError &&
@@ -714,6 +766,7 @@ export async function POST(request: Request) {
       handling_type: decision.handlingType,
       risk_level: decision.riskLevel,
       ai_reason: aiReason,
+      used_knowledge_items: usedKnowledgeItems,
     });
   } catch (error) {
     const message =

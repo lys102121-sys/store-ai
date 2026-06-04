@@ -8,6 +8,7 @@ export type OperationalInfoTopic =
   | "reservation"
   | "refund_exchange"
   | "product_composition"
+  | "product_option"
   | "shipping_fee";
 
 export type MissingOperationalInfo = {
@@ -148,6 +149,178 @@ function hasExplicitRefundInfo(store: CsReplyPromptStore) {
   );
 }
 
+const productOptionQuestionPattern =
+  /케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|(?:^|[\s,?!.])초(?:는|도|를|가)?\s*(?:같이|함께|주|주시|제공|포함)|케이크\s*칼|(?:^|[\s,?!.])칼(?:은|도|을|이)?\s*(?:같이|함께|주|주시|제공|포함)|토퍼|쇼핑백|메시지\s*카드|메세지\s*카드|보냉팩|아이스팩|추가\s*옵션|부가\s*옵션|포함(?:되나요|돼요|인가요)?|동봉(?:되나요|돼요|인가요)?|제공(?:되나요|돼요|인가요)?|증정(?:되나요|돼요|인가요)?|같이\s*(?:주|주시|오나요)|함께\s*(?:주|주시|오나요)|챙겨\s*주|넣어\s*주|달아\s*주|붙여\s*주|변경\s*(?:되나요|돼요|가능|할\s*수)|조절\s*(?:되나요|돼요|가능|할\s*수)|선택\s*(?:되나요|돼요|가능|할\s*수)|각인\s*(?:되나요|돼요|가능|할\s*수)|커스텀\s*(?:되나요|돼요|가능|할\s*수)|맞춤\s*(?:되나요|돼요|가능|할\s*수)/;
+
+const optionDecisionPattern =
+  /가능|불가|제공|미제공|포함|미포함|별도|요청사항|추가|무료|유료|동봉|증정|준비|없음|있음|변경|조절|선택|각인|커스텀|맞춤/;
+
+const genericOptionSubjectPatterns = [
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:포함|동봉|제공|증정)(?:되나요|돼요|인가요|되나|됩니까)?/,
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:같이|함께)\s*(?:주|주시|오나요|오나|제공)/,
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:챙겨|넣어|달아|붙여)\s*주/,
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:변경|조절|선택|각인|커스텀|맞춤)\s*(?:되나요|돼요|가능|할\s*수)/,
+];
+
+const genericOptionSubjectStopWords = new Set([
+  "문의",
+  "고객",
+  "상품",
+  "제품",
+  "메뉴",
+  "주문",
+  "가능",
+  "포함",
+  "동봉",
+  "제공",
+  "증정",
+  "같이",
+  "함께",
+  "주시나요",
+  "주나요",
+  "되나요",
+  "돼요",
+  "있나요",
+  "부탁",
+  "드려요",
+]);
+
+function isProductOptionQuestion(customerMessage: string) {
+  return productOptionQuestionPattern.test(customerMessage);
+}
+
+function normalizeOptionSubject(subject: string) {
+  return subject
+    .replace(/[?!.。！？]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(혹시|혹시요|문의드립니다|문의드려요)\s*/, "")
+    .replace(/\s*(?:은|는|이|가|도|을|를|요)$/g, "")
+    .trim();
+}
+
+function getGenericProductOptionSubject(customerMessage: string) {
+  for (const pattern of genericOptionSubjectPatterns) {
+    const match = customerMessage.match(pattern);
+    const subject = normalizeOptionSubject(match?.[1] ?? "");
+
+    if (subject.length >= 2) return subject;
+  }
+
+  return "";
+}
+
+function getSubjectTokens(subject: string) {
+  return subject
+    .toLowerCase()
+    .split(/[^0-9a-z가-힣]+/)
+    .map((token) =>
+      token
+        .trim()
+        .replace(/(으로|에게|에서|까지|부터|은|는|이|가|을|를|의|에|와|과|도|로|만)$/g, ""),
+    )
+    .filter(
+      (token) =>
+        token.length >= 2 && !genericOptionSubjectStopWords.has(token),
+    );
+}
+
+function getProductOptionInfoPatternForQuestion(
+  customerMessage: string,
+): RegExp | null {
+  if (/케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|(?:^|[\s,?!.])초(?:는|도|를|가)?\s*(?:같이|함께|주|주시|제공|포함)/.test(customerMessage)) {
+    return /케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초/;
+  }
+
+  if (/케이크\s*칼|(?:^|[\s,?!.])칼(?:은|도|을|이)?\s*(?:같이|함께|주|주시|제공|포함)/.test(customerMessage)) {
+    return /케이크\s*칼/;
+  }
+
+  if (/토퍼/.test(customerMessage)) return /토퍼/;
+  if (/쇼핑백/.test(customerMessage)) return /쇼핑백/;
+  if (/메시지\s*카드|메세지\s*카드/.test(customerMessage)) {
+    return /메시지\s*카드|메세지\s*카드/;
+  }
+  if (/보냉팩|아이스팩/.test(customerMessage)) return /보냉팩|아이스팩/;
+
+  if (/추가\s*옵션|부가\s*옵션/.test(customerMessage)) {
+    return /추가\s*옵션|부가\s*옵션/;
+  }
+
+  return null;
+}
+
+function hasExplicitProductOptionInfo(
+  customerMessage: string,
+  store: CsReplyPromptStore,
+) {
+  const text = getProductOperationalText(store);
+  const optionPattern = getProductOptionInfoPatternForQuestion(customerMessage);
+  const explicitKnownOptionInfo = optionPattern?.test(text) ?? false;
+  const genericSubject = getGenericProductOptionSubject(customerMessage);
+  const subjectTokens = getSubjectTokens(genericSubject);
+  const hasSubjectEvidence =
+    subjectTokens.length > 0 &&
+    subjectTokens.every((token) => text.toLowerCase().includes(token));
+
+  return (
+    (explicitKnownOptionInfo || hasSubjectEvidence) &&
+    optionDecisionPattern.test(text)
+  );
+}
+
+function getProductOptionSubject(customerMessage: string) {
+  if (/케이크\s*초|생일\s*초|생일초|숫자\s*초|숫자초|양초|(?:^|[\s,?!.])초(?:는|도|를|가)?\s*(?:같이|함께|주|주시|제공|포함)/.test(customerMessage)) {
+    return "케이크 초 제공 여부";
+  }
+
+  if (/케이크\s*칼|(?:^|[\s,?!.])칼(?:은|도|을|이)?\s*(?:같이|함께|주|주시|제공|포함)/.test(customerMessage)) {
+    return "케이크 칼 제공 여부";
+  }
+
+  if (/토퍼/.test(customerMessage)) return "토퍼 제공 여부";
+  if (/쇼핑백/.test(customerMessage)) return "쇼핑백 제공 여부";
+  if (/메시지\s*카드|메세지\s*카드/.test(customerMessage)) {
+    return "메시지 카드 제공 여부";
+  }
+  if (/보냉팩|아이스팩/.test(customerMessage)) {
+    return "보냉팩 또는 아이스팩 제공 여부";
+  }
+  if (/각인/.test(customerMessage)) return "각인 가능 여부";
+  if (/커스텀/.test(customerMessage)) return "커스텀 가능 여부";
+  if (/맞춤/.test(customerMessage)) return "맞춤 가능 여부";
+
+  const genericSubject = getGenericProductOptionSubject(customerMessage);
+  if (genericSubject) {
+    if (/포함|동봉/.test(customerMessage)) {
+      return `${genericSubject} 포함 여부`;
+    }
+
+    if (/제공|증정|같이|함께|챙겨|넣어|달아|붙여/.test(customerMessage)) {
+      return `${genericSubject} 제공 여부`;
+    }
+
+    if (/변경/.test(customerMessage)) return `${genericSubject} 변경 가능 여부`;
+    if (/조절/.test(customerMessage)) return `${genericSubject} 조절 가능 여부`;
+    if (/선택/.test(customerMessage)) return `${genericSubject} 선택 가능 여부`;
+    if (/각인/.test(customerMessage)) return `${genericSubject} 가능 여부`;
+    if (/커스텀|맞춤/.test(customerMessage)) {
+      return `${genericSubject} 가능 여부`;
+    }
+
+    return `${genericSubject} 가능 여부`;
+  }
+
+  return "부가 옵션 제공 여부";
+}
+
+function createProductOptionFallbackReply(
+  store: CsReplyPromptStore,
+  subject: string,
+) {
+  return `${getGreeting(store)} ${subject}는 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.`;
+}
+
 function getMissingPriceInfo(
   customerMessage: string,
   store: CsReplyPromptStore,
@@ -250,6 +423,21 @@ export function findMissingOperationalInfo(
       question: "환불, 교환, 취소 관련 기준을 등록해주세요.",
       reason: "환불이나 교환 문의는 정확한 정책 기준이 필요합니다.",
       fallbackReply: createFallbackReply(store, "환불 가능 여부", "정보"),
+    };
+  }
+
+  if (
+    isProductOptionQuestion(customerMessage) &&
+    !hasExplicitProductOptionInfo(customerMessage, store)
+  ) {
+    const subject = getProductOptionSubject(customerMessage);
+
+    return {
+      topic: "product_option",
+      question: `${subject}를 등록해주세요.`,
+      reason:
+        "포함, 제공, 동봉, 추가, 변경, 조절 같은 운영 옵션은 등록된 정보가 없으면 가능 여부를 단정할 수 없습니다.",
+      fallbackReply: createProductOptionFallbackReply(store, subject),
     };
   }
 

@@ -23,8 +23,13 @@ import {
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  createUsedKnowledgeSnapshot,
+  isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   mergeStoreKnowledgeIntoStore,
+  selectRelevantStoreKnowledgeItems,
+  warnMissingUsedKnowledgeColumn,
+  withoutUsedKnowledgeItems,
 } from "@/app/lib/storeKnowledge";
 
 export const runtime = "nodejs";
@@ -485,13 +490,20 @@ export async function POST(request: Request) {
       supabase: auth.supabase,
       userId: auth.userId,
     });
-    const storeRow = mergeStoreKnowledgeIntoStore(
-      baseStoreRow,
-      storeKnowledgeItems,
-    );
     const rows = [];
 
     for (const inquiry of newInquiries) {
+      const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+        `${inquiry.productName ?? ""}\n${inquiry.content}`,
+        storeKnowledgeItems,
+      );
+      const usedKnowledgeItems = createUsedKnowledgeSnapshot(
+        relevantStoreKnowledgeItems,
+      );
+      const storeRow = mergeStoreKnowledgeIntoStore(
+        baseStoreRow,
+        relevantStoreKnowledgeItems,
+      );
       const decision = await generateInquiryReply(inquiry, storeRow);
       const shouldCreateMissingInfo =
         decision.handlingType === "needs_review" ||
@@ -514,6 +526,7 @@ export async function POST(request: Request) {
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
         ai_reason: decision.aiReason,
+        used_knowledge_items: usedKnowledgeItems,
         source_platform: "coupang",
         external_id: inquiry.externalId,
         external_url: null,
@@ -535,9 +548,20 @@ export async function POST(request: Request) {
         .from("cs_messages")
         .insert(rows);
 
+      if (isMissingUsedKnowledgeColumnError(insertError)) {
+        warnMissingUsedKnowledgeColumn();
+        const fallbackRows = rows.map(withoutUsedKnowledgeItems);
+        const fallback = await auth.supabase
+          .from("cs_messages")
+          .insert(fallbackRows);
+        insertError = fallback.error;
+      }
+
       if (isMissingAiReasonColumnError(insertError)) {
         warnMissingAiReasonColumns();
-        const fallbackRows = rows.map(withoutAiReason);
+        const fallbackRows = rows
+          .map(withoutUsedKnowledgeItems)
+          .map(withoutAiReason);
         const fallback = await auth.supabase
           .from("cs_messages")
           .insert(fallbackRows);

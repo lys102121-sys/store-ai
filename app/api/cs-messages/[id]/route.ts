@@ -3,6 +3,10 @@ import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
+import {
+  isMissingUsedKnowledgeColumnError,
+  warnMissingUsedKnowledgeColumn,
+} from "@/app/lib/storeKnowledge";
 
 const validStatuses = new Set(["pending", "needs_review", "completed", "answered"]);
 
@@ -149,17 +153,38 @@ export async function PATCH(
     );
   }
 
-  const { data, error } = await auth.supabase
+  const primary = await auth.supabase
     .from("cs_messages")
     .update(payload)
     .eq("id", id)
     .eq("user_id", auth.userId)
     .select(
-      "id, customer_message, reply, status, handling_type, risk_level, ai_reason, source_platform, external_id, external_url, platform_status, created_at",
+      "id, customer_message, reply, status, handling_type, risk_level, ai_reason, used_knowledge_items, source_platform, external_id, external_url, platform_status, created_at",
     )
     .single();
+  const data = primary.data;
+  let error = primary.error;
 
   if (error) {
+    if (isMissingUsedKnowledgeColumnError(error)) {
+      warnMissingUsedKnowledgeColumn();
+      const fallback = await auth.supabase
+        .from("cs_messages")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", auth.userId)
+        .select(
+          "id, customer_message, reply, status, handling_type, risk_level, ai_reason, source_platform, external_id, external_url, platform_status, created_at",
+        )
+        .single();
+
+      if (!fallback.error) {
+        return Response.json({ csMessage: fallback.data });
+      }
+
+      error = fallback.error;
+    }
+
     if (isMissingAiReasonColumnError(error)) {
       warnMissingAiReasonColumns();
       const fallback = await auth.supabase
