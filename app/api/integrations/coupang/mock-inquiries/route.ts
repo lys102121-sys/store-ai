@@ -13,6 +13,10 @@ import {
 } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import {
+  loadStoreKnowledgeItems,
+  mergeStoreKnowledgeIntoStore,
+} from "@/app/lib/storeKnowledge";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -229,7 +233,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const storeRow = store as CsReplyPromptStore;
+    const baseStoreRow = store as CsReplyPromptStore;
+    const storeKnowledgeItems = await loadStoreKnowledgeItems({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    });
+    const storeRow = mergeStoreKnowledgeIntoStore(
+      baseStoreRow,
+      storeKnowledgeItems,
+    );
     const decisions = await Promise.all(
       mockInquiries.map((inquiry) => generateMockReply(inquiry, storeRow)),
     );

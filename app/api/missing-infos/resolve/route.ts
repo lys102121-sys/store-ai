@@ -5,6 +5,12 @@ import {
 } from "@/app/lib/aiReasonColumns";
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import {
+  loadStoreKnowledgeItems,
+  mapMissingInfoTopicToKnowledgeCategory,
+  mergeStoreKnowledgeIntoStore,
+  saveStoreKnowledgeItem,
+} from "@/app/lib/storeKnowledge";
 
 type RequestBody = {
   missingInfoId?: unknown;
@@ -52,6 +58,12 @@ type PendingCsMessageRow = {
   customer_message: string | null;
 };
 
+type InquiryIntentGroup = {
+  id: string;
+  keywords: string[];
+  allowGeneralMatch: boolean;
+};
+
 const allowedTargetFields: TargetField[] = [
   "product_details",
   "product_caution",
@@ -59,6 +71,124 @@ const allowedTargetFields: TargetField[] = [
   "refund_policy",
   "extra_faq",
 ];
+
+const inquiryIntentGroups: InquiryIntentGroup[] = [
+  {
+    id: "pricing",
+    keywords: ["가격", "얼마", "금액", "비용", "몇 원", "몇원", "총액", "견적"],
+    allowGeneralMatch: false,
+  },
+  {
+    id: "shipping",
+    keywords: [
+      "배송",
+      "출고",
+      "발송",
+      "오늘 보내",
+      "언제 받아",
+      "도착",
+      "택배",
+      "수령",
+    ],
+    allowGeneralMatch: true,
+  },
+  {
+    id: "refund_cancel_exchange",
+    keywords: [
+      "환불",
+      "취소",
+      "반품",
+      "교환",
+      "돈 돌려",
+      "환불 가능",
+      "취소 가능",
+    ],
+    allowGeneralMatch: true,
+  },
+  {
+    id: "stock",
+    keywords: [
+      "재고",
+      "남아",
+      "품절",
+      "구매 가능",
+      "주문 가능",
+      "아직 있나요",
+    ],
+    allowGeneralMatch: false,
+  },
+  {
+    id: "reservation_pickup",
+    keywords: [
+      "예약",
+      "픽업",
+      "방문 수령",
+      "수령 시간",
+      "몇 시",
+      "언제 가지러",
+    ],
+    allowGeneralMatch: true,
+  },
+  {
+    id: "packaging",
+    keywords: [
+      "포장",
+      "선물 포장",
+      "포장 가능",
+      "쇼핑백",
+      "포장비",
+    ],
+    allowGeneralMatch: true,
+  },
+  {
+    id: "allergy_ingredient",
+    keywords: [
+      "알레르기",
+      "알러지",
+      "성분",
+      "원재료",
+      "두드러기",
+      "피부",
+      "가려움",
+    ],
+    allowGeneralMatch: true,
+  },
+];
+
+const genericCoreTokens = new Set([
+  "고객",
+  "문의",
+  "답변",
+  "등록",
+  "등록해",
+  "등록해주세요",
+  "알려",
+  "알려주세요",
+  "관련",
+  "세부",
+  "안내",
+  "정보",
+  "정확",
+  "필요",
+  "부탁",
+  "드려요",
+  "드립니다",
+  "가능",
+  "가능한가요",
+  "가능여부",
+  "여부",
+  "궁금",
+  "궁금해요",
+  "있나요",
+  "되나요",
+  "주시나요",
+  "같이",
+  "오늘",
+  "언제",
+  "아직",
+  "상품",
+  "제품",
+]);
 
 function isTargetField(value: string): value is TargetField {
   return allowedTargetFields.includes(value as TargetField);
@@ -161,6 +291,10 @@ function normalizeComparableText(value: string) {
   return value.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
 }
 
+function normalizeKeyword(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "");
+}
+
 function getComparableTokens(value: string) {
   return new Set(
     value
@@ -169,6 +303,95 @@ function getComparableTokens(value: string) {
       .map((token) => token.trim())
       .filter((token) => token.length >= 2),
   );
+}
+
+function stripKoreanPostposition(value: string) {
+  return value.replace(/(으로|에게|에서|까지|부터|은|는|이|가|을|를|의|에|와|과|도|로|만)$/g, "");
+}
+
+function getIntentMatches(value: string) {
+  const normalizedValue = normalizeKeyword(value);
+
+  return inquiryIntentGroups
+    .map((group) => ({
+      group,
+      keywords: group.keywords.filter((keyword) =>
+        normalizedValue.includes(normalizeKeyword(keyword)),
+      ),
+    }))
+    .filter((match) => match.keywords.length > 0);
+}
+
+function getCoreTokens(value: string) {
+  const intentKeywords = inquiryIntentGroups.flatMap((group) => group.keywords);
+
+  return new Set(
+    value
+      .toLowerCase()
+      .split(/[^0-9a-z가-힣]+/)
+      .map((token) => stripKoreanPostposition(token.trim()))
+      .filter((token) => {
+        if (token.length < 2) return false;
+        if (genericCoreTokens.has(token)) return false;
+
+        return !intentKeywords.some((keyword) => {
+          const normalizedKeyword = normalizeKeyword(keyword);
+          const normalizedToken = normalizeKeyword(token);
+
+          return (
+            normalizedToken === normalizedKeyword ||
+            normalizedToken.includes(normalizedKeyword) ||
+            normalizedKeyword.includes(normalizedToken)
+          );
+        });
+      }),
+  );
+}
+
+function hasCoreTokenOverlap(left: string, right: string) {
+  const leftTokens = [...getCoreTokens(left)];
+  const rightTokens = [...getCoreTokens(right)];
+
+  return leftTokens.some((leftToken) =>
+    rightTokens.some(
+      (rightToken) =>
+        leftToken === rightToken ||
+        (Math.min(leftToken.length, rightToken.length) >= 2 &&
+          (leftToken.includes(rightToken) || rightToken.includes(leftToken))),
+    ),
+  );
+}
+
+function isVeryShortGeneralQuestion(value: string) {
+  const normalizedValue = normalizeComparableText(value);
+
+  return normalizedValue.length <= 5 && getCoreTokens(value).size === 0;
+}
+
+function hasIntentKeywordMatch(candidate: string, reference: string) {
+  const candidateMatches = getIntentMatches(candidate);
+  const referenceMatches = getIntentMatches(reference);
+
+  return candidateMatches.some((candidateMatch) => {
+    const referenceMatch = referenceMatches.find(
+      (match) => match.group.id === candidateMatch.group.id,
+    );
+
+    if (!referenceMatch) return false;
+
+    if (hasCoreTokenOverlap(candidate, reference)) {
+      return true;
+    }
+
+    if (candidateMatch.group.allowGeneralMatch) {
+      return !(
+        isVeryShortGeneralQuestion(candidate) ||
+        isVeryShortGeneralQuestion(reference)
+      );
+    }
+
+    return false;
+  });
 }
 
 function isSimilarMessage(candidate: string, references: string[]) {
@@ -184,6 +407,10 @@ function isSimilarMessage(candidate: string, references: string[]) {
         (normalizedCandidate.includes(normalizedReference) ||
           normalizedReference.includes(normalizedCandidate)))
     ) {
+      return true;
+    }
+
+    if (hasIntentKeywordMatch(candidate, reference)) {
       return true;
     }
 
@@ -386,11 +613,24 @@ export async function POST(request: Request) {
       message.customer_message &&
       isSimilarMessage(message.customer_message, referenceMessages),
   );
+
+  console.info(
+    `[missing-infos/resolve] Matched ${relatedCsMessages.length} related CS messages for missingInfoId=${missingInfoId}, topic=${resolvedTopic}.`,
+  );
+
   const updatedStoreRow = {
     ...storeRow,
     [targetField]: updatedTargetValue,
     updated_at: updatedAt,
   };
+  const storeKnowledgeItems = await loadStoreKnowledgeItems({
+    supabase: auth.supabase,
+    userId: auth.userId,
+  });
+  const updatedStoreWithKnowledge = mergeStoreKnowledgeIntoStore(
+    updatedStoreRow,
+    storeKnowledgeItems,
+  );
   let regeneratedReplies: {
     id: number | string;
     decision: Awaited<ReturnType<typeof generateCsReplyDecision>>;
@@ -402,7 +642,7 @@ export async function POST(request: Request) {
         id: message.id,
         decision: await generateCsReplyDecision({
           customerMessage: message.customer_message ?? "",
-          store: updatedStoreRow,
+          store: updatedStoreWithKnowledge,
         }),
       })),
     );
@@ -427,6 +667,17 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  await saveStoreKnowledgeItem({
+    supabase: auth.supabase,
+    userId: auth.userId,
+    storeId: storeRow.id,
+    category: mapMissingInfoTopicToKnowledgeCategory(resolvedTopic),
+    question: missingInfoRow.question ?? "고객 문의에 필요한 정보",
+    answer,
+    sourceId: missingInfoId,
+    sourceText: referenceMessages[0] ?? missingInfoRow.source_message,
+  });
 
   for (const regeneratedReply of regeneratedReplies) {
     let { error: csMessageUpdateError } = await auth.supabase

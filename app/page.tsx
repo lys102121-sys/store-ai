@@ -61,6 +61,21 @@ type MissingInfoItem = {
   created_at: string;
 };
 
+type StoreKnowledgeItem = {
+  id: string;
+  user_id: string;
+  store_id: string | null;
+  category: string;
+  question: string;
+  answer: string;
+  source_type: string;
+  source_id: string | null;
+  source_text: string | null;
+  confidence: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type ReviewApiResponse = {
   reply?: string;
   status?: WorkflowStatus;
@@ -114,6 +129,19 @@ type CsMessagesListResponse = {
 
 type MissingInfosListResponse = {
   missingInfos?: MissingInfoItem[];
+  error?: string;
+  detail?: string;
+};
+
+type StoreKnowledgeListResponse = {
+  knowledgeItems?: StoreKnowledgeItem[];
+  error?: string;
+  detail?: string;
+};
+
+type StoreKnowledgeMutationResponse = {
+  knowledgeItem?: StoreKnowledgeItem;
+  success?: boolean;
   error?: string;
   detail?: string;
 };
@@ -644,6 +672,29 @@ function platformStatusBadgeClass(value?: string | null) {
   }
 }
 
+function storeKnowledgeCategoryLabel(value?: string | null) {
+  switch (value) {
+    case "pricing":
+      return "가격";
+    case "shipping":
+      return "배송/출고";
+    case "refund_exchange":
+      return "환불/교환";
+    case "stock":
+      return "재고";
+    case "reservation":
+      return "예약/픽업";
+    case "packaging":
+      return "포장";
+    case "allergy_ingredient":
+      return "알레르기/성분";
+    case "product":
+      return "상품 정보";
+    default:
+      return "기타 FAQ";
+  }
+}
+
 const aiReasonAttentionPattern =
   /가격|재고|수량|출고|환불|예약|영업시간|알레르기|알러지|건강|위생|법적|분쟁|클레임|확인 필요|확인이 필요|사장님 확인/;
 
@@ -734,6 +785,21 @@ async function fetchMissingInfoList() {
   }
 
   return data.missingInfos ?? [];
+}
+
+async function fetchStoreKnowledgeList() {
+  const response = await fetch("/api/store-knowledge", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
+  const data = (await response.json()) as StoreKnowledgeListResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ?? "AI가 학습한 가게 지식을 불러오지 못했습니다.",
+    );
+  }
+
+  return data.knowledgeItems ?? [];
 }
 
 async function getAuthenticatedRequestHeaders(
@@ -1344,6 +1410,25 @@ export default function Home() {
   >(null);
   const [missingInfoResolveMessage, setMissingInfoResolveMessage] =
     useState("");
+  const [storeKnowledgeItems, setStoreKnowledgeItems] = useState<
+    StoreKnowledgeItem[]
+  >([]);
+  const [storeKnowledgeLoading, setStoreKnowledgeLoading] = useState(true);
+  const [storeKnowledgeError, setStoreKnowledgeError] = useState("");
+  const [storeKnowledgeMessage, setStoreKnowledgeMessage] = useState("");
+  const [editingStoreKnowledgeId, setEditingStoreKnowledgeId] = useState<
+    string | null
+  >(null);
+  const [editingStoreKnowledgeQuestion, setEditingStoreKnowledgeQuestion] =
+    useState("");
+  const [editingStoreKnowledgeAnswer, setEditingStoreKnowledgeAnswer] =
+    useState("");
+  const [savingStoreKnowledgeId, setSavingStoreKnowledgeId] = useState<
+    string | null
+  >(null);
+  const [deletingStoreKnowledgeId, setDeletingStoreKnowledgeId] = useState<
+    string | null
+  >(null);
 
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -1630,6 +1715,25 @@ export default function Home() {
     }
   }, []);
 
+  const loadStoreKnowledge = useCallback(async () => {
+    setStoreKnowledgeLoading(true);
+    setStoreKnowledgeError("");
+
+    try {
+      const items = await fetchStoreKnowledgeList();
+      setStoreKnowledgeItems(items);
+    } catch (error) {
+      setStoreKnowledgeError(
+        error instanceof Error
+          ? error.message
+          : "AI가 학습한 가게 지식을 불러오지 못했습니다.",
+      );
+      setStoreKnowledgeItems([]);
+    } finally {
+      setStoreKnowledgeLoading(false);
+    }
+  }, []);
+
   const loadIntegrationRequests = useCallback(async () => {
     setIntegrationsLoading(true);
     setIntegrationsError("");
@@ -1813,6 +1917,15 @@ export default function Home() {
         setMissingInfoTargetFields({});
         setMissingInfoResolvingId(null);
         setMissingInfoResolveMessage("");
+        setStoreKnowledgeItems([]);
+        setStoreKnowledgeLoading(false);
+        setStoreKnowledgeError("");
+        setStoreKnowledgeMessage("");
+        setEditingStoreKnowledgeId(null);
+        setEditingStoreKnowledgeQuestion("");
+        setEditingStoreKnowledgeAnswer("");
+        setSavingStoreKnowledgeId(null);
+        setDeletingStoreKnowledgeId(null);
         setInsights("");
         setInsightsError("");
         setInsightsLoading(false);
@@ -1828,6 +1941,7 @@ export default function Home() {
       if (!isActive) return;
       setStoreStatusLoading(true);
       setMissingInfosLoading(true);
+      setStoreKnowledgeLoading(true);
       setStoreDraftReady(false);
 
       const draft = readStoreDraft(authUser.id);
@@ -1936,6 +2050,25 @@ export default function Home() {
       .finally(() => {
         if (!isActive) return;
         setMissingInfosLoading(false);
+      });
+
+    void fetchStoreKnowledgeList()
+      .then((items) => {
+        if (!isActive) return;
+        setStoreKnowledgeItems(items);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setStoreKnowledgeError(
+          error instanceof Error
+            ? error.message
+            : "AI가 학습한 가게 지식을 불러오지 못했습니다.",
+        );
+        setStoreKnowledgeItems([]);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setStoreKnowledgeLoading(false);
       });
 
     void fetchInsightsData()
@@ -2313,6 +2446,7 @@ export default function Home() {
       await Promise.allSettled([
         loadMissingInfos(),
         loadCsMessages(),
+        loadStoreKnowledge(),
         loadInsights(),
       ]);
     } catch {
@@ -2321,6 +2455,108 @@ export default function Home() {
       setWorkflowError(errorMessage);
     } finally {
       setMissingInfoResolvingId(null);
+    }
+  }
+
+  function handleStartStoreKnowledgeEdit(item: StoreKnowledgeItem) {
+    setEditingStoreKnowledgeId(item.id);
+    setEditingStoreKnowledgeQuestion(item.question);
+    setEditingStoreKnowledgeAnswer(item.answer);
+    setStoreKnowledgeMessage("");
+    setStoreKnowledgeError("");
+  }
+
+  function handleCancelStoreKnowledgeEdit() {
+    setEditingStoreKnowledgeId(null);
+    setEditingStoreKnowledgeQuestion("");
+    setEditingStoreKnowledgeAnswer("");
+  }
+
+  async function handleSaveStoreKnowledgeItem(item: StoreKnowledgeItem) {
+    const question = editingStoreKnowledgeQuestion.trim();
+    const answer = editingStoreKnowledgeAnswer.trim();
+
+    if (!question || !answer) {
+      setStoreKnowledgeError("질문과 답변을 모두 입력해 주세요.");
+      return;
+    }
+
+    setSavingStoreKnowledgeId(item.id);
+    setStoreKnowledgeError("");
+    setStoreKnowledgeMessage("");
+
+    try {
+      const response = await fetch(`/api/store-knowledge/${item.id}`, {
+        method: "PATCH",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          question,
+          answer,
+          category: item.category,
+        }),
+      });
+      const data = (await response.json()) as StoreKnowledgeMutationResponse;
+
+      if (!response.ok || !data.knowledgeItem) {
+        setStoreKnowledgeError(
+          data.error ?? "학습한 가게 지식을 수정하지 못했습니다.",
+        );
+        return;
+      }
+
+      setStoreKnowledgeItems((currentItems) =>
+        currentItems.map((currentItem) =>
+          currentItem.id === item.id ? data.knowledgeItem! : currentItem,
+        ),
+      );
+      setStoreKnowledgeMessage("AI가 학습한 가게 지식을 수정했습니다.");
+      handleCancelStoreKnowledgeEdit();
+    } catch {
+      setStoreKnowledgeError(
+        "네트워크 오류로 학습한 가게 지식을 수정하지 못했습니다.",
+      );
+    } finally {
+      setSavingStoreKnowledgeId(null);
+    }
+  }
+
+  async function handleDeleteStoreKnowledgeItem(item: StoreKnowledgeItem) {
+    if (!window.confirm("이 학습 지식을 삭제할까요?")) return;
+
+    setDeletingStoreKnowledgeId(item.id);
+    setStoreKnowledgeError("");
+    setStoreKnowledgeMessage("");
+
+    try {
+      const response = await fetch(`/api/store-knowledge/${item.id}`, {
+        method: "DELETE",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as StoreKnowledgeMutationResponse;
+
+      if (!response.ok || !data.success) {
+        setStoreKnowledgeError(
+          data.error ?? "학습한 가게 지식을 삭제하지 못했습니다.",
+        );
+        return;
+      }
+
+      setStoreKnowledgeItems((currentItems) =>
+        currentItems.filter((currentItem) => currentItem.id !== item.id),
+      );
+      setStoreKnowledgeMessage("AI가 학습한 가게 지식을 삭제했습니다.");
+
+      if (editingStoreKnowledgeId === item.id) {
+        handleCancelStoreKnowledgeEdit();
+      }
+    } catch {
+      setStoreKnowledgeError(
+        "네트워크 오류로 학습한 가게 지식을 삭제하지 못했습니다.",
+      );
+    } finally {
+      setDeletingStoreKnowledgeId(null);
     }
   }
 
@@ -3029,6 +3265,7 @@ export default function Home() {
     { label: "리뷰 히스토리", targetId: "review-history" },
     { label: "최근 CS 문의", targetId: "cs-history" },
     { label: "확인 필요 정보", targetId: "missing-infos" },
+    { label: "학습한 가게 지식", targetId: "store-knowledge" },
     { label: "AI 운영 분석", targetId: "ai-insights" },
   ] as const;
 
@@ -6285,6 +6522,196 @@ export default function Home() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          )}
+        </section>
+
+        <section
+          id="store-knowledge"
+          className={`${cardClass} scroll-mt-32 border-emerald-200/70 dark:border-emerald-900/50 ${
+            activeTab === "manage" ? "order-[42]" : "hidden"
+          }`}
+        >
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+                AI Memory
+              </p>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                AI가 학습한 가게 지식
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                사장님이 확인 필요 항목에 답변하며 알려준 내용을 AI가 기억하는
+                공간입니다. 잘못 저장된 내용은 수정하거나 삭제할 수 있어요.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadStoreKnowledge()}
+              disabled={storeKnowledgeLoading}
+              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950"
+            >
+              {storeKnowledgeLoading ? "불러오는 중..." : "새로고침"}
+            </button>
+          </div>
+
+          {storeKnowledgeMessage ? (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {storeKnowledgeMessage}
+            </div>
+          ) : null}
+
+          {storeKnowledgeError ? (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {storeKnowledgeError}
+            </div>
+          ) : null}
+
+          {storeKnowledgeLoading ? (
+            <div className="space-y-3" aria-busy="true">
+              <div className="h-24 animate-pulse rounded-xl bg-emerald-50 dark:bg-emerald-950/30" />
+              <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+            </div>
+          ) : storeKnowledgeItems.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center dark:border-zinc-700 dark:bg-zinc-950">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                아직 AI가 학습한 가게 지식이 없습니다
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                확인 필요 항목에서 사장님이 답변을 입력하면 이곳에 지식으로
+                쌓입니다.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {storeKnowledgeItems.map((item) => {
+                const isEditing = editingStoreKnowledgeId === item.id;
+                const isSaving = savingStoreKnowledgeId === item.id;
+                const isDeleting = deletingStoreKnowledgeId === item.id;
+
+                return (
+                  <article
+                    key={item.id}
+                    className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+                          {storeKnowledgeCategoryLabel(item.category)}
+                        </span>
+                        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700">
+                          {item.confidence === "owner_confirmed"
+                            ? "사장님 확인"
+                            : item.confidence}
+                        </span>
+                      </div>
+                      <time
+                        dateTime={item.updated_at}
+                        className="text-xs text-zinc-500 dark:text-zinc-400"
+                      >
+                        {formatDate(item.updated_at)}
+                      </time>
+                    </div>
+
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                          기억할 질문
+                          <input
+                            value={editingStoreKnowledgeQuestion}
+                            onChange={(event) =>
+                              setEditingStoreKnowledgeQuestion(
+                                event.target.value,
+                              )
+                            }
+                            className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-950"
+                          />
+                        </label>
+                        <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                          AI가 참고할 답변
+                          <textarea
+                            value={editingStoreKnowledgeAnswer}
+                            onChange={(event) =>
+                              setEditingStoreKnowledgeAnswer(event.target.value)
+                            }
+                            className="mt-1 min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-950"
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                            기억한 질문
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm font-medium leading-6 text-zinc-900 dark:text-zinc-100">
+                            {item.question}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                            AI가 참고할 답변
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                            {item.answer}
+                          </p>
+                        </div>
+                        {item.source_text ? (
+                          <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                            출처 문의: {truncateSummaryText(item.source_text, 90)}
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleSaveStoreKnowledgeItem(item)
+                            }
+                            disabled={isSaving}
+                            className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                          >
+                            {isSaving ? "저장 중..." : "수정 저장"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelStoreKnowledgeEdit}
+                            disabled={isSaving}
+                            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                          >
+                            취소
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartStoreKnowledgeEdit(item)}
+                            disabled={isDeleting}
+                            className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                          >
+                            수정하기
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleDeleteStoreKnowledgeItem(item)
+                            }
+                            disabled={isDeleting}
+                            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                          >
+                            {isDeleting ? "삭제 중..." : "삭제"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

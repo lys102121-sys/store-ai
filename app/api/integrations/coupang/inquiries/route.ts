@@ -22,6 +22,10 @@ import {
 } from "@/app/lib/coupangOpenApi";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import {
+  loadStoreKnowledgeItems,
+  mergeStoreKnowledgeIntoStore,
+} from "@/app/lib/storeKnowledge";
 
 export const runtime = "nodejs";
 
@@ -476,7 +480,15 @@ export async function POST(request: Request) {
     const newInquiries = uniqueInquiries.filter(
       (item) => !existingExternalIds.has(item.externalId),
     );
-    const storeRow = store as CsReplyPromptStore;
+    const baseStoreRow = store as CsReplyPromptStore;
+    const storeKnowledgeItems = await loadStoreKnowledgeItems({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    });
+    const storeRow = mergeStoreKnowledgeIntoStore(
+      baseStoreRow,
+      storeKnowledgeItems,
+    );
     const rows = [];
 
     for (const inquiry of newInquiries) {
