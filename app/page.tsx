@@ -729,6 +729,44 @@ function parseUsedKnowledgeItems(value: unknown): UsedKnowledgeItem[] {
 const aiReasonAttentionPattern =
   /가격|재고|수량|출고|환불|예약|영업시간|알레르기|알러지|건강|위생|법적|분쟁|클레임|확인 필요|확인이 필요|사장님 확인/;
 
+function workflowEvidenceTitle(item: WorkflowItem) {
+  if (item.type === "missing_info") return "부족한 정보";
+  if (item.usedKnowledgeItems.length > 0) return "답변에 참고한 가게 지식";
+  if (item.handlingType === "auto_ready") return "답변 근거";
+  if (item.handlingType === "needs_review") return "근거 확인 필요";
+  if (item.handlingType === "needs_approval") return "승인 전 확인할 점";
+
+  return "답변 근거";
+}
+
+function workflowEvidenceMessage(item: WorkflowItem) {
+  if (item.type === "missing_info") {
+    return "AI가 답변하기 위해 추가 정보가 필요하다고 판단한 항목입니다. 사장님이 답변을 입력하면 가게 지식으로 저장됩니다.";
+  }
+
+  if (item.usedKnowledgeItems.length > 0) {
+    return "사장님이 이전에 확인해준 가게 지식을 답변 근거로 함께 사용했습니다.";
+  }
+
+  if (item.handlingType === "auto_ready") {
+    return "저장된 가게 기본 정보, 상품 정보, 정책 또는 FAQ에서 답변 가능한 항목으로 판단했습니다.";
+  }
+
+  if (item.riskLevel === "high") {
+    return "위험도가 높은 항목이라 등록된 정보가 있더라도 답변 전 확인이 필요합니다.";
+  }
+
+  if (item.handlingType === "needs_review") {
+    return "답변에 필요한 정보가 충분하지 않거나 더 정확한 확인이 필요한 항목입니다.";
+  }
+
+  if (item.handlingType === "needs_approval") {
+    return "고객 상황에 맞는 답변인지 사장님이 확인한 뒤 승인하는 것이 안전합니다.";
+  }
+
+  return "AI가 저장된 가게 정보와 정책을 참고해 답변 초안을 작성했습니다.";
+}
+
 function truncateSummaryText(value: string, maxLength = 64) {
   const normalizedValue = value.trim().replace(/\s+/g, " ");
 
@@ -5920,6 +5958,7 @@ export default function Home() {
                 AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
                 사장님 확인이 필요한지 함께 판단합니다. 플랫폼 연동 후에는 이
                 판단을 기준으로 자동 처리와 승인 처리를 나눌 수 있습니다.
+                각 카드에서 AI 판단 이유와 답변 근거도 함께 확인할 수 있습니다.
                 가게 설정에서 자동 처리 옵션을 켜면 낮은 위험도의 반복 문의와
                 긍정 리뷰는 자동으로 답변 완료 처리할 수 있습니다.
                 확인 필요한 정보, 주의 필요한 리뷰, 최근 문의와 리뷰 답글은
@@ -6142,6 +6181,8 @@ export default function Home() {
                         item.handlingType === "needs_review" ||
                         item.riskLevel === "high";
                       const isDemoData = isDemoExternalId(item.externalId);
+                      const evidenceTitle = workflowEvidenceTitle(item);
+                      const evidenceMessage = workflowEvidenceMessage(item);
 
                       return (
                         <article
@@ -6369,11 +6410,30 @@ export default function Home() {
                             </div>
                           ) : null}
 
-                          {item.usedKnowledgeItems.length > 0 ? (
-                            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100">
+                          <div
+                            className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-5 ${
+                              item.usedKnowledgeItems.length > 0 ||
+                              item.handlingType === "auto_ready"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+                                : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold">
-                                참고한 가게 지식
+                                {evidenceTitle}
                               </p>
+                              {item.usedKnowledgeItems.length > 0 ? (
+                                <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-current/10 dark:bg-zinc-950/40">
+                                  사장님 확인 지식{" "}
+                                  {item.usedKnowledgeItems.length.toLocaleString(
+                                    "ko-KR",
+                                  )}
+                                  개
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1">{evidenceMessage}</p>
+                            {item.usedKnowledgeItems.length > 0 ? (
                               <ul className="mt-2 space-y-2">
                                 {item.usedKnowledgeItems
                                   .slice(0, 3)
@@ -6404,8 +6464,8 @@ export default function Home() {
                                     </li>
                                   ))}
                               </ul>
-                            </div>
-                          ) : null}
+                            ) : null}
+                          </div>
 
                           {isAutoCompleted ? (
                             <p className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
