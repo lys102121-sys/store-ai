@@ -8,6 +8,7 @@ import {
   createEmptyStoreKnowledgeQuality,
   STORE_KNOWLEDGE_STALE_DAYS,
 } from "@/app/lib/storeKnowledgeQuality";
+import { buildStoreKnowledgeUsageMap } from "@/app/lib/storeKnowledgeUsage";
 import { getSupabase } from "@/app/lib/supabase";
 
 type Sentiment = "positive" | "neutral" | "negative";
@@ -3006,6 +3007,23 @@ export default function Home() {
   const storeKnowledgeQualityReport = useMemo(
     () => buildStoreKnowledgeQualityReport(storeKnowledgeItems),
     [storeKnowledgeItems],
+  );
+  const storeKnowledgeUsageMap = useMemo(
+    () =>
+      buildStoreKnowledgeUsageMap(
+        csMessages.map((item) => ({
+          id: item.id,
+          customerMessage: item.customer_message,
+          reply: item.reply,
+          status: normalizeWorkflowStatus(item.status),
+          sourcePlatform: item.source_platform ?? "manual",
+          createdAt: item.created_at,
+          usedKnowledgeItems: parseUsedKnowledgeItems(
+            item.used_knowledge_items,
+          ),
+        })),
+      ),
+    [csMessages],
   );
   const workflowItems = useMemo<WorkflowItem[]>(() => {
     const reviewItems = history.map((item) => ({
@@ -6787,6 +6805,8 @@ export default function Home() {
                 const quality =
                   storeKnowledgeQualityReport.byId[item.id] ??
                   createEmptyStoreKnowledgeQuality();
+                const recentKnowledgeUsages =
+                  storeKnowledgeUsageMap[item.id] ?? [];
                 const needsKnowledgeReview =
                   quality.isStale ||
                   quality.duplicateCount > 0 ||
@@ -6924,6 +6944,64 @@ export default function Home() {
                             </ul>
                           </div>
                         ) : null}
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-5 text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-semibold">
+                              최근 이 지식이 사용된 답변
+                            </p>
+                            <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70">
+                              {recentKnowledgeUsages.length.toLocaleString(
+                                "ko-KR",
+                              )}
+                              건
+                            </span>
+                          </div>
+                          {recentKnowledgeUsages.length > 0 ? (
+                            <ul className="mt-2 space-y-2">
+                              {recentKnowledgeUsages.map((usage) => (
+                                <li
+                                  key={`${item.id}-${usage.id}`}
+                                  className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70"
+                                >
+                                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100">
+                                      {sourcePlatformLabel(
+                                        usage.sourcePlatform,
+                                      )}
+                                    </span>
+                                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-zinc-900 dark:text-indigo-200 dark:ring-indigo-900">
+                                      {workflowStatusLabel(
+                                        normalizeWorkflowStatus(usage.status),
+                                      )}
+                                    </span>
+                                    <time
+                                      dateTime={usage.createdAt}
+                                      className="text-[11px] text-indigo-700/80 dark:text-indigo-200/80"
+                                    >
+                                      {formatDate(usage.createdAt)}
+                                    </time>
+                                  </div>
+                                  <p className="font-medium text-indigo-950 dark:text-indigo-100">
+                                    문의:{" "}
+                                    {truncateSummaryText(
+                                      usage.customerMessage,
+                                      72,
+                                    )}
+                                  </p>
+                                  <p className="mt-1 text-indigo-800 dark:text-indigo-200">
+                                    답변:{" "}
+                                    {truncateSummaryText(usage.reply, 96)}
+                                  </p>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="mt-2 text-indigo-800 dark:text-indigo-200">
+                              아직 최근 CS 답변에서 사용된 기록이 없습니다. 비슷한
+                              문의가 들어오면 이곳에 사용 이력이 쌓입니다.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 

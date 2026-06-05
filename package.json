@@ -11,6 +11,7 @@
     "test:learning": "node scripts/missing-info-learning-regression.mjs",
     "test:risk-signals": "node scripts/risk-signals-regression.mjs",
     "test:store-knowledge-quality": "node scripts/store-knowledge-quality-regression.mjs",
+    "test:store-knowledge-usage": "node scripts/store-knowledge-usage-regression.mjs",
     "test:workflow-safety": "node scripts/workflow-status-safety-regression.mjs"
   },
   "dependencies": {
