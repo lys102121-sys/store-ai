@@ -79,7 +79,9 @@ assert.equal(report.summary.reviewCount, 4);
 
 assert.equal(report.byId["price-old"].isStale, true);
 assert.equal(report.byId["price-old"].conflictCount, 1);
+assert.equal(report.byId["price-old"].conflictItems[0].id, "price-conflict");
 assert.equal(report.byId["price-conflict"].conflictCount, 1);
+assert.equal(report.byId["price-conflict"].conflictItems[0].id, "price-old");
 assert.equal(report.byId["wrap-a"].duplicateCount, 1);
 assert.equal(report.byId["wrap-b"].duplicateCount, 1);
 assert.equal(report.byId["stock-ok"].conflictCount, 0);

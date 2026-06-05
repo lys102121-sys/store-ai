@@ -1504,6 +1504,8 @@ export default function Home() {
   const [deletingStoreKnowledgeId, setDeletingStoreKnowledgeId] = useState<
     string | null
   >(null);
+  const [resolvingStoreKnowledgeConflictId, setResolvingStoreKnowledgeConflictId] =
+    useState<string | null>(null);
 
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -2632,6 +2634,88 @@ export default function Home() {
       );
     } finally {
       setDeletingStoreKnowledgeId(null);
+    }
+  }
+
+  async function handleResolveStoreKnowledgeConflicts(
+    item: StoreKnowledgeItem,
+    conflictItems: Array<{ id: string; question: string; answer: string }>,
+  ) {
+    const conflictIds = [
+      ...new Set(
+        conflictItems
+          .map((conflictItem) => conflictItem.id)
+          .filter((id) => id && id !== item.id),
+      ),
+    ];
+
+    if (conflictIds.length === 0) {
+      setStoreKnowledgeMessage("정리할 충돌 지식이 없습니다.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `이 지식을 기준으로 삼고 충돌 가능 지식 ${conflictIds.length.toLocaleString(
+          "ko-KR",
+        )}개를 삭제할까요?`,
+      )
+    ) {
+      return;
+    }
+
+    setResolvingStoreKnowledgeConflictId(item.id);
+    setStoreKnowledgeError("");
+    setStoreKnowledgeMessage("");
+
+    try {
+      const results = await Promise.all(
+        conflictIds.map(async (conflictId) => {
+          const response = await fetch(`/api/store-knowledge/${conflictId}`, {
+            method: "DELETE",
+            headers: await getAuthenticatedRequestHeaders(),
+          });
+          const data = (await response.json()) as StoreKnowledgeMutationResponse;
+
+          return {
+            conflictId,
+            success: response.ok && Boolean(data.success),
+            error: data.error,
+          };
+        }),
+      );
+      const failedResults = results.filter((result) => !result.success);
+      const deletedIds = results
+        .filter((result) => result.success)
+        .map((result) => result.conflictId);
+
+      if (deletedIds.length > 0) {
+        setStoreKnowledgeItems((currentItems) =>
+          currentItems.filter(
+            (currentItem) => !deletedIds.includes(currentItem.id),
+          ),
+        );
+      }
+
+      if (failedResults.length > 0) {
+        setStoreKnowledgeError(
+          failedResults[0]?.error ??
+            "일부 충돌 지식을 정리하지 못했습니다.",
+        );
+        return;
+      }
+
+      setStoreKnowledgeMessage(
+        `충돌 가능 지식 ${deletedIds.length.toLocaleString(
+          "ko-KR",
+        )}개를 정리했습니다.`,
+      );
+    } catch {
+      setStoreKnowledgeError(
+        "네트워크 오류로 충돌 지식을 정리하지 못했습니다.",
+      );
+    } finally {
+      setResolvingStoreKnowledgeConflictId(null);
     }
   }
 
@@ -6802,6 +6886,8 @@ export default function Home() {
                 const isEditing = editingStoreKnowledgeId === item.id;
                 const isSaving = savingStoreKnowledgeId === item.id;
                 const isDeleting = deletingStoreKnowledgeId === item.id;
+                const isResolvingConflict =
+                  resolvingStoreKnowledgeConflictId === item.id;
                 const quality =
                   storeKnowledgeQualityReport.byId[item.id] ??
                   createEmptyStoreKnowledgeQuality();
@@ -6910,16 +6996,6 @@ export default function Home() {
                               {quality.conflictCount > 0 ? (
                                 <li>
                                   비슷한 질문에 다른 답변이 저장되어 있습니다.
-                                  {quality.relatedQuestions[0] ? (
-                                    <>
-                                      {" "}
-                                      관련 질문:{" "}
-                                      {truncateSummaryText(
-                                        quality.relatedQuestions[0],
-                                        56,
-                                      )}
-                                    </>
-                                  ) : null}
                                 </li>
                               ) : null}
                               {quality.duplicateCount > 0 ? (
@@ -6942,6 +7018,48 @@ export default function Home() {
                                 </li>
                               ) : null}
                             </ul>
+                            {quality.conflictItems.length > 0 ? (
+                              <div className="mt-3 space-y-2">
+                                {quality.conflictItems
+                                  .slice(0, 2)
+                                  .map((conflictItem) => (
+                                    <div
+                                      key={`${item.id}-${conflictItem.id}`}
+                                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-amber-100 dark:bg-zinc-950/40 dark:ring-amber-900/70"
+                                    >
+                                      <p className="font-medium">
+                                        충돌 질문:{" "}
+                                        {truncateSummaryText(
+                                          conflictItem.question,
+                                          64,
+                                        )}
+                                      </p>
+                                      <p className="mt-1">
+                                        다른 답변:{" "}
+                                        {truncateSummaryText(
+                                          conflictItem.answer,
+                                          96,
+                                        )}
+                                      </p>
+                                    </div>
+                                  ))}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleResolveStoreKnowledgeConflicts(
+                                      item,
+                                      quality.conflictItems,
+                                    )
+                                  }
+                                  disabled={isResolvingConflict || isDeleting}
+                                  className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-medium text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                >
+                                  {isResolvingConflict
+                                    ? "정리 중..."
+                                    : "이 답변을 기준으로 정리"}
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
                         <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-5 text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100">

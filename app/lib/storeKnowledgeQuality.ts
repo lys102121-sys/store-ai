@@ -12,6 +12,11 @@ export type StoreKnowledgeQuality = {
   duplicateCount: number;
   conflictCount: number;
   relatedQuestions: string[];
+  conflictItems: Array<{
+    id: string;
+    question: string;
+    answer: string;
+  }>;
 };
 
 export type StoreKnowledgeQualityReport = {
@@ -163,6 +168,7 @@ export function createEmptyStoreKnowledgeQuality(): StoreKnowledgeQuality {
     duplicateCount: 0,
     conflictCount: 0,
     relatedQuestions: [],
+    conflictItems: [],
   };
 }
 
@@ -206,6 +212,16 @@ export function buildStoreKnowledgeQualityReport(
         otherQuality.conflictCount += 1;
         itemQuality.relatedQuestions.push(otherItem.question);
         otherQuality.relatedQuestions.push(item.question);
+        itemQuality.conflictItems.push({
+          id: otherItem.id,
+          question: otherItem.question,
+          answer: otherItem.answer,
+        });
+        otherQuality.conflictItems.push({
+          id: item.id,
+          question: item.question,
+          answer: item.answer,
+        });
       }
     });
   });
