@@ -5,6 +5,7 @@ import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -22,9 +23,6 @@ export type CsReplyDecision = {
   riskLevel: CsReplyRiskLevel;
   aiReason: string;
 };
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|붉어|복통|식중독|상한\s*것\s*같|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응|가려/;
 
 function parseCsReplyDecision(
   output: string | undefined,
@@ -132,7 +130,7 @@ export async function generateCsReplyDecision({
     throw new Error("Failed to generate a CS reply.");
   }
 
-  const hasHealthSafetyIssue = healthSafetyPattern.test(customerMessage);
+  const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
   const missingOperationalInfo = findMissingOperationalInfo(
     customerMessage,
     store,

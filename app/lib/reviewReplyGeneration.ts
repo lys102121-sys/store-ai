@@ -5,6 +5,7 @@ import {
   buildReviewReplySystemPrompt,
   type ReviewReplyPromptStore,
 } from "@/app/lib/prompts/reviewReplyPrompt";
+import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 
 export type Sentiment = "positive" | "neutral" | "negative";
 export type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
@@ -18,13 +19,6 @@ export type ReviewReplyGenerationResult = {
   riskLevel: RiskLevel;
   aiReason: string;
 };
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|복통|식중독|상한\s*것\s*같|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응/;
-
-function hasHealthSafetySignal(text: string) {
-  return healthSafetyPattern.test(text);
-}
 
 export const reviewReplyStoreSelect = [
   "store_name",

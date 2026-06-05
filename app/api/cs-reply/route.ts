@@ -14,6 +14,7 @@ import {
 } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import {
   createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
@@ -68,13 +69,6 @@ type MissingInfoTopic =
   | "business_hours"
   | "reservation"
   | "general";
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|복통|식중독|상한\s*것\s*같|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응/;
-
-function hasHealthSafetySignal(text: string) {
-  return healthSafetyPattern.test(text);
-}
 
 function parseCsReplyDecision(output: string | undefined): CsReplyDecision | null {
   if (!output) return null;

@@ -12,6 +12,7 @@ import {
   generateReviewReplyWithSentiment,
   reviewReplyStoreSelect,
 } from "@/app/lib/reviewReplyGeneration";
+import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import { resolveReviewWorkflowStatus } from "@/app/lib/workflowStatus";
 
 const openai = new OpenAI({
@@ -29,9 +30,6 @@ type MockPlatformReviewsConfig = {
   platformName: string;
   reviews: readonly string[];
 };
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|붉어|복통|배가\s*아프|식중독|상한|이상\s*반응|호흡|병원|아프다|먹고\s*탈|피부\s*반응|가려|위생/;
 
 const safeHealthReviewReply =
   "불편을 겪으셨다니 걱정되는 마음입니다. 정확한 확인을 위해 주문 정보와 함께 문의 남겨주시면 원재료와 안내 사항을 확인해보겠습니다. 증상이 계속되거나 심한 경우에는 의료기관 상담을 권장드립니다.";
@@ -85,7 +83,7 @@ export async function createMockPlatformReviewsResponse(
         storeSettings,
         review,
       );
-      const hasHealthSafetyIssue = healthSafetyPattern.test(review);
+      const hasHealthSafetyIssue = hasHealthSafetySignal(review);
 
       results.push({
         ...generated,

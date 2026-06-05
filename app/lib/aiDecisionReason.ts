@@ -8,11 +8,12 @@ import type {
   RiskLevel,
   Sentiment,
 } from "@/app/lib/reviewReplyGeneration";
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|붉어|복통|배가\s*아프|식중독|상한|이상\s*반응|호흡|병원|아프다|아파|먹고\s*탈|탈났|피부\s*반응|가려|위생/;
-const disputePattern = /법적|신고|소송|분쟁|고소|소비자원|보상/;
-const strongComplaintPattern = /최악|화나|불쾌|실망|강력|항의|클레임/;
+import {
+  hasDisputeSignal,
+  hasHealthSafetySignal,
+  hasRefundExchangeSignal,
+  hasStrongComplaintSignal,
+} from "@/app/lib/riskSignals";
 
 const missingOperationalReason: Record<
   MissingOperationalInfo["topic"],
@@ -53,19 +54,19 @@ export function buildCsAiReason({
     return missingOperationalReason[missingOperationalInfo.topic];
   }
 
-  if (healthSafetyPattern.test(customerMessage)) {
+  if (hasHealthSafetySignal(customerMessage)) {
     return "알레르기/건강/위생 관련 내용이 포함되어 있어 원인 단정 없이 사장님 확인이 필요합니다.";
   }
 
-  if (disputePattern.test(customerMessage)) {
+  if (hasDisputeSignal(customerMessage)) {
     return "법적 또는 분쟁 가능성이 있는 표현이 포함되어 있어 답변 전 사장님 확인이 필요합니다.";
   }
 
-  if (/환불|반품|교환|취소/.test(customerMessage)) {
+  if (hasRefundExchangeSignal(customerMessage)) {
     return "환불 또는 교환 관련 문의로 정책과 주문 상태를 확인한 뒤 답변해야 합니다.";
   }
 
-  if (strongComplaintPattern.test(customerMessage) || riskLevel === "high") {
+  if (hasStrongComplaintSignal(customerMessage) || riskLevel === "high") {
     return "강한 불만 또는 위험 가능성이 있어 답변 전 사장님 확인이 필요합니다.";
   }
 
@@ -91,15 +92,15 @@ export function buildReviewAiReason({
   handlingType: HandlingType;
   riskLevel: RiskLevel;
 }) {
-  if (healthSafetyPattern.test(review)) {
+  if (hasHealthSafetySignal(review)) {
     return "알레르기/건강/위생 관련 내용이 포함되어 있어 원인 단정 없이 사장님 확인이 필요합니다.";
   }
 
-  if (disputePattern.test(review)) {
+  if (hasDisputeSignal(review)) {
     return "법적 또는 분쟁 가능성이 있는 표현이 포함되어 있어 답글 등록 전 사장님 확인이 필요합니다.";
   }
 
-  if (/환불|반품|교환|취소/.test(review)) {
+  if (hasRefundExchangeSignal(review)) {
     return "환불 또는 교환 요구가 포함되어 있어 답글 등록 전 사장님 확인이 필요합니다.";
   }
 
@@ -107,7 +108,7 @@ export function buildReviewAiReason({
     return "배송 또는 배달 지연에 대한 아쉬움이 포함되어 있어 답글 등록 전 사장님 확인이 필요합니다.";
   }
 
-  if (riskLevel === "high" || strongComplaintPattern.test(review)) {
+  if (riskLevel === "high" || hasStrongComplaintSignal(review)) {
     return "강한 불만 또는 위험 가능성이 있는 리뷰로 답글 등록 전 사장님 확인이 필요합니다.";
   }
 

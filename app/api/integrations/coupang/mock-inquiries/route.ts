@@ -13,6 +13,7 @@ import {
 } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import {
   createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
@@ -42,9 +43,6 @@ type CsReplyDecision = {
   handlingType: HandlingType;
   riskLevel: RiskLevel;
 };
-
-const healthSafetyPattern =
-  /알레르기|알러지|두드러기|발진|복통|식중독|상한\s*것\s*같다|이상\s*반응|호흡|병원|아프다|먹고\s*탈|피부\s*반응|가려/;
 
 function parseCsReplyDecision(
   output: string | undefined,
@@ -165,7 +163,7 @@ async function generateMockReply(
     throw new Error("Failed to generate a mock CS reply.");
   }
 
-  const hasHealthSafetyIssue = healthSafetyPattern.test(customerMessage);
+  const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
   const needsReview = needsStoreConfirmation(customerMessage, store);
   const initialDecision: CsReplyDecision = {
     reply: sanitizeCustomerReply(parsedDecision.reply),
