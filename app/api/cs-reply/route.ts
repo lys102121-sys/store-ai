@@ -22,6 +22,7 @@ import {
   selectRelevantStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
 } from "@/app/lib/storeKnowledge";
+import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -625,15 +626,12 @@ export async function POST(request: Request) {
       storeRow,
       missingOperationalInfo,
     );
-    const status =
-      storeRow.auto_complete_low_risk_cs &&
-      decision.handlingType === "auto_ready" &&
-      decision.riskLevel === "low" &&
-      !shouldCreateMissingInfo
-        ? "completed"
-        : decision.handlingType === "needs_review" || shouldCreateMissingInfo
-          ? "needs_review"
-          : "pending";
+    const status = resolveCsWorkflowStatus({
+      autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      hasMissingInfo: shouldCreateMissingInfo,
+    });
 
     let { error: csMessageSaveError } = await auth.supabase
       .from("cs_messages")

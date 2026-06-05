@@ -10,6 +10,7 @@ import {
   reviewReplyStoreSelect,
 } from "@/app/lib/reviewReplyGeneration";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
+import { resolveReviewWorkflowStatus } from "@/app/lib/workflowStatus";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -86,15 +87,13 @@ export async function POST(request: Request) {
       storeSettings,
       review,
     );
-    const status =
-      storeSettings.auto_complete_positive_reviews &&
-      result.sentiment === "positive" &&
-      result.handlingType === "auto_ready" &&
-      result.riskLevel === "low"
-        ? "completed"
-        : result.handlingType === "needs_review"
-          ? "needs_review"
-          : "pending";
+    const status = resolveReviewWorkflowStatus({
+      autoCompletePositiveReviews:
+        storeSettings.auto_complete_positive_reviews,
+      sentiment: result.sentiment,
+      handlingType: result.handlingType,
+      riskLevel: result.riskLevel,
+    });
 
     let { error: reviewSaveError } = await auth.supabase
       .from("reviews")

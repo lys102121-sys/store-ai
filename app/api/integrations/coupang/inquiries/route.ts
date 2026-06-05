@@ -31,6 +31,7 @@ import {
   warnMissingUsedKnowledgeColumn,
   withoutUsedKnowledgeItems,
 } from "@/app/lib/storeKnowledge";
+import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 export const runtime = "nodejs";
 
@@ -508,15 +509,12 @@ export async function POST(request: Request) {
       const shouldCreateMissingInfo =
         decision.handlingType === "needs_review" ||
         hasMissingInfoSignal(decision.reply);
-      const status =
-        storeRow.auto_complete_low_risk_cs &&
-        decision.handlingType === "auto_ready" &&
-        decision.riskLevel === "low" &&
-        !shouldCreateMissingInfo
-          ? "completed"
-          : shouldCreateMissingInfo
-            ? "needs_review"
-            : "pending";
+      const status = resolveCsWorkflowStatus({
+        autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
+        handlingType: decision.handlingType,
+        riskLevel: decision.riskLevel,
+        hasMissingInfo: shouldCreateMissingInfo,
+      });
 
       rows.push({
         user_id: auth.userId,
