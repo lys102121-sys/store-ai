@@ -3,6 +3,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
+import {
+  buildStoreKnowledgeQualityReport,
+  createEmptyStoreKnowledgeQuality,
+  STORE_KNOWLEDGE_STALE_DAYS,
+} from "@/app/lib/storeKnowledgeQuality";
 import { getSupabase } from "@/app/lib/supabase";
 
 type Sentiment = "positive" | "neutral" | "negative";
@@ -2998,6 +3003,10 @@ export default function Home() {
     .slice(0, 3);
   const recentCsMessages = csMessages.slice(0, 5);
   const recentReviews = history.slice(0, 5);
+  const storeKnowledgeQualityReport = useMemo(
+    () => buildStoreKnowledgeQualityReport(storeKnowledgeItems),
+    [storeKnowledgeItems],
+  );
   const workflowItems = useMemo<WorkflowItem[]>(() => {
     const reviewItems = history.map((item) => ({
       key: `review-${item.id}`,
@@ -6699,6 +6708,61 @@ export default function Home() {
             </div>
           ) : null}
 
+          {!storeKnowledgeLoading && storeKnowledgeItems.length > 0 ? (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                    지식 품질 점검
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                    비슷한 질문에 다른 답변이 있거나 오래 업데이트되지 않은
+                    지식을 찾아 정리할 수 있습니다.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    {
+                      label: "전체",
+                      value: storeKnowledgeQualityReport.summary.totalCount,
+                    },
+                    {
+                      label: "검토 필요",
+                      value: storeKnowledgeQualityReport.summary.reviewCount,
+                    },
+                    {
+                      label: "충돌 가능",
+                      value: storeKnowledgeQualityReport.summary.conflictCount,
+                    },
+                    {
+                      label: "오래됨",
+                      value: storeKnowledgeQualityReport.summary.staleCount,
+                    },
+                  ].map((metric) => (
+                    <div
+                      key={metric.label}
+                      className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
+                    >
+                      <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                        {metric.label}
+                      </p>
+                      <p className="mt-0.5 text-lg font-semibold text-emerald-950 dark:text-emerald-100">
+                        {metric.value.toLocaleString("ko-KR")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {storeKnowledgeQualityReport.summary.reviewCount > 0 ? (
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                  검토 필요 배지가 있는 지식은 수정하거나 삭제해 주세요. AI가
+                  비슷한 문의에 답할 때 오래되거나 충돌하는 지식을 참고할 수
+                  있습니다.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           {storeKnowledgeLoading ? (
             <div className="space-y-3" aria-busy="true">
               <div className="h-24 animate-pulse rounded-xl bg-emerald-50 dark:bg-emerald-950/30" />
@@ -6720,11 +6784,22 @@ export default function Home() {
                 const isEditing = editingStoreKnowledgeId === item.id;
                 const isSaving = savingStoreKnowledgeId === item.id;
                 const isDeleting = deletingStoreKnowledgeId === item.id;
+                const quality =
+                  storeKnowledgeQualityReport.byId[item.id] ??
+                  createEmptyStoreKnowledgeQuality();
+                const needsKnowledgeReview =
+                  quality.isStale ||
+                  quality.duplicateCount > 0 ||
+                  quality.conflictCount > 0;
 
                 return (
                   <article
                     key={item.id}
-                    className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                    className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-900 ${
+                      needsKnowledgeReview
+                        ? "border-amber-300 ring-1 ring-amber-200 dark:border-amber-800 dark:ring-amber-900/60"
+                        : "border-zinc-200 dark:border-zinc-800"
+                    }`}
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -6736,6 +6811,21 @@ export default function Home() {
                             ? "사장님 확인"
                             : item.confidence}
                         </span>
+                        {quality.conflictCount > 0 ? (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-900">
+                            충돌 가능
+                          </span>
+                        ) : null}
+                        {quality.duplicateCount > 0 ? (
+                          <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900">
+                            중복 가능
+                          </span>
+                        ) : null}
+                        {quality.isStale ? (
+                          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
+                            오래됨
+                          </span>
+                        ) : null}
                       </div>
                       <time
                         dateTime={item.updated_at}
@@ -6792,6 +6882,47 @@ export default function Home() {
                           <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                             출처 문의: {truncateSummaryText(item.source_text, 90)}
                           </p>
+                        ) : null}
+                        {needsKnowledgeReview ? (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                            <p className="font-semibold">검토가 필요한 지식</p>
+                            <ul className="mt-1 space-y-1">
+                              {quality.conflictCount > 0 ? (
+                                <li>
+                                  비슷한 질문에 다른 답변이 저장되어 있습니다.
+                                  {quality.relatedQuestions[0] ? (
+                                    <>
+                                      {" "}
+                                      관련 질문:{" "}
+                                      {truncateSummaryText(
+                                        quality.relatedQuestions[0],
+                                        56,
+                                      )}
+                                    </>
+                                  ) : null}
+                                </li>
+                              ) : null}
+                              {quality.duplicateCount > 0 ? (
+                                <li>
+                                  같은 내용으로 보이는 지식이{" "}
+                                  {quality.duplicateCount.toLocaleString(
+                                    "ko-KR",
+                                  )}
+                                  개 더 있습니다.
+                                </li>
+                              ) : null}
+                              {quality.isStale ? (
+                                <li>
+                                  마지막 수정 후{" "}
+                                  {quality.ageDays?.toLocaleString("ko-KR") ??
+                                    STORE_KNOWLEDGE_STALE_DAYS.toLocaleString(
+                                      "ko-KR",
+                                    )}
+                                  일 이상 지났습니다.
+                                </li>
+                              ) : null}
+                            </ul>
+                          </div>
                         ) : null}
                       </div>
                     )}
