@@ -159,7 +159,8 @@ const genericOptionSubjectPatterns = [
   /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:포함|동봉|제공|증정)(?:되나요|돼요|인가요|되나|됩니까)?/,
   /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:같이|함께)\s*(?:주|주시|오나요|오나|제공)/,
   /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:챙겨|넣어|달아|붙여)\s*주/,
-  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:변경|조절|선택|각인|커스텀|맞춤)\s*(?:되나요|돼요|가능|할\s*수)/,
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*(?:추가|변경|조절|선택|각인|커스텀|맞춤)\s*(?:되나요|돼요|가능|할\s*수)/,
+  /(.{1,40}?)(?:은|는|이|가|도|을|를)?\s*가능(?:한가요|한지|할까요|합니까|한가|해요)/,
 ];
 
 const genericOptionSubjectStopWords = new Set([
@@ -186,7 +187,10 @@ const genericOptionSubjectStopWords = new Set([
 ]);
 
 function isProductOptionQuestion(customerMessage: string) {
-  return productOptionQuestionPattern.test(customerMessage);
+  return (
+    productOptionQuestionPattern.test(customerMessage) ||
+    Boolean(getGenericProductOptionSubject(customerMessage))
+  );
 }
 
 function normalizeOptionSubject(subject: string) {
@@ -300,6 +304,7 @@ function getProductOptionSubject(customerMessage: string) {
       return `${genericSubject} 제공 여부`;
     }
 
+    if (/추가/.test(customerMessage)) return `${genericSubject} 추가 가능 여부`;
     if (/변경/.test(customerMessage)) return `${genericSubject} 변경 가능 여부`;
     if (/조절/.test(customerMessage)) return `${genericSubject} 조절 가능 여부`;
     if (/선택/.test(customerMessage)) return `${genericSubject} 선택 가능 여부`;
