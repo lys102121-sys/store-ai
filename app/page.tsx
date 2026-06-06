@@ -220,6 +220,7 @@ type UpdateWorkflowItemResponse = {
 };
 
 type DashboardTab = "start" | "store" | "integrations" | "answer" | "manage";
+type ManageSupportPanel = "store_knowledge" | "insights";
 
 type IntegrationPlatform =
   | "baemin"
@@ -1506,6 +1507,9 @@ export default function Home() {
   >(null);
   const [resolvingStoreKnowledgeConflictId, setResolvingStoreKnowledgeConflictId] =
     useState<string | null>(null);
+  const [isStoreKnowledgePanelOpen, setIsStoreKnowledgePanelOpen] =
+    useState(false);
+  const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
 
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -3492,6 +3496,27 @@ export default function Home() {
     });
   }
 
+  function toggleManageSupportPanel(panel: ManageSupportPanel) {
+    const targetId =
+      panel === "store_knowledge" ? "store-knowledge" : "ai-insights";
+    const isOpen =
+      panel === "store_knowledge"
+        ? isStoreKnowledgePanelOpen
+        : isInsightsPanelOpen;
+
+    if (panel === "store_knowledge") {
+      setIsStoreKnowledgePanelOpen((current) => !current);
+    } else {
+      setIsInsightsPanelOpen((current) => !current);
+    }
+
+    if (!isOpen) {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => scrollToSection(targetId));
+      });
+    }
+  }
+
   async function handleKakaoLogin() {
     setAuthActionLoading(true);
     setAuthError("");
@@ -4449,7 +4474,9 @@ export default function Home() {
         <section
           id="ai-insights"
           className={`${cardClass} scroll-mt-32 border-indigo-200/60 dark:border-indigo-900/50 ${
-            activeTab === "manage" ? "order-[45]" : "hidden"
+            activeTab === "manage" && isInsightsPanelOpen
+              ? "order-[44]"
+              : "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -6067,17 +6094,14 @@ export default function Home() {
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                 AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
-                사장님 확인이 필요한지 함께 판단합니다. 플랫폼 연동 후에는 이
-                판단을 기준으로 자동 처리와 승인 처리를 나눌 수 있습니다.
-                각 카드에서 AI 판단 이유와 답변 근거도 함께 확인할 수 있습니다.
-                가게 설정에서 자동 처리 옵션을 켜면 낮은 위험도의 반복 문의와
-                긍정 리뷰는 자동으로 답변 완료 처리할 수 있습니다.
-                확인 필요한 정보, 주의 필요한 리뷰, 최근 문의와 리뷰 답글은
-                이제 AI CS 처리함에서 상태별로 관리할 수 있습니다.
+                사장님 확인이 필요한지 함께 판단합니다. 확인 필요한 정보,
+                주의 필요한 리뷰, 최근 문의와 리뷰 답글은 이곳에서 상태별로
+                관리할 수 있습니다.
               </p>
               <p className="mt-2 max-w-3xl text-xs leading-5 text-indigo-700 dark:text-indigo-300">
-                플랫폼 연동 후에는 배민, 요기요, 쿠팡이츠, 스마트스토어 문의와
-                리뷰를 이곳에서 함께 관리할 수 있습니다.
+                각 카드에서 AI 판단 이유와 답변 근거를 확인할 수 있고, 플랫폼
+                연동 후에는 배민, 요기요, 쿠팡이츠, 스마트스토어 문의와 리뷰를
+                함께 관리할 수 있습니다.
                 <span className="mt-1 block">
                   플랫폼 연동 탭에서 불러온 샘플 데이터에는 ‘데모 데이터’ 배지가
                   표시됩니다.
@@ -6770,9 +6794,120 @@ export default function Home() {
         </section>
 
         <section
+          id="manage-support"
+          className={`${cardClass} scroll-mt-32 border-zinc-200/80 dark:border-zinc-800 ${
+            activeTab === "manage" ? "order-[42]" : "hidden"
+          }`}
+        >
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Support Tools
+              </p>
+              <h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                보조 관리
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                자주 보는 업무는 AI CS 처리함에 모아두고, 지식 점검과 운영 분석은
+                필요할 때만 펼쳐서 확인합니다.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <article className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                    AI가 학습한 가게 지식
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                    사장님이 알려준 답변과 AI가 실제 답변에 사용한 기록을 관리합니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleManageSupportPanel("store_knowledge")}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  aria-expanded={isStoreKnowledgePanelOpen}
+                  aria-controls="store-knowledge"
+                >
+                  {isStoreKnowledgePanelOpen ? "접기" : "열기"}
+                </button>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    전체 지식
+                  </p>
+                  <p className="mt-0.5 text-lg font-semibold text-emerald-950 dark:text-emerald-100">
+                    {storeKnowledgeQualityReport.summary.totalCount.toLocaleString(
+                      "ko-KR",
+                    )}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    검토 필요
+                  </p>
+                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
+                    {storeKnowledgeQualityReport.summary.reviewCount.toLocaleString(
+                      "ko-KR",
+                    )}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    충돌 가능
+                  </p>
+                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
+                    {storeKnowledgeQualityReport.summary.conflictCount.toLocaleString(
+                      "ko-KR",
+                    )}
+                  </p>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
+                    AI 운영 분석
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-indigo-800 dark:text-indigo-200">
+                    최근 리뷰 흐름을 바탕으로 운영에서 볼 만한 신호를 요약합니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleManageSupportPanel("insights")}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-indigo-700 px-3 text-xs font-semibold text-white transition hover:bg-indigo-800 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                  aria-expanded={isInsightsPanelOpen}
+                  aria-controls="ai-insights"
+                >
+                  {isInsightsPanelOpen ? "접기" : "열기"}
+                </button>
+              </div>
+              <div className="mt-4 rounded-lg bg-white/80 px-3 py-2 ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70">
+                <p className="text-xs font-medium text-indigo-800 dark:text-indigo-200">
+                  {insightsLoading
+                    ? "분석을 불러오는 중입니다."
+                    : insightsError
+                      ? "분석을 다시 불러와야 합니다."
+                      : "분석 결과를 접힌 상태로 보관 중입니다."}
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section
           id="store-knowledge"
           className={`${cardClass} scroll-mt-32 border-emerald-200/70 dark:border-emerald-900/50 ${
-            activeTab === "manage" ? "order-[42]" : "hidden"
+            activeTab === "manage" && isStoreKnowledgePanelOpen
+              ? "order-[43]"
+              : "hidden"
           }`}
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
