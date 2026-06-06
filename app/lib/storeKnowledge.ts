@@ -25,9 +25,12 @@ export type StoreKnowledgeItem = {
   source_id?: string | null;
   source_text?: string | null;
   confidence: string;
+  status?: StoreKnowledgeStatus | string | null;
   created_at?: string;
   updated_at?: string;
 };
+
+export type StoreKnowledgeStatus = "active" | "needs_review" | "archived";
 
 export type UsedStoreKnowledgeItem = {
   id: string;
@@ -65,6 +68,7 @@ create table if not exists store_knowledge_items (
   source_id text,
   source_text text,
   confidence text not null default 'owner_confirmed',
+  status text not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -78,6 +82,9 @@ create index if not exists store_knowledge_items_user_id_category_idx
 
 export const usedKnowledgeItemsSql =
   "alter table cs_messages add column if not exists used_knowledge_items jsonb default '[]'::jsonb;";
+
+export const storeKnowledgeStatusSql =
+  "alter table store_knowledge_items add column if not exists status text not null default 'active';";
 
 function isMissingStoreKnowledgeTableError(error: { message: string } | null) {
   return Boolean(error && /store_knowledge_items|schema cache|does not exist/i.test(error.message));
@@ -93,6 +100,14 @@ export function isMissingUsedKnowledgeColumnError(error: { message: string } | n
 
 export function warnMissingUsedKnowledgeColumn() {
   console.warn(`cs_messages used_knowledge_items column is missing. Run: ${usedKnowledgeItemsSql}`);
+}
+
+function isMissingStoreKnowledgeStatusColumnError(error: { message: string } | null) {
+  return Boolean(error && /status/i.test(error.message));
+}
+
+function warnMissingStoreKnowledgeStatusColumn() {
+  console.warn(`store_knowledge_items status column is missing. Run: ${storeKnowledgeStatusSql}`);
 }
 
 export function mapMissingInfoTopicToKnowledgeCategory(
@@ -162,7 +177,7 @@ export async function saveStoreKnowledgeItem({
   }
 
   if (existing.data?.id) {
-    const { error } = await supabase
+    let { error } = await supabase
       .from("store_knowledge_items")
       .update({
         answer: trimmedAnswer,
@@ -170,10 +185,28 @@ export async function saveStoreKnowledgeItem({
         source_id: sourceId ? String(sourceId) : null,
         source_text: sourceText?.trim() || null,
         confidence: "owner_confirmed",
+        status: "active",
         updated_at: now,
       })
       .eq("id", existing.data.id)
       .eq("user_id", userId);
+
+    if (isMissingStoreKnowledgeStatusColumnError(error)) {
+      warnMissingStoreKnowledgeStatusColumn();
+      const fallback = await supabase
+        .from("store_knowledge_items")
+        .update({
+          answer: trimmedAnswer,
+          source_type: "missing_info",
+          source_id: sourceId ? String(sourceId) : null,
+          source_text: sourceText?.trim() || null,
+          confidence: "owner_confirmed",
+          updated_at: now,
+        })
+        .eq("id", existing.data.id)
+        .eq("user_id", userId);
+      error = fallback.error;
+    }
 
     if (isMissingStoreKnowledgeTableError(error)) {
       warnMissingStoreKnowledgeTable();
@@ -188,7 +221,7 @@ export async function saveStoreKnowledgeItem({
     return { saved: true, updated: true };
   }
 
-  const { error } = await supabase.from("store_knowledge_items").insert({
+  let { error } = await supabase.from("store_knowledge_items").insert({
     user_id: userId,
     store_id: String(storeId),
     category,
@@ -198,9 +231,28 @@ export async function saveStoreKnowledgeItem({
     source_id: sourceId ? String(sourceId) : null,
     source_text: sourceText?.trim() || null,
     confidence: "owner_confirmed",
+    status: "active",
     created_at: now,
     updated_at: now,
   });
+
+  if (isMissingStoreKnowledgeStatusColumnError(error)) {
+    warnMissingStoreKnowledgeStatusColumn();
+    const fallback = await supabase.from("store_knowledge_items").insert({
+      user_id: userId,
+      store_id: String(storeId),
+      category,
+      question: trimmedQuestion,
+      answer: trimmedAnswer,
+      source_type: "missing_info",
+      source_id: sourceId ? String(sourceId) : null,
+      source_text: sourceText?.trim() || null,
+      confidence: "owner_confirmed",
+      created_at: now,
+      updated_at: now,
+    });
+    error = fallback.error;
+  }
 
   if (isMissingStoreKnowledgeTableError(error)) {
     warnMissingStoreKnowledgeTable();
@@ -223,7 +275,7 @@ export async function loadStoreKnowledgeItems({
   const { data, error } = await supabase
     .from("store_knowledge_items")
     .select(
-      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, status, created_at, updated_at",
     )
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
@@ -235,6 +287,28 @@ export async function loadStoreKnowledgeItems({
   }
 
   if (error) {
+    if (isMissingStoreKnowledgeStatusColumnError(error)) {
+      warnMissingStoreKnowledgeStatusColumn();
+      const fallback = await supabase
+        .from("store_knowledge_items")
+        .select(
+          "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+        )
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(limit);
+
+      if (fallback.error) {
+        console.warn("Failed to load store knowledge items.", fallback.error);
+        return [];
+      }
+
+      return (fallback.data ?? []).map((item) => ({
+        ...item,
+        status: "active",
+      })) as StoreKnowledgeItem[];
+    }
+
     console.warn("Failed to load store knowledge items.", error);
     return [];
   }
@@ -414,8 +488,9 @@ export function selectRelevantStoreKnowledgeItems(
   items: StoreKnowledgeItem[],
   limit = 3,
 ) {
+  const usableItems = items.filter((item) => (item.status ?? "active") === "active");
   const qualityReport = buildStoreKnowledgeQualityReport(
-    items.filter(
+    usableItems.filter(
       (
         item,
       ): item is StoreKnowledgeItem & {
@@ -424,7 +499,7 @@ export function selectRelevantStoreKnowledgeItems(
     ),
   );
 
-  return items
+  return usableItems
     .map((item) => {
       const quality = item.id ? qualityReport.byId[item.id] : null;
       const score = scoreKnowledgeItem(customerMessage, item);

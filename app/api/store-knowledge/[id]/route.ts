@@ -4,6 +4,7 @@ type PatchBody = {
   question?: unknown;
   answer?: unknown;
   category?: unknown;
+  status?: unknown;
 };
 
 const allowedCategories = new Set([
@@ -18,12 +19,35 @@ const allowedCategories = new Set([
   "general",
 ]);
 
+const allowedStatuses = new Set(["active", "needs_review", "archived"]);
+
+const storeKnowledgeStatusSql =
+  "alter table store_knowledge_items add column if not exists status text not null default 'active';";
+
+function isMissingStatusColumnError(error: { message: string } | null) {
+  return Boolean(error && /status/i.test(error.message));
+}
+
+function warnMissingStatusColumn() {
+  console.warn(
+    `store_knowledge_items status column is missing. Run: ${storeKnowledgeStatusSql}`,
+  );
+}
+
 function normalizeCategory(value: unknown) {
   if (typeof value !== "string") return "general";
 
   const category = value.trim();
 
   return allowedCategories.has(category) ? category : "general";
+}
+
+function normalizeStatus(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const status = value.trim();
+
+  return allowedStatuses.has(status) ? status : null;
 }
 
 export async function PATCH(
@@ -58,10 +82,20 @@ export async function PATCH(
 
   const question = typeof body.question === "string" ? body.question.trim() : "";
   const answer = typeof body.answer === "string" ? body.answer.trim() : "";
+  const nextStatus = normalizeStatus(body.status);
+  const hasContentUpdate =
+    typeof body.question === "string" || typeof body.answer === "string";
 
-  if (!question || !answer) {
+  if (hasContentUpdate && (!question || !answer)) {
     return Response.json(
       { error: "Question and answer are required." },
+      { status: 400 },
+    );
+  }
+
+  if (!hasContentUpdate && !nextStatus) {
+    return Response.json(
+      { error: "Question, answer, or status is required." },
       { status: 400 },
     );
   }
@@ -87,21 +121,62 @@ export async function PATCH(
     );
   }
 
-  const { data, error } = await auth.supabase
+  const updatePayload: Record<string, string> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (hasContentUpdate) {
+    updatePayload.question = question;
+    updatePayload.answer = answer;
+    updatePayload.category = normalizeCategory(body.category);
+    updatePayload.confidence = "owner_confirmed";
+  }
+
+  if (nextStatus) {
+    updatePayload.status = nextStatus;
+  }
+
+  let { data, error } = await auth.supabase
     .from("store_knowledge_items")
-    .update({
-      question,
-      answer,
-      category: normalizeCategory(body.category),
-      confidence: "owner_confirmed",
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", id)
     .eq("user_id", auth.userId)
     .select(
-      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, status, created_at, updated_at",
     )
     .maybeSingle();
+
+  if (isMissingStatusColumnError(error)) {
+    warnMissingStatusColumn();
+
+    if (!hasContentUpdate) {
+      return Response.json(
+        {
+          error:
+            "Store knowledge status column is missing. Run the required SQL before changing status.",
+          detail: storeKnowledgeStatusSql,
+        },
+        { status: 500 },
+      );
+    }
+
+    const fallbackPayload = { ...updatePayload };
+    delete fallbackPayload.status;
+    const fallback = await auth.supabase
+      .from("store_knowledge_items")
+      .update(fallbackPayload)
+      .eq("id", id)
+      .eq("user_id", auth.userId)
+      .select(
+        "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      )
+      .maybeSingle();
+
+    data = fallback.data
+      ? { ...fallback.data, status: nextStatus ?? "active" }
+      : null;
+    error = fallback.error;
+  }
 
   if (error) {
     return Response.json(

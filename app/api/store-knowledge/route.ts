@@ -20,6 +20,19 @@ const allowedCategories = new Set([
   "general",
 ]);
 
+const storeKnowledgeStatusSql =
+  "alter table store_knowledge_items add column if not exists status text not null default 'active';";
+
+function isMissingStatusColumnError(error: { message: string } | null) {
+  return Boolean(error && /status/i.test(error.message));
+}
+
+function warnMissingStatusColumn() {
+  console.warn(
+    `store_knowledge_items status column is missing. Run: ${storeKnowledgeStatusSql}`,
+  );
+}
+
 function normalizeCategory(value: unknown) {
   if (typeof value !== "string") return "general";
 
@@ -38,13 +51,42 @@ export async function GET(request: Request) {
   const { data, error } = await auth.supabase
     .from("store_knowledge_items")
     .select(
-      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, status, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
     .limit(100);
 
   if (error) {
+    if (isMissingStatusColumnError(error)) {
+      warnMissingStatusColumn();
+      const fallback = await auth.supabase
+        .from("store_knowledge_items")
+        .select(
+          "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+        )
+        .eq("user_id", auth.userId)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+
+      if (fallback.error) {
+        return Response.json(
+          {
+            error: "Failed to load store knowledge.",
+            detail: fallback.error.message,
+          },
+          { status: 500 },
+        );
+      }
+
+      return Response.json({
+        knowledgeItems: (fallback.data ?? []).map((item) => ({
+          ...item,
+          status: "active",
+        })),
+      });
+    }
+
     return Response.json(
       { error: "Failed to load store knowledge.", detail: error.message },
       { status: 500 },
@@ -115,7 +157,7 @@ export async function POST(request: Request) {
       ? body.sourceText.trim()
       : null;
 
-  const { data, error } = await auth.supabase
+  const query = auth.supabase
     .from("store_knowledge_items")
     .insert({
       user_id: auth.userId,
@@ -127,13 +169,41 @@ export async function POST(request: Request) {
       source_id: sourceId,
       source_text: sourceText,
       confidence: "owner_confirmed",
+      status: "active",
       created_at: now,
       updated_at: now,
     })
     .select(
-      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, status, created_at, updated_at",
     )
     .maybeSingle();
+  let { data, error } = await query;
+
+  if (isMissingStatusColumnError(error)) {
+    warnMissingStatusColumn();
+    const fallback = await auth.supabase
+      .from("store_knowledge_items")
+      .insert({
+        user_id: auth.userId,
+        store_id: String(store.id),
+        category: normalizeCategory(body.category),
+        question,
+        answer,
+        source_type: "owner_correction",
+        source_id: sourceId,
+        source_text: sourceText,
+        confidence: "owner_confirmed",
+        created_at: now,
+        updated_at: now,
+      })
+      .select(
+        "id, user_id, store_id, category, question, answer, source_type, source_id, source_text, confidence, created_at, updated_at",
+      )
+      .maybeSingle();
+
+    data = fallback.data ? { ...fallback.data, status: "active" } : null;
+    error = fallback.error;
+  }
 
   if (error) {
     return Response.json(

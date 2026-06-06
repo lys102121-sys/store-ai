@@ -227,6 +227,19 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
+  ids(
+    storeKnowledge.selectRelevantStoreKnowledgeItems(
+      "딸기 케이크 비용 안내 부탁드려요.",
+      [
+        { ...learnedKnowledgeItems[0], status: "needs_review" },
+        { ...learnedKnowledgeItems[1], status: "archived" },
+      ],
+    ),
+  ),
+  [],
+);
+
+assert.deepEqual(
   plain(storeKnowledge.createUsedKnowledgeSnapshot([learnedKnowledgeItems[0]])),
   [
     {
