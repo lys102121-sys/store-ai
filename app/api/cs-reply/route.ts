@@ -16,9 +16,11 @@ import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import {
+  createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
+  mergeUsedKnowledgeSnapshots,
   mergeStoreKnowledgeIntoStore,
   selectRelevantStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
@@ -526,6 +528,10 @@ export async function POST(request: Request) {
     baseStoreRow,
     relevantStoreKnowledgeItems,
   );
+  const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
+    usedKnowledgeItems,
+    createStoreInfoEvidenceSnapshot(customerMessage, storeRow),
+  );
   const systemPrompt = buildCsReplySystemPrompt(storeRow);
 
   try {
@@ -637,7 +643,7 @@ export async function POST(request: Request) {
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
         ai_reason: aiReason,
-        used_knowledge_items: usedKnowledgeItems,
+        used_knowledge_items: usedKnowledgeItemsWithStoreEvidence,
         source_platform: "manual",
         external_id: null,
         external_url: null,
@@ -758,7 +764,7 @@ export async function POST(request: Request) {
       handling_type: decision.handlingType,
       risk_level: decision.riskLevel,
       ai_reason: aiReason,
-      used_knowledge_items: usedKnowledgeItems,
+      used_knowledge_items: usedKnowledgeItemsWithStoreEvidence,
     });
   } catch (error) {
     const message =

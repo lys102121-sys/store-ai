@@ -197,6 +197,63 @@ assert.deepEqual(
   ],
 );
 
+const storeInfoEvidenceStore = {
+  user_id: "user-1",
+  store_name: "테스트 가게",
+  business_type: "디저트/카페",
+  shipping_policy: "오후 2시 이전 주문은 당일 출고됩니다.",
+  refund_policy: "제조 시작 후에는 단순 변심 취소가 어렵습니다.",
+  product_name: "딸기 생크림 케이크",
+  product_description: "딸기를 올린 생크림 케이크입니다.",
+  product_details: "1호 30,000원",
+  product_caution: "우유, 계란, 밀 포함",
+  product_catalog: "[딸기 생크림 케이크]\n- 1호 30,000원",
+  extra_faq: "케이크 초는 1개 제공됩니다.",
+  owner_cs_examples: "",
+  created_at: null,
+  updated_at: null,
+};
+
+assert.deepEqual(
+  plain(ids(
+    storeKnowledge.createStoreInfoEvidenceSnapshot(
+      "딸기 케이크 얼마인가요?",
+      storeInfoEvidenceStore,
+    ),
+  )),
+  ["store:product_catalog", "store:product_details"],
+);
+
+assert.deepEqual(
+  plain(ids(
+    storeKnowledge.createStoreInfoEvidenceSnapshot(
+      "오늘 출고되나요?",
+      storeInfoEvidenceStore,
+    ),
+  )),
+  ["store:shipping_policy"],
+);
+
+assert.deepEqual(
+  plain(ids(
+    storeKnowledge.createStoreInfoEvidenceSnapshot(
+      "케이크 초도 같이 주시나요?",
+      storeInfoEvidenceStore,
+    ),
+  )),
+  ["store:product_catalog", "store:product_details", "store:extra_faq"],
+);
+
+assert.deepEqual(
+  plain(ids(
+    storeKnowledge.mergeUsedKnowledgeSnapshots(
+      [{ id: "store:extra_faq", category: "general", question: "FAQ", answer: "A" }],
+      [{ id: "store:extra_faq", category: "general", question: "FAQ", answer: "B" }],
+    ),
+  )),
+  ["store:extra_faq"],
+);
+
 const mergedStore = storeKnowledge.mergeStoreKnowledgeIntoStore(
   {
     user_id: "user-1",

@@ -691,6 +691,8 @@ function platformStatusBadgeClass(value?: string | null) {
 
 function storeKnowledgeCategoryLabel(value?: string | null) {
   switch (value) {
+    case "product_catalog":
+      return "상품 목록";
     case "pricing":
       return "가격";
     case "shipping":
@@ -710,6 +712,10 @@ function storeKnowledgeCategoryLabel(value?: string | null) {
     default:
       return "기타 FAQ";
   }
+}
+
+function isStoreInfoEvidenceItem(item: UsedKnowledgeItem) {
+  return item.id.startsWith("store:");
 }
 
 function parseUsedKnowledgeItems(value: unknown): UsedKnowledgeItem[] {
@@ -738,6 +744,9 @@ const aiReasonAttentionPattern =
 
 function workflowEvidenceTitle(item: WorkflowItem) {
   if (item.type === "missing_info") return "부족한 정보";
+  if (item.usedKnowledgeItems.some(isStoreInfoEvidenceItem)) {
+    return "답변에 참고한 가게 정보";
+  }
   if (item.usedKnowledgeItems.length > 0) return "답변에 참고한 가게 지식";
   if (item.handlingType === "auto_ready") return "답변 근거";
   if (item.handlingType === "needs_review") return "근거 확인 필요";
@@ -749,6 +758,10 @@ function workflowEvidenceTitle(item: WorkflowItem) {
 function workflowEvidenceMessage(item: WorkflowItem) {
   if (item.type === "missing_info") {
     return "AI가 답변하기 위해 추가 정보가 필요하다고 판단한 항목입니다. 사장님이 답변을 입력하면 가게 지식으로 저장됩니다.";
+  }
+
+  if (item.usedKnowledgeItems.some(isStoreInfoEvidenceItem)) {
+    return "저장된 상품 목록, 정책, FAQ 또는 사장님이 확인해준 가게 지식을 답변 근거로 사용했습니다.";
   }
 
   if (item.usedKnowledgeItems.length > 0) {
@@ -6731,7 +6744,7 @@ export default function Home() {
                                   </p>
                                   {item.usedKnowledgeItems.length > 0 ? (
                                     <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-current/10 dark:bg-zinc-950/40">
-                                      사장님 확인 지식{" "}
+                                      참고 근거{" "}
                                       {item.usedKnowledgeItems.length.toLocaleString(
                                         "ko-KR",
                                       )}

@@ -24,9 +24,11 @@ import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import {
+  createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
+  mergeUsedKnowledgeSnapshots,
   mergeStoreKnowledgeIntoStore,
   selectRelevantStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
@@ -503,6 +505,13 @@ export async function POST(request: Request) {
         baseStoreRow,
         relevantStoreKnowledgeItems,
       );
+      const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
+        usedKnowledgeItems,
+        createStoreInfoEvidenceSnapshot(
+          `${inquiry.productName ?? ""}\n${inquiry.content}`,
+          storeRow,
+        ),
+      );
       const decision = await generateInquiryReply(inquiry, storeRow);
       const shouldCreateMissingInfo =
         decision.handlingType === "needs_review" ||
@@ -522,7 +531,7 @@ export async function POST(request: Request) {
         handling_type: decision.handlingType,
         risk_level: decision.riskLevel,
         ai_reason: decision.aiReason,
-        used_knowledge_items: usedKnowledgeItems,
+        used_knowledge_items: usedKnowledgeItemsWithStoreEvidence,
         source_platform: "coupang",
         external_id: inquiry.externalId,
         external_url: null,

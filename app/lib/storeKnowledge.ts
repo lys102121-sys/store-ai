@@ -429,6 +429,215 @@ export function createUsedKnowledgeSnapshot(
     }));
 }
 
+function truncateEvidenceAnswer(value: string, maxLength = 220) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) return normalized;
+
+  return `${normalized.slice(0, maxLength).trim()}...`;
+}
+
+function hasAnyKnowledgeKeyword(value: string, keywords: string[]) {
+  const normalizedValue = normalizeKnowledgeText(value);
+
+  return keywords.some((keyword) =>
+    normalizedValue.includes(normalizeKnowledgeText(keyword)),
+  );
+}
+
+function hasStoreFieldOverlap(customerMessage: string, fieldValue?: string | null) {
+  const fieldText = fieldValue?.trim() ?? "";
+
+  if (!fieldText) return false;
+
+  return getTokenOverlapScore(customerMessage, fieldText) > 0;
+}
+
+function createStoreInfoEvidenceItem({
+  id,
+  category,
+  question,
+  answer,
+}: {
+  id: string;
+  category: string;
+  question: string;
+  answer?: string | null;
+}): UsedStoreKnowledgeItem | null {
+  const trimmedAnswer = answer?.trim() ?? "";
+
+  if (!trimmedAnswer) return null;
+
+  return {
+    id,
+    category,
+    question,
+    answer: truncateEvidenceAnswer(trimmedAnswer),
+  };
+}
+
+export function createStoreInfoEvidenceSnapshot(
+  customerMessage: string,
+  store: CsReplyPromptStore,
+): UsedStoreKnowledgeItem[] {
+  const evidenceItems: Array<UsedStoreKnowledgeItem | null> = [];
+  const isPricingInquiry = hasAnyKnowledgeKeyword(customerMessage, [
+    "가격",
+    "얼마",
+    "금액",
+    "비용",
+    "몇 원",
+    "몇원",
+    "총액",
+    "견적",
+  ]);
+  const isShippingInquiry = hasAnyKnowledgeKeyword(customerMessage, [
+    "배송",
+    "출고",
+    "발송",
+    "오늘 보내",
+    "언제 받아",
+    "도착",
+    "택배",
+    "수령",
+  ]);
+  const isRefundInquiry = hasAnyKnowledgeKeyword(customerMessage, [
+    "환불",
+    "취소",
+    "반품",
+    "교환",
+    "돈 돌려",
+    "환불 가능",
+    "취소 가능",
+  ]);
+  const isProductInquiry = hasAnyKnowledgeKeyword(customerMessage, [
+    "상품",
+    "제품",
+    "구성",
+    "용량",
+    "사이즈",
+    "재질",
+    "성분",
+    "원재료",
+    "보관",
+    "사용법",
+    "포함",
+    "동봉",
+    "제공",
+  ]);
+  const isFaqOrOptionInquiry = hasAnyKnowledgeKeyword(customerMessage, [
+    "포장",
+    "선물",
+    "쇼핑백",
+    "옵션",
+    "추가",
+    "변경",
+    "조절",
+    "선택",
+    "각인",
+    "커스텀",
+    "가능",
+  ]);
+  const hasProductCatalogOverlap =
+    isPricingInquiry ||
+    isProductInquiry ||
+    hasStoreFieldOverlap(customerMessage, store.product_catalog);
+  const hasRepresentativeProductOverlap =
+    isProductInquiry ||
+    isPricingInquiry ||
+    [
+      store.product_name,
+      store.product_description,
+      store.product_details,
+      store.product_caution,
+    ].some((fieldValue) => hasStoreFieldOverlap(customerMessage, fieldValue));
+
+  if (hasProductCatalogOverlap) {
+    evidenceItems.push(
+      createStoreInfoEvidenceItem({
+        id: "store:product_catalog",
+        category: isPricingInquiry ? "pricing" : "product_catalog",
+        question: "상품 목록",
+        answer: store.product_catalog,
+      }),
+    );
+  }
+
+  if (hasRepresentativeProductOverlap) {
+    evidenceItems.push(
+      createStoreInfoEvidenceItem({
+        id: "store:product_details",
+        category: "product",
+        question: "대표 상품 정보",
+        answer: [
+          store.product_name,
+          store.product_description,
+          store.product_details,
+          store.product_caution,
+        ]
+          .map((value) => value?.trim())
+          .filter(Boolean)
+          .join("\n"),
+      }),
+    );
+  }
+
+  if (isShippingInquiry || hasStoreFieldOverlap(customerMessage, store.shipping_policy)) {
+    evidenceItems.push(
+      createStoreInfoEvidenceItem({
+        id: "store:shipping_policy",
+        category: "shipping",
+        question: "배송정책",
+        answer: store.shipping_policy,
+      }),
+    );
+  }
+
+  if (isRefundInquiry || hasStoreFieldOverlap(customerMessage, store.refund_policy)) {
+    evidenceItems.push(
+      createStoreInfoEvidenceItem({
+        id: "store:refund_policy",
+        category: "refund_exchange",
+        question: "환불정책",
+        answer: store.refund_policy,
+      }),
+    );
+  }
+
+  if (
+    isFaqOrOptionInquiry ||
+    (!isPricingInquiry && hasStoreFieldOverlap(customerMessage, store.extra_faq))
+  ) {
+    evidenceItems.push(
+      createStoreInfoEvidenceItem({
+        id: "store:extra_faq",
+        category: isFaqOrOptionInquiry ? "packaging" : "general",
+        question: "기타 FAQ/포장·옵션",
+        answer: store.extra_faq,
+      }),
+    );
+  }
+
+  return evidenceItems.filter((item): item is UsedStoreKnowledgeItem =>
+    Boolean(item),
+  );
+}
+
+export function mergeUsedKnowledgeSnapshots(
+  ...snapshots: UsedStoreKnowledgeItem[][]
+): UsedStoreKnowledgeItem[] {
+  const uniqueItems = new Map<string, UsedStoreKnowledgeItem>();
+
+  for (const item of snapshots.flat()) {
+    if (!item.id || !item.question.trim() || !item.answer.trim()) continue;
+    if (!uniqueItems.has(item.id)) {
+      uniqueItems.set(item.id, item);
+    }
+  }
+
+  return [...uniqueItems.values()];
+}
+
 export function withoutUsedKnowledgeItems<
   T extends { used_knowledge_items?: unknown },
 >(row: T) {

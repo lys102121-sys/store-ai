@@ -6,10 +6,12 @@ import {
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   mapMissingInfoTopicToKnowledgeCategory,
+  mergeUsedKnowledgeSnapshots,
   mergeStoreKnowledgeIntoStore,
   saveStoreKnowledgeItem,
   selectRelevantStoreKnowledgeItems,
@@ -272,19 +274,22 @@ export async function POST(request: Request) {
           customerMessage,
           uniqueStoreKnowledgeItems,
         );
+        const storeWithKnowledge = mergeStoreKnowledgeIntoStore(
+          updatedStoreRow,
+          relevantStoreKnowledgeItems,
+        );
+        const usedKnowledgeItems = mergeUsedKnowledgeSnapshots(
+          createUsedKnowledgeSnapshot(relevantStoreKnowledgeItems),
+          createStoreInfoEvidenceSnapshot(customerMessage, storeWithKnowledge),
+        );
 
         return {
           id: message.id,
           decision: await generateCsReplyDecision({
             customerMessage,
-            store: mergeStoreKnowledgeIntoStore(
-              updatedStoreRow,
-              relevantStoreKnowledgeItems,
-            ),
+            store: storeWithKnowledge,
           }),
-          usedKnowledgeItems: createUsedKnowledgeSnapshot(
-            relevantStoreKnowledgeItems,
-          ),
+          usedKnowledgeItems,
         };
       }),
     );
