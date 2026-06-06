@@ -5557,7 +5557,13 @@ export default function Home() {
                   {deliveryMockReviewPlatform ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
                       <div className="rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
-                        <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                          데모 체험
+                        </p>
+                        <h4 className="mt-1 text-sm font-semibold text-violet-950 dark:text-violet-100">
+                          샘플 리뷰로 흐름 확인
+                        </h4>
+                        <p className="mt-2 text-xs leading-5 text-violet-900 dark:text-violet-100">
                           샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
                           CS 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
@@ -5613,8 +5619,22 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                        <div>
+                      <div className="rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/60 dark:bg-zinc-950">
+                        <div className="mb-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                            실제 연동
+                          </p>
+                          <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                            쿠팡 Open API 연결
+                          </h4>
+                          <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                            저장된 쿠팡 API 설정으로 연결을 테스트하고, 연결 후 실제
+                            상품 문의를 AI CS 처리함으로 가져옵니다.
+                          </p>
+                        </div>
+
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                          <div>
                           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                             쿠팡 Open API 연결 상태
                           </p>
@@ -5638,7 +5658,7 @@ export default function Home() {
                             coupangCredential?.status,
                           )}
                         </span>
-                      </div>
+                        </div>
 
                       <button
                         type="button"
@@ -5873,75 +5893,101 @@ export default function Home() {
                           {coupangInquiryImportError}
                         </p>
                       ) : null}
-
-                      <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
-                        <p className="text-xs leading-5 text-sky-900 dark:text-sky-100">
-                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
-                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
-                        </p>
-                        <button
-                          type="button"
-                          disabled={coupangMockInquiriesLoading}
-                          onClick={() => void handleLoadCoupangMockInquiries()}
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
-                        >
-                          {coupangMockInquiriesLoading
-                            ? "샘플 문의 불러오는 중..."
-                            : "샘플 문의 불러오기"}
-                        </button>
-
-                        {coupangMockInquiriesMessage ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
-                            role="status"
-                          >
-                            {coupangMockInquiriesMessage}
-                          </p>
-                        ) : null}
-
-                        {coupangMockInquiriesError ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                            role="alert"
-                          >
-                            {coupangMockInquiriesError}
-                          </p>
-                        ) : null}
                       </div>
 
-                      <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
-                        <p className="text-xs leading-5 text-violet-900 dark:text-violet-100">
-                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
-                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
+                      <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-900/60 dark:bg-violet-950/25">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                          데모 체험
                         </p>
-                        <button
-                          type="button"
-                          disabled={coupangMockReviewsLoading}
-                          onClick={() => void handleLoadCoupangMockReviews()}
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
-                        >
-                          {coupangMockReviewsLoading
-                            ? "샘플 리뷰 불러오는 중..."
-                            : "샘플 리뷰 불러오기"}
-                        </button>
+                        <h4 className="mt-1 text-sm font-semibold text-violet-950 dark:text-violet-100">
+                          샘플 데이터로 AI CS 처리함 흐름 확인
+                        </h4>
+                        <p className="mt-2 text-xs leading-5 text-violet-900 dark:text-violet-100">
+                          샘플 데이터는 실제 쿠팡에서 가져온 데이터가 아니며, 실제
+                          API 키가 없어도 처리함 흐름을 체험하기 위한 데모용입니다.
+                        </p>
 
-                        {coupangMockReviewsMessage ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
-                            role="status"
-                          >
-                            {coupangMockReviewsMessage}
-                          </p>
-                        ) : null}
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-xl border border-sky-200 bg-white/80 p-4 dark:border-sky-900/60 dark:bg-zinc-950/50">
+                            <p className="text-xs font-semibold text-sky-900 dark:text-sky-100">
+                              샘플 문의
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-sky-800 dark:text-sky-200">
+                              쿠팡 상품 문의 3개를 AI 답변 초안과 함께 처리함에
+                              추가합니다.
+                            </p>
+                            <button
+                              type="button"
+                              disabled={coupangMockInquiriesLoading}
+                              onClick={() =>
+                                void handleLoadCoupangMockInquiries()
+                              }
+                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                            >
+                              {coupangMockInquiriesLoading
+                                ? "샘플 문의 불러오는 중..."
+                                : "샘플 문의 불러오기"}
+                            </button>
 
-                        {coupangMockReviewsError ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                            role="alert"
+                            {coupangMockInquiriesMessage ? (
+                              <p
+                                className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                role="status"
+                              >
+                                {coupangMockInquiriesMessage}
+                              </p>
+                            ) : null}
+
+                            {coupangMockInquiriesError ? (
+                              <p
+                                className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                                role="alert"
+                              >
+                                {coupangMockInquiriesError}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div
+                            className="rounded-xl border border-violet-200 bg-white/80 p-4 dark:border-violet-900/60 dark:bg-zinc-950/50"
                           >
-                            {coupangMockReviewsError}
-                          </p>
-                        ) : null}
+                            <p className="text-xs font-semibold text-violet-900 dark:text-violet-100">
+                              샘플 리뷰
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-violet-800 dark:text-violet-200">
+                              쿠팡 리뷰 3개를 AI 답글 초안과 함께 처리함에
+                              추가합니다.
+                            </p>
+                            <button
+                              type="button"
+                              disabled={coupangMockReviewsLoading}
+                              onClick={() => void handleLoadCoupangMockReviews()}
+                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
+                            >
+                              {coupangMockReviewsLoading
+                                ? "샘플 리뷰 불러오는 중..."
+                                : "샘플 리뷰 불러오기"}
+                            </button>
+
+                            {coupangMockReviewsMessage ? (
+                              <p
+                                className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                role="status"
+                              >
+                                {coupangMockReviewsMessage}
+                              </p>
+                            ) : null}
+
+                            {coupangMockReviewsError ? (
+                              <p
+                                className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                                role="alert"
+                              >
+                                {coupangMockReviewsError}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
