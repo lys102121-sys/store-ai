@@ -3477,6 +3477,97 @@ export default function Home() {
   const policyOptionButtonClass =
     "rounded-lg border px-3 py-2 text-xs font-medium transition";
 
+  const startGuideItems = [
+    {
+      step: "1단계",
+      title: hasStore ? "가게 정보 확인" : "가게 정보 준비",
+      description: hasStore
+        ? "등록된 가게 정보와 정책을 확인하고, 필요한 정보만 보강합니다."
+        : "예시 데이터로 먼저 체험하거나, 우리 가게 정보를 직접 입력합니다.",
+      actionLabel: hasStore ? "가게 설정 보기" : "가게 정보 입력하기",
+      onAction: () => goToTabSection("store", "store-info"),
+    },
+    {
+      step: "2단계",
+      title: "답변 생성 테스트",
+      description:
+        "고객 문의나 리뷰를 넣어보고 AI가 어떤 초안을 만드는지 확인합니다.",
+      actionLabel: "답변 작성하기",
+      onAction: () => goToTabSection("answer", "cs-reply"),
+    },
+    {
+      step: "3단계",
+      title: "AI CS 처리함 확인",
+      description:
+        "승인 대기, 확인 필요, 답변 완료 상태를 보며 실제 CS 업무처럼 관리합니다.",
+      actionLabel: "처리함 보기",
+      onAction: () => goToTabSection("manage", "ai-cs-inbox"),
+    },
+  ];
+
+  const startRecommendedAction = !authUser
+    ? {
+        eyebrow: "먼저 할 일",
+        title: "카카오 로그인으로 내 가게 공간 만들기",
+        description:
+          "로그인하면 가게 정보, 답변 기록, 학습 지식이 내 계정 기준으로 저장됩니다.",
+        actionLabel: "카카오로 로그인",
+        onAction: () => void handleKakaoLogin(),
+      }
+    : storeStatusLoading
+      ? {
+          eyebrow: "확인 중",
+          title: "가게 정보를 확인하고 있어요",
+          description:
+            "잠시 후 현재 가게 정보 상태에 맞춰 다음 작업을 추천해드릴게요.",
+          actionLabel: "가게 설정 보기",
+          onAction: () => goToTabSection("store", "store-info"),
+        }
+      : !hasStore
+        ? {
+            eyebrow: "추천 시작",
+            title: "예시 데이터로 먼저 체험해보기",
+            description:
+              "처음부터 모두 입력하기 부담스럽다면 예시 업종을 골라 AI 답변 흐름을 먼저 확인해보세요.",
+            actionLabel: "예시 데이터 선택하기",
+            onAction: () => {
+              setIsExamplePickerOpen(true);
+              goToTabSection("store", "store-info");
+            },
+          }
+        : pendingMissingInfoCount > 0
+          ? {
+              eyebrow: "우선 처리",
+              title: "AI가 모르는 질문에 답변해주기",
+              description:
+                "확인 필요한 정보를 채우면 가게 지식에 저장되고 비슷한 문의 답변에도 반영됩니다.",
+              actionLabel: "확인 필요 보기",
+              onAction: () => {
+                setSelectedWorkflowStatus("needs_review");
+                goToTabSection("manage", "ai-cs-inbox");
+              },
+            }
+          : workflowPendingItems.length > 0
+            ? {
+                eyebrow: "다음 작업",
+                title: "승인 대기 답변 확인하기",
+                description:
+                  "AI가 작성한 답변 초안을 확인하고 승인하거나 수정해보세요.",
+                actionLabel: "승인 대기 보기",
+                onAction: () => {
+                  setSelectedWorkflowStatus("pending");
+                  goToTabSection("manage", "ai-cs-inbox");
+                },
+              }
+            : {
+                eyebrow: "다음 테스트",
+                title: "문의 답변을 하나 만들어보기",
+                description:
+                  "새 고객 문의를 입력해 AI가 현재 가게 정보를 어떻게 활용하는지 확인해보세요.",
+                actionLabel: "문의 답변 테스트",
+                onAction: () => goToTabSection("answer", "cs-reply"),
+              };
+
   const dashboardTabs = [
     { id: "start", label: "시작하기" },
     { id: "store", label: "가게 설정" },
@@ -4159,26 +4250,7 @@ export default function Home() {
             </div>
 
             <div className="grid gap-3">
-              {[
-                {
-                  step: "1단계",
-                  title: "가게 정보 등록",
-                  description:
-                    "업종, 말투 학습 예시, 배송·환불 정책, 상품 정보를 입력합니다.",
-                },
-                {
-                  step: "2단계",
-                  title: "리뷰·문의 답변 생성",
-                  description:
-                    "고객 리뷰와 문의를 입력하면 AI가 우리 가게에 맞는 답변을 작성합니다.",
-                },
-                {
-                  step: "3단계",
-                  title: "부족한 정보 학습",
-                  description:
-                    "AI가 모르는 질문을 발견하면 사장님에게 확인하고, 답변을 지식에 반영합니다.",
-                },
-              ].map((item) => (
+              {startGuideItems.map((item) => (
                 <article
                   key={item.step}
                   className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/60"
@@ -4194,6 +4266,13 @@ export default function Home() {
                       <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
                         {item.description}
                       </p>
+                      <button
+                        type="button"
+                        onClick={item.onAction}
+                        className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        {item.actionLabel}
+                      </button>
                     </div>
                   </div>
                 </article>
@@ -4202,44 +4281,30 @@ export default function Home() {
           </div>
         </section>
 
-        {activeTab === "start" && authUser && !storeStatusLoading && !hasStore ? (
-          <section className="order-[20] rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        {activeTab === "start" ? (
+          <section className="order-[15] rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 shadow-sm dark:border-indigo-900/60 dark:bg-indigo-950/25">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  Onboarding
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                  {startRecommendedAction.eyebrow}
                 </p>
-                <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  먼저 우리 가게 정보를 등록해주세요
+                <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  {startRecommendedAction.title}
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  AI 답변이 가게 정책과 사장님 응대 방식을 반영할 수 있도록 기본 정보를 먼저 저장해주세요.
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  {startRecommendedAction.description}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => goToTabSection("store", "store-info")}
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                onClick={startRecommendedAction.onAction}
+                disabled={authActionLoading}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
               >
-                가게 정보 등록하기
+                {authActionLoading
+                  ? "처리 중..."
+                  : startRecommendedAction.actionLabel}
               </button>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {["가게명 입력", "말투 예시 입력", "배송정책 입력", "환불정책 입력"].map(
-                (step, index) => (
-                  <div
-                    key={step}
-                    className="rounded-xl border border-emerald-100 bg-white px-4 py-3 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-zinc-900"
-                  >
-                    <span className="mb-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                      {index + 1}
-                    </span>
-                    <p className="font-medium text-zinc-800 dark:text-zinc-100">
-                      {step}
-                    </p>
-                  </div>
-                ),
-              )}
             </div>
           </section>
         ) : null}
