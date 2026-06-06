@@ -1465,6 +1465,9 @@ export default function Home() {
     null,
   );
   const [editingWorkflowReply, setEditingWorkflowReply] = useState("");
+  const [expandedWorkflowDetailKeys, setExpandedWorkflowDetailKeys] = useState<
+    Record<string, boolean>
+  >({});
   const [selectedWorkflowStatus, setSelectedWorkflowStatus] =
     useState<WorkflowStatus>("needs_review");
   const [selectedWorkflowPlatform, setSelectedWorkflowPlatform] =
@@ -6318,6 +6321,10 @@ export default function Home() {
                       const isDemoData = isDemoExternalId(item.externalId);
                       const evidenceTitle = workflowEvidenceTitle(item);
                       const evidenceMessage = workflowEvidenceMessage(item);
+                      const isWorkflowDetailExpanded =
+                        Boolean(expandedWorkflowDetailKeys[item.key]) ||
+                        item.type === "missing_info" ||
+                        isEditing;
 
                       return (
                         <article
@@ -6532,105 +6539,127 @@ export default function Home() {
                             )}
                           </div>
 
-                          {item.handlingType === "auto_ready" ? (
-                            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
-                              AI가 바로 답변 가능하다고 판단했습니다.
-                            </p>
+                          {item.type !== "missing_info" ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedWorkflowDetailKeys((current) => ({
+                                  ...current,
+                                  [item.key]: !current[item.key],
+                                }))
+                              }
+                              className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                              aria-expanded={isWorkflowDetailExpanded}
+                            >
+                              {isWorkflowDetailExpanded
+                                ? "상세 접기"
+                                : "AI 판단·근거 보기"}
+                            </button>
                           ) : null}
 
-                          {item.aiReason ? (
-                            <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
-                              <p className="font-semibold">AI 판단 이유</p>
-                              <p className="mt-1">{item.aiReason}</p>
-                            </div>
-                          ) : null}
+                          {isWorkflowDetailExpanded ? (
+                            <div className="mt-3 space-y-3">
+                              {item.handlingType === "auto_ready" ? (
+                                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                  AI가 바로 답변 가능하다고 판단했습니다.
+                                </p>
+                              ) : null}
 
-                          <div
-                            className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-5 ${
-                              item.usedKnowledgeItems.length > 0 ||
-                              item.handlingType === "auto_ready"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
-                                : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
-                            }`}
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold">
-                                {evidenceTitle}
-                              </p>
-                              {item.usedKnowledgeItems.length > 0 ? (
-                                <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-current/10 dark:bg-zinc-950/40">
-                                  사장님 확인 지식{" "}
-                                  {item.usedKnowledgeItems.length.toLocaleString(
-                                    "ko-KR",
-                                  )}
-                                  개
-                                </span>
+                              {item.aiReason ? (
+                                <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                                  <p className="font-semibold">AI 판단 이유</p>
+                                  <p className="mt-1">{item.aiReason}</p>
+                                </div>
+                              ) : null}
+
+                              <div
+                                className={`rounded-lg border px-3 py-2 text-xs leading-5 ${
+                                  item.usedKnowledgeItems.length > 0 ||
+                                  item.handlingType === "auto_ready"
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+                                    : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-semibold">
+                                    {evidenceTitle}
+                                  </p>
+                                  {item.usedKnowledgeItems.length > 0 ? (
+                                    <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-current/10 dark:bg-zinc-950/40">
+                                      사장님 확인 지식{" "}
+                                      {item.usedKnowledgeItems.length.toLocaleString(
+                                        "ko-KR",
+                                      )}
+                                      개
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <p className="mt-1">{evidenceMessage}</p>
+                                {item.usedKnowledgeItems.length > 0 ? (
+                                  <ul className="mt-2 space-y-2">
+                                    {item.usedKnowledgeItems
+                                      .slice(0, 3)
+                                      .map((knowledgeItem) => (
+                                        <li
+                                          key={`${item.key}-${knowledgeItem.id}`}
+                                          className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
+                                        >
+                                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                                              {storeKnowledgeCategoryLabel(
+                                                knowledgeItem.category,
+                                              )}
+                                            </span>
+                                            <span className="font-medium">
+                                              {truncateSummaryText(
+                                                knowledgeItem.question,
+                                                56,
+                                              )}
+                                            </span>
+                                          </div>
+                                          <p className="text-emerald-800 dark:text-emerald-200">
+                                            {truncateSummaryText(
+                                              knowledgeItem.answer,
+                                              100,
+                                            )}
+                                          </p>
+                                        </li>
+                                      ))}
+                                  </ul>
+                                ) : null}
+                              </div>
+
+                              {isAutoCompleted ? (
+                                <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
+                                  AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
+                                  자동 완료 처리했습니다.
+                                </p>
+                              ) : null}
+
+                              {isDemoData ? (
+                                <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
+                                  {item.platformStatus === "posted"
+                                    ? "샘플 데이터가 플랫폼 등록 완료 상태로 처리되었습니다. 실제 플랫폼 API 등록은 실연동 단계에서 연결됩니다."
+                                    : "이 항목은 실제 플랫폼에서 가져온 데이터가 아니라, 연동 흐름을 체험하기 위한 샘플 데이터입니다."}
+                                </p>
+                              ) : null}
+
+                              {!isDemoData &&
+                              item.sourcePlatform !== "manual" &&
+                              item.platformStatus === "posted" ? (
+                                <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                                  승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
+                                  실제 플랫폼 API 등록은 연동 단계에서 연결될
+                                  예정입니다.
+                                </p>
+                              ) : null}
+
+                              {needsAttention ? (
+                                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                                  사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.
+                                </p>
                               ) : null}
                             </div>
-                            <p className="mt-1">{evidenceMessage}</p>
-                            {item.usedKnowledgeItems.length > 0 ? (
-                              <ul className="mt-2 space-y-2">
-                                {item.usedKnowledgeItems
-                                  .slice(0, 3)
-                                  .map((knowledgeItem) => (
-                                    <li
-                                      key={`${item.key}-${knowledgeItem.id}`}
-                                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
-                                    >
-                                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
-                                          {storeKnowledgeCategoryLabel(
-                                            knowledgeItem.category,
-                                          )}
-                                        </span>
-                                        <span className="font-medium">
-                                          {truncateSummaryText(
-                                            knowledgeItem.question,
-                                            56,
-                                          )}
-                                        </span>
-                                      </div>
-                                      <p className="text-emerald-800 dark:text-emerald-200">
-                                        {truncateSummaryText(
-                                          knowledgeItem.answer,
-                                          100,
-                                        )}
-                                      </p>
-                                    </li>
-                                  ))}
-                              </ul>
-                            ) : null}
-                          </div>
-
-                          {isAutoCompleted ? (
-                            <p className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
-                              AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
-                              자동 완료 처리했습니다.
-                            </p>
-                          ) : null}
-
-                          {isDemoData ? (
-                            <p className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
-                              {item.platformStatus === "posted"
-                                ? "샘플 데이터가 플랫폼 등록 완료 상태로 처리되었습니다. 실제 플랫폼 API 등록은 실연동 단계에서 연결됩니다."
-                                : "이 항목은 실제 플랫폼에서 가져온 데이터가 아니라, 연동 흐름을 체험하기 위한 샘플 데이터입니다."}
-                            </p>
-                          ) : null}
-
-                          {!isDemoData &&
-                          item.sourcePlatform !== "manual" &&
-                          item.platformStatus === "posted" ? (
-                            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                              승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
-                              실제 플랫폼 API 등록은 연동 단계에서 연결될
-                              예정입니다.
-                            </p>
-                          ) : null}
-
-                          {needsAttention ? (
-                            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                              사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.
-                            </p>
                           ) : null}
 
                           <div className="mt-4 flex flex-wrap gap-2">
