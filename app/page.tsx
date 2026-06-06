@@ -161,6 +161,14 @@ type StoreKnowledgeMutationResponse = {
   detail?: string;
 };
 
+type StoreKnowledgeCreateInput = {
+  question: string;
+  answer: string;
+  category: string;
+  sourceId?: string;
+  sourceText?: string;
+};
+
 type ResolveMissingInfoResponse = {
   success?: boolean;
   updatedCsMessages?: number;
@@ -797,6 +805,55 @@ function truncateSummaryText(value: string, maxLength = 64) {
   return `${normalizedValue.slice(0, maxLength)}...`;
 }
 
+function normalizeReplyForLearning(value: string) {
+  return value.toLowerCase().replace(/[\s.,!?()[\]{}'"`~:;·…]+/g, "");
+}
+
+function hasMeaningfulReplyCorrection(beforeReply: string, afterReply: string) {
+  const before = normalizeReplyForLearning(beforeReply);
+  const after = normalizeReplyForLearning(afterReply);
+
+  if (!before || !after || before === after) return false;
+
+  const shorterLength = Math.min(before.length, after.length);
+  const longerLength = Math.max(before.length, after.length);
+  const lengthGap = Math.abs(before.length - after.length);
+
+  if (lengthGap >= 18 || lengthGap / Math.max(longerLength, 1) >= 0.22) {
+    return true;
+  }
+
+  let differentCharacters = 0;
+
+  for (let index = 0; index < shorterLength; index += 1) {
+    if (before[index] !== after[index]) differentCharacters += 1;
+  }
+
+  return differentCharacters / Math.max(shorterLength, 1) >= 0.24;
+}
+
+function inferCorrectionKnowledgeCategory(item: WorkflowItem, correctedReply = "") {
+  const text =
+    `${item.original}\n${item.reply}\n${correctedReply}\n${item.aiReason}`.toLowerCase();
+
+  if (/가격|얼마|금액|비용|몇\s*원|견적/.test(text)) return "pricing";
+  if (/배송|출고|발송|도착|택배|수령/.test(text)) return "shipping";
+  if (/환불|취소|반품|교환/.test(text)) return "refund_exchange";
+  if (/재고|품절|구매 가능|주문 가능/.test(text)) return "stock";
+  if (/예약|픽업|방문 수령|수령 시간/.test(text)) return "reservation";
+  if (/포장|선물|쇼핑백|옵션|추가|포함|제공|동봉/.test(text)) {
+    return "packaging";
+  }
+  if (/알레르기|알러지|성분|원재료|두드러기|피부|가려움/.test(text)) {
+    return "allergy_ingredient";
+  }
+  if (/상품|제품|구성|용량|사이즈|재질|보관|사용법/.test(text)) {
+    return "product";
+  }
+
+  return "general";
+}
+
 function workflowAttentionPriority(item: WorkflowItem) {
   if (item.type === "missing_info") return 70;
   if (item.riskLevel === "high") return 100;
@@ -889,6 +946,23 @@ async function fetchStoreKnowledgeList() {
   }
 
   return data.knowledgeItems ?? [];
+}
+
+async function createStoreKnowledgeItem(input: StoreKnowledgeCreateInput) {
+  const response = await fetch("/api/store-knowledge", {
+    method: "POST",
+    headers: await getAuthenticatedRequestHeaders({
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify(input),
+  });
+  const data = (await response.json()) as StoreKnowledgeMutationResponse;
+
+  if (!response.ok || !data.knowledgeItem) {
+    throw new Error(data.error ?? "가게 지식으로 저장하지 못했습니다.");
+  }
+
+  return data.knowledgeItem;
 }
 
 async function getAuthenticatedRequestHeaders(
@@ -2846,6 +2920,40 @@ export default function Home() {
     }
   }
 
+  async function maybeSaveWorkflowReplyCorrectionAsKnowledge(
+    item: WorkflowItem,
+    correctedReply: string,
+  ) {
+    if (item.type !== "cs") return;
+
+    const trimmedReply = correctedReply.trim();
+
+    if (!hasMeaningfulReplyCorrection(item.reply, trimmedReply)) return;
+
+    const shouldSave = window.confirm(
+      "수정한 답변이 기존 AI 답변과 많이 달라졌습니다. 이 내용을 가게 지식으로 저장해서 다음 비슷한 문의에 반영할까요?",
+    );
+
+    if (!shouldSave) return;
+
+    const knowledgeItem = await createStoreKnowledgeItem({
+      question: `고객 문의: ${truncateSummaryText(item.original, 120)}`,
+      answer: trimmedReply,
+      category: inferCorrectionKnowledgeCategory(item, trimmedReply),
+      sourceId: `cs-${item.id}`,
+      sourceText: [
+        `고객 문의: ${item.original}`,
+        `AI 기존 답변: ${item.reply}`,
+        `사장님 수정 답변: ${trimmedReply}`,
+      ].join("\n\n"),
+    });
+
+    setStoreKnowledgeItems((currentItems) => [knowledgeItem, ...currentItems]);
+    setStoreKnowledgeMessage(
+      "수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.",
+    );
+  }
+
   async function handleUpdateWorkflowItem(
     item: WorkflowItem,
     payload: { reply?: string; status?: WorkflowStatus },
@@ -2872,6 +2980,21 @@ export default function Home() {
           ]);
         }
         return;
+      }
+
+      if (payload.reply !== undefined) {
+        try {
+          await maybeSaveWorkflowReplyCorrectionAsKnowledge(
+            item,
+            payload.reply,
+          );
+        } catch (error) {
+          setWorkflowError(
+            error instanceof Error
+              ? `답변은 저장됐지만 지식 저장에 실패했습니다. ${error.message}`
+              : "답변은 저장됐지만 지식 저장에 실패했습니다.",
+          );
+        }
       }
 
       await Promise.all([loadHistory(), loadCsMessages(), loadInsights()]);
