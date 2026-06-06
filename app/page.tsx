@@ -2948,7 +2948,27 @@ export default function Home() {
       ].join("\n\n"),
     });
 
-    setStoreKnowledgeItems((currentItems) => [knowledgeItem, ...currentItems]);
+    const nextStoreKnowledgeItems = [knowledgeItem, ...storeKnowledgeItems];
+    const nextQualityReport = buildStoreKnowledgeQualityReport(
+      nextStoreKnowledgeItems,
+    );
+    const newItemQuality =
+      nextQualityReport.byId[knowledgeItem.id] ??
+      createEmptyStoreKnowledgeQuality();
+
+    setStoreKnowledgeItems(nextStoreKnowledgeItems);
+
+    if (newItemQuality.conflictCount > 0) {
+      setStoreKnowledgeMessage(
+        "수정한 답변을 가게 지식으로 저장했습니다. 다만 기존 지식과 충돌 가능성이 있어 확인이 필요합니다.",
+      );
+      setIsStoreKnowledgePanelOpen(true);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
+      });
+      return;
+    }
+
     setStoreKnowledgeMessage(
       "수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.",
     );
