@@ -769,11 +769,11 @@ function workflowEvidenceMessage(item: WorkflowItem) {
   }
 
   if (item.usedKnowledgeItems.some(isStoreInfoEvidenceItem)) {
-    return "저장된 상품 목록, 정책, FAQ 또는 사장님이 확인해준 가게 지식을 답변 근거로 사용했습니다.";
+    return "저장된 상품 목록, 정책, FAQ 또는 사장님이 확인해준 가게 지식을 답변 근거로 사용했습니다. 충돌 가능성이 있는 지식은 답변 근거에서 제외됩니다.";
   }
 
   if (item.usedKnowledgeItems.length > 0) {
-    return "사장님이 이전에 확인해준 가게 지식을 답변 근거로 함께 사용했습니다.";
+    return "사장님이 이전에 확인해준 가게 지식을 답변 근거로 함께 사용했습니다. 충돌 가능성이 있는 지식은 답변 근거에서 제외됩니다.";
   }
 
   if (item.handlingType === "auto_ready") {

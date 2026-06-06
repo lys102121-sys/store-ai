@@ -21,6 +21,9 @@ function loadTsModule(relativePath) {
     exports: {},
     require(specifier) {
       if (specifier === "@supabase/supabase-js") return {};
+      if (specifier === "@/app/lib/storeKnowledgeQuality") {
+        return loadTsModule("app/lib/storeKnowledgeQuality.ts");
+      }
 
       throw new Error(`Unexpected test import: ${specifier}`);
     },
@@ -183,6 +186,44 @@ assert.deepEqual(
     ),
   ),
   ["knowledge-allergy"],
+);
+
+const conflictingKnowledgeItems = [
+  ...learnedKnowledgeItems,
+  {
+    id: "knowledge-candle-yes",
+    user_id: "user-1",
+    category: "packaging",
+    question: "케이크 초 제공 여부를 등록해주세요.",
+    answer: "케이크 초는 1개 제공됩니다.",
+    source_type: "missing_info",
+    source_id: "missing-candle",
+    source_text: "케이크 초도 같이 주시나요?",
+    confidence: "owner_confirmed",
+    updated_at: "2026-06-05T00:00:00.000Z",
+  },
+  {
+    id: "knowledge-candle-no",
+    user_id: "user-1",
+    category: "packaging",
+    question: "케이크 초 제공 여부를 등록해주세요.",
+    answer: "케이크 초는 제공하지 않습니다.",
+    source_type: "owner_correction",
+    source_id: "cs-candle",
+    source_text: "케이크 초도 같이 주시나요?",
+    confidence: "owner_confirmed",
+    updated_at: "2026-06-06T00:00:00.000Z",
+  },
+];
+
+assert.deepEqual(
+  ids(
+    storeKnowledge.selectRelevantStoreKnowledgeItems(
+      "케이크 초도 같이 주시나요?",
+      conflictingKnowledgeItems,
+    ),
+  ),
+  [],
 );
 
 assert.deepEqual(

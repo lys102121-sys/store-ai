@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { buildStoreKnowledgeQualityReport } from "@/app/lib/storeKnowledgeQuality";
 
 export type StoreKnowledgeCategory =
   | "pricing"
@@ -383,6 +384,18 @@ function scoreKnowledgeItem(customerMessage: string, item: StoreKnowledgeItem) {
     (normalizedMessage.includes(normalizedQuestion) ||
       normalizedQuestion.includes(normalizedMessage));
 
+  if (!directQuestionMatch && tokenOverlapScore === 0) {
+    return 0;
+  }
+
+  if (
+    categoryKeywords.length > 0 &&
+    messageKeywordMatches === 0 &&
+    !directQuestionMatch
+  ) {
+    return 0;
+  }
+
   let score = tokenOverlapScore * 4;
 
   if (messageKeywordMatches > 0 && itemKeywordMatches > 0) {
@@ -401,8 +414,31 @@ export function selectRelevantStoreKnowledgeItems(
   items: StoreKnowledgeItem[],
   limit = 3,
 ) {
+  const qualityReport = buildStoreKnowledgeQualityReport(
+    items.filter(
+      (
+        item,
+      ): item is StoreKnowledgeItem & {
+        id: string;
+      } => typeof item.id === "string" && item.id.length > 0,
+    ),
+  );
+
   return items
-    .map((item) => ({ item, score: scoreKnowledgeItem(customerMessage, item) }))
+    .map((item) => {
+      const quality = item.id ? qualityReport.byId[item.id] : null;
+      const score = scoreKnowledgeItem(customerMessage, item);
+
+      return {
+        item,
+        score:
+          score -
+          (quality?.isStale ? 2 : 0) -
+          Math.min(quality?.duplicateCount ?? 0, 2),
+        hasConflict: (quality?.conflictCount ?? 0) > 0,
+      };
+    })
+    .filter(({ hasConflict }) => !hasConflict)
     .filter(({ score }) => score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
