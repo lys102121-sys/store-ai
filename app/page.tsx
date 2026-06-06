@@ -4638,8 +4638,11 @@ export default function Home() {
                 aria-label="업종 직접 입력"
               />
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/25">
-                <div className="mb-3">
+              <details className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/25">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  업종별 입력 가이드 보기
+                </summary>
+                <div className="mt-3">
                   <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
                     이 업종은 이런 정보를 입력하면 좋아요
                   </p>
@@ -4657,7 +4660,7 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </details>
             </div>
 
             <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
@@ -4801,18 +4804,23 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
-              <div className="space-y-2">
+            <details className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-sky-950 dark:text-sky-100">
+                  상품 목록 학습
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                  여러 상품이 있을 때 열어서 상품별 구성, 가격, 옵션, 주의사항을
+                  입력합니다.
+                </span>
+              </summary>
+              <div className="mt-4 space-y-2">
                 <label
                   htmlFor="product_catalog"
-                  className="text-sm font-semibold text-sky-950 dark:text-sky-100"
+                  className="sr-only"
                 >
                   상품 목록 학습
                 </label>
-                <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
-                  여러 상품 정보를 한 번에 입력해두면 AI가 고객 문의에서 관련
-                  상품을 찾아 더 정확히 답변합니다.
-                </p>
                 <div className="rounded-lg border border-sky-200 bg-white/80 p-3 dark:border-sky-900/70 dark:bg-zinc-950/60">
                   <p className="text-xs font-semibold text-sky-950 dark:text-sky-100">
                     추천 입력 형식
@@ -4854,10 +4862,20 @@ export default function Home() {
                   className="min-h-64 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
                 />
               </div>
-            </div>
+            </details>
 
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-              <div className="space-y-2">
+            <details className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  사장님 말투 학습
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+                  리뷰 답글과 CS 응대 예시를 넣으면 AI가 사장님 말투를 더 잘
+                  따라갑니다.
+                </span>
+              </summary>
+
+              <div className="mt-4 space-y-2">
                 <label
                   htmlFor="owner_reply_examples"
                   className="text-sm font-semibold text-emerald-950 dark:text-emerald-100"
@@ -4886,49 +4904,57 @@ export default function Home() {
                   className="min-h-40 w-full resize-y rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-500 dark:border-emerald-900/70 dark:bg-zinc-950"
                 />
               </div>
-            </div>
 
-            <p className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-              예시를 입력하지 않아도 AI가 기본적으로 친절하고 자연스럽게
-              작성합니다. 예시를 입력하면 사장님이 평소 쓰는 말투를 더 잘
-              따라갑니다.
-            </p>
+              <p className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                예시를 입력하지 않아도 AI가 기본적으로 친절하고 자연스럽게
+                작성합니다. 예시를 입력하면 사장님이 평소 쓰는 말투를 더 잘
+                따라갑니다.
+              </p>
 
-            <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
-              <div className="space-y-2">
-                <label
-                  htmlFor="owner_cs_examples"
-                  className="text-sm font-semibold text-sky-950 dark:text-sky-100"
-                >
-                  CS 응대 말투 학습
-                </label>
-                <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
-                  평소 고객 문의에 답변하실 때 쓰는 문장을 3개 이상 붙여넣어
-                  주세요. AI가 문장 길이, 안내 방식, 마무리 표현을
-                  참고해 문의 답변을 작성합니다.
-                </p>
-                <textarea
-                  id="owner_cs_examples"
-                  value={ownerCsExamples}
-                  onChange={(event) => setOwnerCsExamples(event.target.value)}
-                  placeholder={[
-                    "예:",
-                    "안녕하세요. 문의주신 상품은 오늘 오후 2시 이전 주문 시 당일 출고됩니다.",
-                    "",
-                    "선물 포장 가능합니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.",
-                    "",
-                    "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
-                  ].join("\n")}
-                  className="min-h-40 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
-                />
+              <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="owner_cs_examples"
+                    className="text-sm font-semibold text-sky-950 dark:text-sky-100"
+                  >
+                    CS 응대 말투 학습
+                  </label>
+                  <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                    평소 고객 문의에 답변하실 때 쓰는 문장을 3개 이상 붙여넣어
+                    주세요. AI가 문장 길이, 안내 방식, 마무리 표현을 참고해 문의
+                    답변을 작성합니다.
+                  </p>
+                  <textarea
+                    id="owner_cs_examples"
+                    value={ownerCsExamples}
+                    onChange={(event) => setOwnerCsExamples(event.target.value)}
+                    placeholder={[
+                      "예:",
+                      "안녕하세요. 문의주신 상품은 오늘 오후 2시 이전 주문 시 당일 출고됩니다.",
+                      "",
+                      "선물 포장 가능합니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.",
+                      "",
+                      "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
+                    ].join("\n")}
+                    className="min-h-40 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
+                  />
+                </div>
               </div>
-            </div>
+            </details>
 
-            <div className="space-y-2">
-              <label htmlFor="shipping_policy" className="text-sm font-medium">
+            <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  배송정책
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  출고, 배송, 픽업, 배달 기준을 자세히 입력할 때 열어주세요.
+                </span>
+              </summary>
+              <label htmlFor="shipping_policy" className="sr-only">
                 배송정책
               </label>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -5066,13 +5092,21 @@ export default function Home() {
                 placeholder="배송 안내, 기간, 지역 등"
                 className={textareaClass}
               />
-            </div>
+            </details>
 
-            <div className="space-y-2">
-              <label htmlFor="refund_policy" className="text-sm font-medium">
+            <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  환불정책
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  취소, 환불, 교환 기준을 자세히 입력할 때 열어주세요.
+                </span>
+              </summary>
+              <label htmlFor="refund_policy" className="sr-only">
                 환불정책
               </label>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -5385,7 +5419,7 @@ export default function Home() {
                 placeholder="환불·교환 조건 등"
                 className={textareaClass}
               />
-            </div>
+            </details>
 
             <button
               type="submit"
