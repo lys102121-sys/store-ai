@@ -7,6 +7,7 @@ import {
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   generateReviewReplyWithSentiment,
+  legacyReviewReplyStoreSelect,
   reviewReplyStoreSelect,
 } from "@/app/lib/reviewReplyGeneration";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: store, error: storeError } = await auth.supabase
+  const storeResult = await auth.supabase
     .from("stores")
     .select(reviewReplyStoreSelect)
     .eq("user_id", auth.userId)
@@ -62,6 +63,37 @@ export async function POST(request: Request) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  let store = storeResult.data as Record<string, unknown> | null;
+  let storeError = storeResult.error;
+
+  if (
+    storeError &&
+    /(ai_work_mode|ai_work_start_time|ai_work_end_time)/i.test(
+      storeError.message,
+    )
+  ) {
+    console.warn(
+      "stores AI work mode columns are missing. Run: alter table stores add column if not exists ai_work_mode text default 'safe_auto'; alter table stores add column if not exists ai_work_start_time text default '09:00'; alter table stores add column if not exists ai_work_end_time text default '22:00';",
+    );
+    const fallback = await auth.supabase
+      .from("stores")
+      .select(legacyReviewReplyStoreSelect)
+      .eq("user_id", auth.userId)
+      .order("updated_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    store = fallback.data
+      ? {
+          ...(fallback.data as unknown as Record<string, unknown>),
+          ai_work_mode: "safe_auto",
+          ai_work_start_time: "09:00",
+          ai_work_end_time: "22:00",
+        }
+      : null;
+    storeError = fallback.error;
+  }
 
   if (storeError) {
     return Response.json(
@@ -90,6 +122,9 @@ export async function POST(request: Request) {
     const status = resolveReviewWorkflowStatus({
       autoCompletePositiveReviews:
         storeSettings.auto_complete_positive_reviews,
+      aiWorkMode: storeSettings.ai_work_mode,
+      aiWorkStartTime: storeSettings.ai_work_start_time,
+      aiWorkEndTime: storeSettings.ai_work_end_time,
       sentiment: result.sentiment,
       handlingType: result.handlingType,
       riskLevel: result.riskLevel,

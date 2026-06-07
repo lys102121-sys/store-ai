@@ -11,6 +11,9 @@ export type ReviewReplyPromptStore = {
   extra_faq?: string | null;
   owner_reply_examples?: string | null;
   auto_complete_positive_reviews?: boolean | null;
+  ai_work_mode?: string | null;
+  ai_work_start_time?: string | null;
+  ai_work_end_time?: string | null;
 };
 
 export function buildReviewReplySystemPrompt(

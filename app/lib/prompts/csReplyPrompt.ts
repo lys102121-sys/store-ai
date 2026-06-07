@@ -12,6 +12,9 @@ export type CsReplyPromptStore = {
   extra_faq: string | null;
   owner_cs_examples: string | null;
   auto_complete_low_risk_cs?: boolean | null;
+  ai_work_mode?: string | null;
+  ai_work_start_time?: string | null;
+  ai_work_end_time?: string | null;
   created_at: string | null;
   updated_at: string | null;
 };

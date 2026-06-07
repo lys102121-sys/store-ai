@@ -15,10 +15,30 @@ type RequestBody = {
   owner_cs_examples?: unknown;
   auto_complete_low_risk_cs?: unknown;
   auto_complete_positive_reviews?: unknown;
+  ai_work_mode?: unknown;
+  ai_work_start_time?: unknown;
+  ai_work_end_time?: unknown;
 };
 
 const storeSelectColumns =
+  "id, user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, auto_complete_low_risk_cs, auto_complete_positive_reviews, ai_work_mode, ai_work_start_time, ai_work_end_time, created_at, updated_at";
+const legacyStoreSelectColumns =
   "id, user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_reply_examples, owner_cs_examples, auto_complete_low_risk_cs, auto_complete_positive_reviews, created_at, updated_at";
+const aiWorkModeSql =
+  "alter table stores add column if not exists ai_work_mode text default 'safe_auto'; alter table stores add column if not exists ai_work_start_time text default '09:00'; alter table stores add column if not exists ai_work_end_time text default '22:00';";
+
+function isMissingAiWorkModeColumnError(error: { message?: string } | null) {
+  return Boolean(
+    error &&
+      /(ai_work_mode|ai_work_start_time|ai_work_end_time)/i.test(
+        error.message ?? "",
+      ),
+  );
+}
+
+function warnMissingAiWorkModeColumns() {
+  console.warn(`stores AI work mode columns are missing. Run: ${aiWorkModeSql}`);
+}
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
@@ -55,7 +75,13 @@ export async function POST(request: Request) {
     (body.auto_complete_low_risk_cs !== undefined &&
       typeof body.auto_complete_low_risk_cs !== "boolean") ||
     (body.auto_complete_positive_reviews !== undefined &&
-      typeof body.auto_complete_positive_reviews !== "boolean")
+      typeof body.auto_complete_positive_reviews !== "boolean") ||
+    (body.ai_work_mode !== undefined &&
+      typeof body.ai_work_mode !== "string") ||
+    (body.ai_work_start_time !== undefined &&
+      typeof body.ai_work_start_time !== "string") ||
+    (body.ai_work_end_time !== undefined &&
+      typeof body.ai_work_end_time !== "string")
   ) {
     return Response.json(
       {
@@ -82,6 +108,22 @@ export async function POST(request: Request) {
   const auto_complete_low_risk_cs = body.auto_complete_low_risk_cs ?? false;
   const auto_complete_positive_reviews =
     body.auto_complete_positive_reviews ?? false;
+  const requestedAiWorkMode =
+    typeof body.ai_work_mode === "string" ? body.ai_work_mode.trim() : "";
+  const ai_work_mode =
+    requestedAiWorkMode === "approval_only" ||
+    requestedAiWorkMode === "safe_auto" ||
+    requestedAiWorkMode === "after_hours_conservative"
+      ? requestedAiWorkMode
+      : "safe_auto";
+  const ai_work_start_time =
+    typeof body.ai_work_start_time === "string"
+      ? body.ai_work_start_time.trim()
+      : "09:00";
+  const ai_work_end_time =
+    typeof body.ai_work_end_time === "string"
+      ? body.ai_work_end_time.trim()
+      : "22:00";
 
   if (!store_name) {
     return Response.json(
@@ -92,6 +134,26 @@ export async function POST(request: Request) {
 
   const savedAt = new Date().toISOString();
   const storePayload = {
+    store_name,
+    business_type,
+    shipping_policy,
+    refund_policy,
+    product_name,
+    product_description,
+    product_details,
+    product_caution,
+    product_catalog,
+    extra_faq,
+    owner_reply_examples,
+    owner_cs_examples,
+    auto_complete_low_risk_cs,
+    auto_complete_positive_reviews,
+    ai_work_mode,
+    ai_work_start_time,
+    ai_work_end_time,
+    updated_at: savedAt,
+  };
+  const legacyStorePayload = {
     store_name,
     business_type,
     shipping_policy,
@@ -146,7 +208,39 @@ export async function POST(request: Request) {
         .select(storeSelectColumns)
         .single();
 
-  const { data, error } = await query;
+  let { data, error } = await query;
+
+  if (isMissingAiWorkModeColumnError(error)) {
+    warnMissingAiWorkModeColumns();
+    const fallbackQuery = existingStore
+      ? auth.supabase
+          .from("stores")
+          .update(legacyStorePayload)
+          .eq("id", existingStore.id)
+          .eq("user_id", auth.userId)
+          .select(legacyStoreSelectColumns)
+          .single()
+      : auth.supabase
+          .from("stores")
+          .insert({
+            user_id: auth.userId,
+            ...legacyStorePayload,
+            created_at: savedAt,
+          })
+          .select(legacyStoreSelectColumns)
+          .single();
+
+    const fallback = await fallbackQuery;
+    data = fallback.data
+      ? {
+          ...fallback.data,
+          ai_work_mode,
+          ai_work_start_time,
+          ai_work_end_time,
+        }
+      : null;
+    error = fallback.error;
+  }
 
   if (error) {
     return Response.json(

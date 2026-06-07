@@ -33,6 +33,24 @@ export const reviewReplyStoreSelect = [
   "extra_faq",
   "owner_reply_examples",
   "auto_complete_positive_reviews",
+  "ai_work_mode",
+  "ai_work_start_time",
+  "ai_work_end_time",
+].join(", ");
+
+export const legacyReviewReplyStoreSelect = [
+  "store_name",
+  "business_type",
+  "shipping_policy",
+  "refund_policy",
+  "product_name",
+  "product_description",
+  "product_details",
+  "product_caution",
+  "product_catalog",
+  "extra_faq",
+  "owner_reply_examples",
+  "auto_complete_positive_reviews",
 ].join(", ");
 
 function parseSentiment(output: string | undefined): Sentiment | null {

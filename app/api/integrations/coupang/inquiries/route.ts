@@ -344,16 +344,47 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: store, error: storeError } = await auth.supabase
+  let { data: store, error: storeError } = await auth.supabase
     .from("stores")
     .select(
-      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at",
+      "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, ai_work_mode, ai_work_start_time, ai_work_end_time, created_at, updated_at",
     )
     .eq("user_id", auth.userId)
     .order("updated_at", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (
+    storeError &&
+    /(ai_work_mode|ai_work_start_time|ai_work_end_time)/i.test(
+      storeError.message,
+    )
+  ) {
+    console.warn(
+      "stores AI work mode columns are missing. Run: alter table stores add column if not exists ai_work_mode text default 'safe_auto'; alter table stores add column if not exists ai_work_start_time text default '09:00'; alter table stores add column if not exists ai_work_end_time text default '22:00';",
+    );
+    const fallback = await auth.supabase
+      .from("stores")
+      .select(
+        "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at",
+      )
+      .eq("user_id", auth.userId)
+      .order("updated_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    store = fallback.data
+      ? {
+          ...fallback.data,
+          ai_work_mode: "safe_auto",
+          ai_work_start_time: "09:00",
+          ai_work_end_time: "22:00",
+        }
+      : null;
+    storeError = fallback.error;
+  }
 
   if (storeError) {
     return Response.json(
@@ -518,6 +549,9 @@ export async function POST(request: Request) {
         hasMissingInfoSignal(decision.reply);
       const status = resolveCsWorkflowStatus({
         autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
+        aiWorkMode: storeRow.ai_work_mode,
+        aiWorkStartTime: storeRow.ai_work_start_time,
+        aiWorkEndTime: storeRow.ai_work_end_time,
         handlingType: decision.handlingType,
         riskLevel: decision.riskLevel,
         hasMissingInfo: shouldCreateMissingInfo,

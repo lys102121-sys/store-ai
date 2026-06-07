@@ -23,6 +23,7 @@ type SourcePlatform =
   | "coupangeats"
   | string;
 type PlatformStatus = "local" | "synced" | "posted" | "failed" | string;
+type AiWorkMode = "approval_only" | "safe_auto" | "after_hours_conservative";
 type StoreKnowledgeStatus = "active" | "needs_review" | "archived" | string;
 type StoreKnowledgeStatusFilter =
   | "all"
@@ -358,6 +359,9 @@ type StoreSettings = {
   owner_cs_examples: string | null;
   auto_complete_low_risk_cs: boolean | null;
   auto_complete_positive_reviews: boolean | null;
+  ai_work_mode?: AiWorkMode | null;
+  ai_work_start_time?: string | null;
+  ai_work_end_time?: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -383,6 +387,9 @@ type StoreDraft = {
   ownerCsExamples: string;
   autoCompleteLowRiskCs: boolean;
   autoCompletePositiveReviews: boolean;
+  aiWorkMode: AiWorkMode;
+  aiWorkStartTime: string;
+  aiWorkEndTime: string;
 };
 
 type InsightsApiResponse = {
@@ -1078,6 +1085,14 @@ function getStoreDraftStorageKey(userId: string) {
   return `${STORE_DRAFT_STORAGE_KEY_PREFIX}:${userId}`;
 }
 
+function normalizeAiWorkMode(value: unknown): AiWorkMode {
+  return value === "approval_only" ||
+    value === "safe_auto" ||
+    value === "after_hours_conservative"
+    ? value
+    : "safe_auto";
+}
+
 function isStoreDraft(value: unknown): value is StoreDraft {
   if (!value || typeof value !== "object") return false;
 
@@ -1103,7 +1118,15 @@ function isStoreDraft(value: unknown): value is StoreDraft {
     (draft.autoCompleteLowRiskCs === undefined ||
       typeof draft.autoCompleteLowRiskCs === "boolean") &&
     (draft.autoCompletePositiveReviews === undefined ||
-      typeof draft.autoCompletePositiveReviews === "boolean")
+      typeof draft.autoCompletePositiveReviews === "boolean") &&
+    (draft.aiWorkMode === undefined ||
+      draft.aiWorkMode === "approval_only" ||
+      draft.aiWorkMode === "safe_auto" ||
+      draft.aiWorkMode === "after_hours_conservative") &&
+    (draft.aiWorkStartTime === undefined ||
+      typeof draft.aiWorkStartTime === "string") &&
+    (draft.aiWorkEndTime === undefined ||
+      typeof draft.aiWorkEndTime === "string")
   );
 }
 
@@ -1129,6 +1152,9 @@ function readStoreDraft(userId: string): StoreDraft | null {
           autoCompleteLowRiskCs: parsedDraft.autoCompleteLowRiskCs ?? false,
           autoCompletePositiveReviews:
             parsedDraft.autoCompletePositiveReviews ?? false,
+          aiWorkMode: normalizeAiWorkMode(parsedDraft.aiWorkMode),
+          aiWorkStartTime: parsedDraft.aiWorkStartTime ?? "09:00",
+          aiWorkEndTime: parsedDraft.aiWorkEndTime ?? "22:00",
         }
       : null;
   } catch {
@@ -1152,8 +1178,24 @@ function removeStoreDraft(userId: string) {
 }
 
 function hasStoreDraftContent(draft: StoreDraft) {
-  return Object.values(draft).some((value) =>
-    typeof value === "string" ? value.trim().length > 0 : value,
+  const {
+    aiWorkMode,
+    aiWorkStartTime,
+    aiWorkEndTime,
+    autoCompleteLowRiskCs,
+    autoCompletePositiveReviews,
+    ...textDraft
+  } = draft;
+
+  return (
+    Object.values(textDraft).some((value) =>
+      typeof value === "string" ? value.trim().length > 0 : value,
+    ) ||
+    autoCompleteLowRiskCs ||
+    autoCompletePositiveReviews ||
+    aiWorkMode !== "safe_auto" ||
+    aiWorkStartTime !== "09:00" ||
+    aiWorkEndTime !== "22:00"
   );
 }
 
@@ -1572,6 +1614,9 @@ export default function Home() {
   const [autoCompleteLowRiskCs, setAutoCompleteLowRiskCs] = useState(false);
   const [autoCompletePositiveReviews, setAutoCompletePositiveReviews] =
     useState(false);
+  const [aiWorkMode, setAiWorkMode] = useState<AiWorkMode>("safe_auto");
+  const [aiWorkStartTime, setAiWorkStartTime] = useState("09:00");
+  const [aiWorkEndTime, setAiWorkEndTime] = useState("22:00");
   const [shippingCutoffTime, setShippingCutoffTime] = useState("");
   const [sameDayShipping, setSameDayShipping] = useState("가능");
   const [courierName, setCourierName] = useState("");
@@ -1763,6 +1808,9 @@ export default function Home() {
       ownerCsExamples,
       autoCompleteLowRiskCs,
       autoCompletePositiveReviews,
+      aiWorkMode,
+      aiWorkStartTime,
+      aiWorkEndTime,
     }),
     [
       storeName,
@@ -1779,6 +1827,9 @@ export default function Home() {
       ownerCsExamples,
       autoCompleteLowRiskCs,
       autoCompletePositiveReviews,
+      aiWorkMode,
+      aiWorkStartTime,
+      aiWorkEndTime,
     ],
   );
 
@@ -1804,6 +1855,9 @@ export default function Home() {
       setAutoCompletePositiveReviews(
         Boolean(store.auto_complete_positive_reviews),
       );
+      setAiWorkMode(normalizeAiWorkMode(store.ai_work_mode));
+      setAiWorkStartTime(store.ai_work_start_time ?? "09:00");
+      setAiWorkEndTime(store.ai_work_end_time ?? "22:00");
       return;
     }
 
@@ -1821,6 +1875,9 @@ export default function Home() {
     setOwnerCsExamples("");
     setAutoCompleteLowRiskCs(false);
     setAutoCompletePositiveReviews(false);
+    setAiWorkMode("safe_auto");
+    setAiWorkStartTime("09:00");
+    setAiWorkEndTime("22:00");
   }, []);
 
   useEffect(() => {
@@ -2157,6 +2214,9 @@ export default function Home() {
         setOwnerCsExamples("");
         setAutoCompleteLowRiskCs(false);
         setAutoCompletePositiveReviews(false);
+        setAiWorkMode("safe_auto");
+        setAiWorkStartTime("09:00");
+        setAiWorkEndTime("22:00");
         setStoreExampleMessage("");
         setIsExamplePickerOpen(false);
         setCsMessages([]);
@@ -2222,6 +2282,9 @@ export default function Home() {
         setOwnerCsExamples(draft.ownerCsExamples);
         setAutoCompleteLowRiskCs(draft.autoCompleteLowRiskCs);
         setAutoCompletePositiveReviews(draft.autoCompletePositiveReviews);
+        setAiWorkMode(draft.aiWorkMode);
+        setAiWorkStartTime(draft.aiWorkStartTime);
+        setAiWorkEndTime(draft.aiWorkEndTime);
       }
 
       setStoreDraftReady(true);
@@ -2575,6 +2638,9 @@ export default function Home() {
     setOwnerCsExamples(preset.ownerCsExamples);
     setAutoCompleteLowRiskCs(false);
     setAutoCompletePositiveReviews(false);
+    setAiWorkMode("safe_auto");
+    setAiWorkStartTime("09:00");
+    setAiWorkEndTime("22:00");
     setStoreError("");
     setStoreExampleMessage(
       "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
@@ -2620,6 +2686,9 @@ export default function Home() {
           owner_cs_examples: ownerCsExamples,
           auto_complete_low_risk_cs: autoCompleteLowRiskCs,
           auto_complete_positive_reviews: autoCompletePositiveReviews,
+          ai_work_mode: aiWorkMode,
+          ai_work_start_time: aiWorkStartTime,
+          ai_work_end_time: aiWorkEndTime,
         }),
       });
 
@@ -4006,19 +4075,31 @@ export default function Home() {
   );
   const latestWorkflowItem = workflowSummaryItems[0] ?? null;
   const automationModeLabel =
+    aiWorkMode === "approval_only"
+      ? "승인 대기 모드"
+      : aiWorkMode === "after_hours_conservative"
+        ? "영업시간 중심 근무"
+        : autoCompleteLowRiskCs || autoCompletePositiveReviews
+          ? "자동 근무 중"
+          : "승인 대기 모드";
+  const autoCompletionScopeDescription =
     autoCompleteLowRiskCs && autoCompletePositiveReviews
-      ? "자동 근무 중"
-      : autoCompleteLowRiskCs || autoCompletePositiveReviews
-        ? "부분 자동 근무 중"
-        : "승인 대기 모드";
-  const automationModeDescription =
-    autoCompleteLowRiskCs && autoCompletePositiveReviews
-      ? "낮은 위험도의 반복 문의와 단순 긍정 리뷰는 앱 안에서 자동 완료 처리합니다."
+      ? "낮은 위험도의 반복 문의와 단순 긍정 리뷰"
       : autoCompleteLowRiskCs
-        ? "낮은 위험도의 반복 문의는 자동 완료하고, 리뷰는 승인 대기로 모읍니다."
+        ? "낮은 위험도의 반복 문의"
         : autoCompletePositiveReviews
-          ? "단순 긍정 리뷰는 자동 완료하고, 문의는 승인 대기로 모읍니다."
-          : "모든 AI 답변을 사장님 승인 대기로 모아두고 있습니다.";
+          ? "단순 긍정 리뷰"
+          : "";
+  const automationModeDescription =
+    aiWorkMode === "approval_only"
+      ? "모든 AI 답변을 사장님 승인 대기로 모아두고 있습니다."
+      : aiWorkMode === "after_hours_conservative"
+        ? `${aiWorkStartTime}~${aiWorkEndTime}에는 ${
+            autoCompletionScopeDescription || "안전한 항목"
+          }만 자동 완료하고, 그 외 시간에는 승인 대기로 모읍니다.`
+        : autoCompletionScopeDescription
+          ? `${autoCompletionScopeDescription}는 앱 안에서 자동 완료 처리합니다.`
+          : "자동 완료 옵션이 꺼져 있어 모든 AI 답변을 승인 대기로 모읍니다.";
   const aiWorkGuardrailItems = [
     {
       label: "고위험 자동 보류",
@@ -5249,7 +5330,8 @@ export default function Home() {
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        autoCompleteLowRiskCs || autoCompletePositiveReviews
+                        aiWorkMode !== "approval_only" &&
+                        (autoCompleteLowRiskCs || autoCompletePositiveReviews)
                           ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200 dark:ring-emerald-900"
                           : "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900"
                       }`}
@@ -5639,9 +5721,67 @@ export default function Home() {
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
                     AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
-                    긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 플랫폼
-                    연동 전까지는 앱 안에서만 완료 처리됩니다.
+                    긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
+                    모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
                   </p>
+                </div>
+
+                <div className="rounded-xl border border-violet-100 bg-white p-3 dark:border-violet-900/60 dark:bg-zinc-950">
+                  <label
+                    htmlFor="ai_work_mode"
+                    className="text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                  >
+                    AI 근무 모드
+                  </label>
+                  <select
+                    id="ai_work_mode"
+                    value={aiWorkMode}
+                    onChange={(event) =>
+                      setAiWorkMode(normalizeAiWorkMode(event.target.value))
+                    }
+                    className={`${inputClass} mt-2`}
+                  >
+                    <option value="approval_only">
+                      항상 승인 대기로 모으기
+                    </option>
+                    <option value="safe_auto">
+                      안전 항목은 항상 자동 완료
+                    </option>
+                    <option value="after_hours_conservative">
+                      영업시간 안에서만 자동 완료
+                    </option>
+                  </select>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    고위험, 정보 부족, 승인 필수 항목은 어떤 모드에서도 자동
+                    완료하지 않습니다.
+                  </p>
+
+                  {aiWorkMode === "after_hours_conservative" ? (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        자동 근무 시작
+                        <input
+                          type="time"
+                          value={aiWorkStartTime}
+                          onChange={(event) =>
+                            setAiWorkStartTime(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        자동 근무 종료
+                        <input
+                          type="time"
+                          value={aiWorkEndTime}
+                          onChange={(event) =>
+                            setAiWorkEndTime(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
                 </div>
 
                 <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
