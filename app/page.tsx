@@ -7838,6 +7838,58 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="space-y-3">
+                        {needsKnowledgeReview ? (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+                            <p className="font-semibold">
+                              먼저 판단해 주세요
+                            </p>
+                            <p className="mt-1">
+                              이 지식은 최근 수정 답변이나 품질 점검에서 확인이
+                              필요하다고 표시됐습니다. 맞는 내용이면 다시
+                              사용하고, 틀렸다면 수정하거나 보관해 주세요.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleUpdateStoreKnowledgeStatus(
+                                    item,
+                                    "active",
+                                  )
+                                }
+                                disabled={isDeleting || isSaving}
+                                className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                              >
+                                {isSaving ? "처리 중..." : "문제 없음, 다시 사용"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleStartStoreKnowledgeEdit(item)
+                                }
+                                disabled={isDeleting || isSaving}
+                                className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-800 dark:bg-zinc-950 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                              >
+                                수정하기
+                              </button>
+                              {knowledgeStatus !== "archived" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateStoreKnowledgeStatus(
+                                      item,
+                                      "archived",
+                                    )
+                                  }
+                                  disabled={isDeleting || isSaving}
+                                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                >
+                                  {isSaving ? "처리 중..." : "보관"}
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
                         <div>
                           <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             기억한 질문
@@ -8024,57 +8076,63 @@ export default function Home() {
                         </>
                       ) : (
                         <>
-                          <button
-                            type="button"
-                            onClick={() => handleStartStoreKnowledgeEdit(item)}
-                            disabled={isDeleting || isSaving}
-                            className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-                          >
-                            수정하기
-                          </button>
-                          {knowledgeStatus === "active" ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleUpdateStoreKnowledgeStatus(
-                                  item,
-                                  "needs_review",
-                                )
-                              }
-                              disabled={isDeleting || isSaving}
-                              className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
-                            >
-                              {isSaving ? "처리 중..." : "사용 중지"}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleUpdateStoreKnowledgeStatus(
-                                  item,
-                                  "active",
-                                )
-                              }
-                              disabled={isDeleting || isSaving}
-                              className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-                            >
-                              {isSaving ? "처리 중..." : "다시 사용"}
-                            </button>
-                          )}
-                          {knowledgeStatus !== "archived" ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleUpdateStoreKnowledgeStatus(
-                                  item,
-                                  "archived",
-                                )
-                              }
-                              disabled={isDeleting || isSaving}
-                              className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                            >
-                              {isSaving ? "처리 중..." : "보관"}
-                            </button>
+                          {!needsKnowledgeReview ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleStartStoreKnowledgeEdit(item)
+                                }
+                                disabled={isDeleting || isSaving}
+                                className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                              >
+                                수정하기
+                              </button>
+                              {knowledgeStatus === "active" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateStoreKnowledgeStatus(
+                                      item,
+                                      "needs_review",
+                                    )
+                                  }
+                                  disabled={isDeleting || isSaving}
+                                  className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                >
+                                  {isSaving ? "처리 중..." : "사용 중지"}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateStoreKnowledgeStatus(
+                                      item,
+                                      "active",
+                                    )
+                                  }
+                                  disabled={isDeleting || isSaving}
+                                  className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                                >
+                                  {isSaving ? "처리 중..." : "다시 사용"}
+                                </button>
+                              )}
+                              {knowledgeStatus !== "archived" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleUpdateStoreKnowledgeStatus(
+                                      item,
+                                      "archived",
+                                    )
+                                  }
+                                  disabled={isDeleting || isSaving}
+                                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                >
+                                  {isSaving ? "처리 중..." : "보관"}
+                                </button>
+                              ) : null}
+                            </>
                           ) : null}
                           <button
                             type="button"
