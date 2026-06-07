@@ -3984,6 +3984,75 @@ export default function Home() {
       description: "사장님이 알려준 지식을 답변에 재사용",
     },
   ] as const;
+  const allSafePendingApprovalItems = workflowSummaryItems.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      item.status === "pending" &&
+      item.handlingType === "auto_ready" &&
+      item.riskLevel === "low" &&
+      Boolean(item.reply.trim()),
+  );
+  const activeHighRiskHoldItems = activeWorkflowSummaryItems.filter(
+    (item) => item.type !== "missing_info" && item.riskLevel === "high",
+  );
+  const activeMissingInfoHoldItems = activeWorkflowSummaryItems.filter(
+    (item) => item.type === "missing_info",
+  );
+  const postedPlatformItems = workflowSummaryItems.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      item.sourcePlatform !== "manual" &&
+      item.platformStatus === "posted",
+  );
+  const latestWorkflowItem = workflowSummaryItems[0] ?? null;
+  const automationModeLabel =
+    autoCompleteLowRiskCs && autoCompletePositiveReviews
+      ? "자동 근무 중"
+      : autoCompleteLowRiskCs || autoCompletePositiveReviews
+        ? "부분 자동 근무 중"
+        : "승인 대기 모드";
+  const automationModeDescription =
+    autoCompleteLowRiskCs && autoCompletePositiveReviews
+      ? "낮은 위험도의 반복 문의와 단순 긍정 리뷰는 앱 안에서 자동 완료 처리합니다."
+      : autoCompleteLowRiskCs
+        ? "낮은 위험도의 반복 문의는 자동 완료하고, 리뷰는 승인 대기로 모읍니다."
+        : autoCompletePositiveReviews
+          ? "단순 긍정 리뷰는 자동 완료하고, 문의는 승인 대기로 모읍니다."
+          : "모든 AI 답변을 사장님 승인 대기로 모아두고 있습니다.";
+  const aiWorkGuardrailItems = [
+    {
+      label: "고위험 자동 보류",
+      value: activeHighRiskHoldItems.length.toLocaleString("ko-KR"),
+      description: "건강, 환불, 강한 클레임 등은 자동 완료하지 않음",
+      className:
+        activeHighRiskHoldItems.length > 0
+          ? "border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
+          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50",
+    },
+    {
+      label: "정보 부족 보류",
+      value: activeMissingInfoHoldItems.length.toLocaleString("ko-KR"),
+      description: "모르는 질문은 답을 지어내지 않고 확인 필요로 분리",
+      className:
+        activeMissingInfoHoldItems.length > 0
+          ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
+          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50",
+    },
+    {
+      label: "안전 승인 후보",
+      value: allSafePendingApprovalItems.length.toLocaleString("ko-KR"),
+      description: "바로 답변 가능 + 위험도 낮음으로 일괄 승인 가능",
+      className:
+        "border-emerald-200 bg-white text-emerald-950 dark:border-emerald-900/60 dark:bg-zinc-950 dark:text-emerald-100",
+    },
+    {
+      label: "플랫폼 완료 표시",
+      value: postedPlatformItems.length.toLocaleString("ko-KR"),
+      description: "승인 후 플랫폼 등록 완료 상태로 관리된 항목",
+      className:
+        "border-indigo-200 bg-white text-indigo-950 dark:border-indigo-900/60 dark:bg-zinc-950 dark:text-indigo-100",
+    },
+  ] as const;
 
   const workflowColumns = [
     {
@@ -5168,6 +5237,83 @@ export default function Home() {
                     </p>
                   </article>
                 ))}
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    AI Work Mode
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        autoCompleteLowRiskCs || autoCompletePositiveReviews
+                          ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200 dark:ring-emerald-900"
+                          : "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900"
+                      }`}
+                    >
+                      {automationModeLabel}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-300 dark:ring-zinc-700">
+                      실수 방지 우선
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                    자는 동안에도 안전 기준대로 일합니다
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                    {automationModeDescription}
+                  </p>
+                  <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    마지막 처리 항목:{" "}
+                    {workflowSummaryLoading
+                      ? "불러오는 중..."
+                      : latestWorkflowItem
+                        ? formatDate(latestWorkflowItem.createdAt)
+                        : "아직 처리 항목이 없습니다"}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        자동 처리 안전장치
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                        AI가 확실한 일은 처리하고, 애매하거나 위험한 일은
+                        일부러 멈춰둔 내역입니다.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => goToTabSection("store", "store-info")}
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      자동 처리 설정 보기
+                    </button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {aiWorkGuardrailItems.map((item) => (
+                      <article
+                        key={item.label}
+                        className={`rounded-xl border p-4 ${item.className}`}
+                      >
+                        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                          {item.label}
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+                          {workflowSummaryLoading ? "—" : item.value}
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          {item.description}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
