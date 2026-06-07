@@ -24,6 +24,11 @@ type SourcePlatform =
   | string;
 type PlatformStatus = "local" | "synced" | "posted" | "failed" | string;
 type StoreKnowledgeStatus = "active" | "needs_review" | "archived" | string;
+type StoreKnowledgeStatusFilter =
+  | "all"
+  | "active"
+  | "needs_review"
+  | "archived";
 
 type ReviewHistoryItem = {
   id: number;
@@ -1614,6 +1619,8 @@ export default function Home() {
   const [storeKnowledgeLoading, setStoreKnowledgeLoading] = useState(true);
   const [storeKnowledgeError, setStoreKnowledgeError] = useState("");
   const [storeKnowledgeMessage, setStoreKnowledgeMessage] = useState("");
+  const [selectedStoreKnowledgeStatus, setSelectedStoreKnowledgeStatus] =
+    useState<StoreKnowledgeStatusFilter>("all");
   const [editingStoreKnowledgeId, setEditingStoreKnowledgeId] = useState<
     string | null
   >(null);
@@ -2124,6 +2131,7 @@ export default function Home() {
         setStoreKnowledgeLoading(false);
         setStoreKnowledgeError("");
         setStoreKnowledgeMessage("");
+        setSelectedStoreKnowledgeStatus("all");
         setEditingStoreKnowledgeId(null);
         setEditingStoreKnowledgeQuestion("");
         setEditingStoreKnowledgeAnswer("");
@@ -3184,6 +3192,7 @@ export default function Home() {
       setStoreKnowledgeMessage(
         `수정한 답변을 가게 지식으로 저장했습니다. 다만 기존 지식과 충돌 가능성이 있어 검토 필요로 표시했습니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
       );
+      setSelectedStoreKnowledgeStatus("needs_review");
       setIsStoreKnowledgePanelOpen(true);
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
@@ -3195,6 +3204,14 @@ export default function Home() {
     setStoreKnowledgeMessage(
       `수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
     );
+
+    if (suspectKnowledgeReviewResult.reviewedItems.length > 0) {
+      setSelectedStoreKnowledgeStatus("needs_review");
+      setIsStoreKnowledgePanelOpen(true);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
+      });
+    }
   }
 
   async function handleUpdateWorkflowItem(
@@ -3483,21 +3500,6 @@ export default function Home() {
       ),
     [storeKnowledgeItems],
   );
-  const storeKnowledgeStatusSummary = useMemo(
-    () => ({
-      active: storeKnowledgeItems.filter(
-        (item) => normalizeStoreKnowledgeStatus(item.status) === "active",
-      ).length,
-      needsReview: storeKnowledgeItems.filter(
-        (item) =>
-          normalizeStoreKnowledgeStatus(item.status) === "needs_review",
-      ).length,
-      archived: storeKnowledgeItems.filter(
-        (item) => normalizeStoreKnowledgeStatus(item.status) === "archived",
-      ).length,
-    }),
-    [storeKnowledgeItems],
-  );
   const storeKnowledgeReviewItemCount = useMemo(() => {
     const reviewIds = new Set<string>();
 
@@ -3519,6 +3521,64 @@ export default function Home() {
 
     return reviewIds.size;
   }, [storeKnowledgeItems, storeKnowledgeQualityReport]);
+  const storeKnowledgeFilterCounts = useMemo(() => {
+    let active = 0;
+    let needsReview = 0;
+    let archived = 0;
+
+    for (const item of storeKnowledgeItems) {
+      const status = normalizeStoreKnowledgeStatus(item.status);
+      const quality =
+        storeKnowledgeQualityReport.byId[item.id] ??
+        createEmptyStoreKnowledgeQuality();
+      const needsReviewByQuality =
+        status === "needs_review" ||
+        quality.isStale ||
+        quality.duplicateCount > 0 ||
+        quality.conflictCount > 0;
+
+      if (status === "archived") {
+        archived += 1;
+      } else if (needsReviewByQuality) {
+        needsReview += 1;
+      } else {
+        active += 1;
+      }
+    }
+
+    return {
+      all: storeKnowledgeItems.length,
+      active,
+      needs_review: needsReview,
+      archived,
+    };
+  }, [storeKnowledgeItems, storeKnowledgeQualityReport]);
+  const filteredStoreKnowledgeItems = useMemo(
+    () =>
+      storeKnowledgeItems.filter((item) => {
+        const status = normalizeStoreKnowledgeStatus(item.status);
+        const quality =
+          storeKnowledgeQualityReport.byId[item.id] ??
+          createEmptyStoreKnowledgeQuality();
+        const needsReview =
+          status === "needs_review" ||
+          quality.isStale ||
+          quality.duplicateCount > 0 ||
+          quality.conflictCount > 0;
+
+        switch (selectedStoreKnowledgeStatus) {
+          case "active":
+            return status === "active" && !needsReview;
+          case "needs_review":
+            return status !== "archived" && needsReview;
+          case "archived":
+            return status === "archived";
+          default:
+            return true;
+        }
+      }),
+    [selectedStoreKnowledgeStatus, storeKnowledgeItems, storeKnowledgeQualityReport],
+  );
   const storeKnowledgeUsageMap = useMemo(
     () =>
       buildStoreKnowledgeUsageMap(
@@ -7556,7 +7616,7 @@ export default function Home() {
                   {[
                     {
                       label: "답변 사용 중",
-                      value: storeKnowledgeStatusSummary.active,
+                      value: storeKnowledgeFilterCounts.active,
                     },
                     {
                       label: "검토 필요",
@@ -7568,7 +7628,7 @@ export default function Home() {
                     },
                     {
                       label: "보관됨",
-                      value: storeKnowledgeStatusSummary.archived,
+                      value: storeKnowledgeFilterCounts.archived,
                     },
                   ].map((metric) => (
                     <div
@@ -7585,13 +7645,69 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              {storeKnowledgeQualityReport.summary.reviewCount > 0 ? (
+              {storeKnowledgeReviewItemCount > 0 ? (
                 <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
                   검토 필요 배지가 있는 지식은 수정하거나 삭제해 주세요. AI가
                   비슷한 문의에 답할 때는 충돌 가능 지식, 검토 필요 지식, 보관된
                   지식을 답변 근거에서 제외합니다.
                 </p>
               ) : null}
+            </div>
+          ) : null}
+
+          {!storeKnowledgeLoading && storeKnowledgeItems.length > 0 ? (
+            <div className="mb-4 overflow-x-auto pb-1">
+              <div className="flex min-w-max gap-2">
+                {[
+                  {
+                    id: "all" as const,
+                    label: "전체",
+                    count: storeKnowledgeFilterCounts.all,
+                  },
+                  {
+                    id: "active" as const,
+                    label: "답변 사용 중",
+                    count: storeKnowledgeFilterCounts.active,
+                  },
+                  {
+                    id: "needs_review" as const,
+                    label: "검토 필요",
+                    count: storeKnowledgeFilterCounts.needs_review,
+                  },
+                  {
+                    id: "archived" as const,
+                    label: "보관됨",
+                    count: storeKnowledgeFilterCounts.archived,
+                  },
+                ].map((filter) => {
+                  const isSelected =
+                    selectedStoreKnowledgeStatus === filter.id;
+
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setSelectedStoreKnowledgeStatus(filter.id)}
+                      className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+                        isSelected
+                          ? "bg-emerald-700 text-white shadow-sm dark:bg-emerald-500 dark:text-emerald-950"
+                          : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {filter.label}
+                      <span
+                        className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                          isSelected
+                            ? "bg-white/20 text-white dark:bg-emerald-950/20 dark:text-emerald-950"
+                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                        }`}
+                      >
+                        {filter.count.toLocaleString("ko-KR")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
 
@@ -7610,9 +7726,19 @@ export default function Home() {
                 쌓입니다.
               </p>
             </div>
+          ) : filteredStoreKnowledgeItems.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center dark:border-zinc-700 dark:bg-zinc-950">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                선택한 상태의 지식이 없습니다
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                다른 상태 필터를 선택하거나, AI CS 처리함에서 새 정보를 학습하면
+                이곳에 표시됩니다.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
-              {storeKnowledgeItems.map((item) => {
+              {filteredStoreKnowledgeItems.map((item) => {
                 const isEditing = editingStoreKnowledgeId === item.id;
                 const isSaving = savingStoreKnowledgeId === item.id;
                 const isDeleting = deletingStoreKnowledgeId === item.id;
