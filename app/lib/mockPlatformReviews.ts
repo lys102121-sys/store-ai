@@ -23,7 +23,8 @@ export type MockReviewPlatform =
   | "baemin"
   | "yogiyo"
   | "coupangeats"
-  | "coupang";
+  | "coupang"
+  | "smartstore";
 
 type MockPlatformReviewsConfig = {
   platform: MockReviewPlatform;

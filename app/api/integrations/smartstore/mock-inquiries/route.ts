@@ -1,15 +1,15 @@
 import { createMockPlatformInquiriesResponse } from "@/app/lib/mockPlatformInquiries";
 
 const mockInquiries = [
-  "이 상품 오늘 출고되나요?",
-  "선물 포장 가능한가요?",
-  "상품을 사용하고 피부가 가려워졌어요. 알레르기일까요?",
+  "오늘 주문하면 언제 출고되나요?",
+  "선물 포장이나 쇼핑백 같이 받을 수 있나요?",
+  "이 상품 재고 있나요?",
 ] as const;
 
 export async function POST(request: Request) {
   return createMockPlatformInquiriesResponse(request, {
-    platform: "coupang",
-    platformName: "쿠팡",
+    platform: "smartstore",
+    platformName: "스마트스토어",
     inquiries: mockInquiries,
   });
 }

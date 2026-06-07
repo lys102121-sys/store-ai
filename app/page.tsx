@@ -244,7 +244,11 @@ type IntegrationPlatform =
   | "smartstore"
   | "coupang";
 
-type DeliveryMockReviewPlatform = "baemin" | "yogiyo" | "coupangeats";
+type DeliveryMockReviewPlatform =
+  | "baemin"
+  | "yogiyo"
+  | "coupangeats"
+  | "smartstore";
 
 type PlatformIntegrationRequest = {
   id: string;
@@ -1201,7 +1205,12 @@ function isIntegrationPlatform(value: string): value is IntegrationPlatform {
 function isDeliveryMockReviewPlatform(
   value: IntegrationPlatform,
 ): value is DeliveryMockReviewPlatform {
-  return value === "baemin" || value === "yogiyo" || value === "coupangeats";
+  return (
+    value === "baemin" ||
+    value === "yogiyo" ||
+    value === "coupangeats" ||
+    value === "smartstore"
+  );
 }
 
 const businessTypeInputGuides = {
@@ -1689,6 +1698,12 @@ export default function Home() {
   const [coupangMockReviewsError, setCoupangMockReviewsError] = useState("");
   const [coupangMockReviewsMessage, setCoupangMockReviewsMessage] =
     useState("");
+  const [smartstoreMockInquiriesLoading, setSmartstoreMockInquiriesLoading] =
+    useState(false);
+  const [smartstoreMockInquiriesError, setSmartstoreMockInquiriesError] =
+    useState("");
+  const [smartstoreMockInquiriesMessage, setSmartstoreMockInquiriesMessage] =
+    useState("");
   const [
     deliveryMockReviewsLoadingPlatform,
     setDeliveryMockReviewsLoadingPlatform,
@@ -2053,6 +2068,9 @@ export default function Home() {
         setCoupangMockReviewsLoading(false);
         setCoupangMockReviewsError("");
         setCoupangMockReviewsMessage("");
+        setSmartstoreMockInquiriesLoading(false);
+        setSmartstoreMockInquiriesError("");
+        setSmartstoreMockInquiriesMessage("");
         setDeliveryMockReviewsLoadingPlatform(null);
         setDeliveryMockReviewsErrors({});
         setDeliveryMockReviewsMessages({});
@@ -4413,6 +4431,47 @@ export default function Home() {
     }
   }
 
+  async function handleLoadSmartstoreMockInquiries() {
+    if (!authUser) {
+      setSmartstoreMockInquiriesMessage("");
+      setSmartstoreMockInquiriesError("로그인이 필요합니다");
+      return;
+    }
+
+    setSmartstoreMockInquiriesLoading(true);
+    setSmartstoreMockInquiriesMessage("");
+    setSmartstoreMockInquiriesError("");
+
+    try {
+      const response = await fetch(
+        "/api/integrations/smartstore/mock-inquiries",
+        {
+          method: "POST",
+          headers: await getAuthenticatedRequestHeaders(),
+        },
+      );
+      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
+
+      if (!response.ok || !data.inserted) {
+        setSmartstoreMockInquiriesError(
+          "스마트스토어 샘플 문의 불러오기에 실패했습니다.",
+        );
+        return;
+      }
+
+      setSmartstoreMockInquiriesMessage(
+        "스마트스토어 샘플 문의가 AI CS 처리함에 추가되었습니다.",
+      );
+      await Promise.all([loadCsMessages(), loadMissingInfos(), loadInsights()]);
+    } catch {
+      setSmartstoreMockInquiriesError(
+        "스마트스토어 샘플 문의 불러오기에 실패했습니다.",
+      );
+    } finally {
+      setSmartstoreMockInquiriesLoading(false);
+    }
+  }
+
   async function handleLoadDeliveryMockReviews(
     platform: DeliveryMockReviewPlatform,
     platformName: string,
@@ -6193,6 +6252,52 @@ export default function Home() {
                           </p>
                         ) : null}
                       </div>
+                    </div>
+                  ) : null}
+
+                  {platform.id === "smartstore" ? (
+                    <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                        데모 체험
+                      </p>
+                      <h4 className="mt-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
+                        샘플 문의로 흐름 확인
+                      </h4>
+                      <p className="mt-2 text-xs leading-5 text-sky-900 dark:text-sky-100">
+                        샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
+                        아니며, 상품 문의가 AI CS 처리함에 모이는 흐름을 체험하기
+                        위한 데모용입니다.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={smartstoreMockInquiriesLoading}
+                        onClick={() =>
+                          void handleLoadSmartstoreMockInquiries()
+                        }
+                        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                      >
+                        {smartstoreMockInquiriesLoading
+                          ? "샘플 문의 불러오는 중..."
+                          : "샘플 문의 불러오기"}
+                      </button>
+
+                      {smartstoreMockInquiriesMessage ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                          role="status"
+                        >
+                          {smartstoreMockInquiriesMessage}
+                        </p>
+                      ) : null}
+
+                      {smartstoreMockInquiriesError ? (
+                        <p
+                          className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                          role="alert"
+                        >
+                          {smartstoreMockInquiriesError}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
 
