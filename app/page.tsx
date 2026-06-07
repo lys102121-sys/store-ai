@@ -168,6 +168,15 @@ type StoreKnowledgeMutationResponse = {
   detail?: string;
 };
 
+type StoreKnowledgeReprocessResponse = {
+  success?: boolean;
+  matchedCsMessages?: number;
+  updatedCsMessages?: number;
+  message?: string;
+  error?: string;
+  detail?: string;
+};
+
 type StoreKnowledgeCreateInput = {
   question: string;
   answer: string;
@@ -2741,7 +2750,27 @@ export default function Home() {
           currentItem.id === item.id ? data.knowledgeItem! : currentItem,
         ),
       );
-      setStoreKnowledgeMessage("AI가 학습한 가게 지식을 수정했습니다.");
+      const reprocessResult = await reprocessRelatedCsMessagesForKnowledge(
+        data.knowledgeItem,
+      );
+
+      if (reprocessResult.success) {
+        setStoreKnowledgeMessage(
+          reprocessResult.updatedCount > 0
+            ? `AI가 학습한 가게 지식을 수정했습니다. 관련 문의 ${reprocessResult.updatedCount.toLocaleString(
+                "ko-KR",
+              )}건의 답변 초안을 새 지식 기준으로 다시 만들었습니다.`
+            : "AI가 학습한 가게 지식을 수정했습니다. 새로 반영할 관련 문의는 없었습니다.",
+        );
+        await Promise.allSettled([
+          loadCsMessages(),
+          loadMissingInfos(),
+          loadInsights(),
+        ]);
+      } else {
+        setStoreKnowledgeMessage("AI가 학습한 가게 지식을 수정했습니다.");
+        setStoreKnowledgeError(reprocessResult.error ?? "");
+      }
       handleCancelStoreKnowledgeEdit();
     } catch {
       setStoreKnowledgeError(
@@ -2782,19 +2811,80 @@ export default function Home() {
           currentItem.id === item.id ? data.knowledgeItem! : currentItem,
         ),
       );
+
+      let reprocessResult: Awaited<
+        ReturnType<typeof reprocessRelatedCsMessagesForKnowledge>
+      > | null = null;
+
+      if (status === "active") {
+        reprocessResult = await reprocessRelatedCsMessagesForKnowledge(
+          data.knowledgeItem,
+        );
+      }
+
       setStoreKnowledgeMessage(
         status === "active"
-          ? "이 지식을 다시 답변 근거로 사용합니다."
+          ? reprocessResult?.success
+            ? reprocessResult.updatedCount > 0
+              ? `이 지식을 다시 답변 근거로 사용합니다. 관련 문의 ${reprocessResult.updatedCount.toLocaleString(
+                  "ko-KR",
+                )}건의 답변 초안을 새 지식 기준으로 다시 만들었습니다.`
+              : "이 지식을 다시 답변 근거로 사용합니다. 새로 반영할 관련 문의는 없었습니다."
+            : "이 지식을 다시 답변 근거로 사용합니다."
           : status === "needs_review"
             ? "이 지식을 검토 필요 상태로 표시했습니다. 답변 근거에서는 제외됩니다."
             : "이 지식을 보관했습니다. 답변 근거에서는 제외됩니다.",
       );
+
+      if (reprocessResult?.success) {
+        await Promise.allSettled([
+          loadCsMessages(),
+          loadMissingInfos(),
+          loadInsights(),
+        ]);
+      } else if (reprocessResult && !reprocessResult.success) {
+        setStoreKnowledgeError(reprocessResult.error ?? "");
+      }
     } catch {
       setStoreKnowledgeError(
         "네트워크 오류로 학습한 가게 지식 상태를 변경하지 못했습니다.",
       );
     } finally {
       setSavingStoreKnowledgeId(null);
+    }
+  }
+
+  async function reprocessRelatedCsMessagesForKnowledge(
+    item: StoreKnowledgeItem,
+  ) {
+    try {
+      const response = await fetch(`/api/store-knowledge/${item.id}/reprocess`, {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as StoreKnowledgeReprocessResponse;
+
+      if (!response.ok || data.success === false) {
+        return {
+          success: false,
+          updatedCount: 0,
+          error:
+            data.error ??
+            "관련 문의 답변을 새 지식 기준으로 다시 생성하지 못했습니다.",
+        };
+      }
+
+      return {
+        success: true,
+        updatedCount: data.updatedCsMessages ?? 0,
+      };
+    } catch {
+      return {
+        success: false,
+        updatedCount: 0,
+        error:
+          "네트워크 오류로 관련 문의 답변을 새 지식 기준으로 다시 생성하지 못했습니다.",
+      };
     }
   }
 
