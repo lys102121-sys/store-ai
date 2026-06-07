@@ -855,6 +855,29 @@ function truncateSummaryText(value: string, maxLength = 64) {
   return `${normalizedValue.slice(0, maxLength)}...`;
 }
 
+function isSameLocalDate(value: string, date = new Date()) {
+  const targetDate = new Date(value);
+
+  if (Number.isNaN(targetDate.getTime())) return false;
+
+  return (
+    targetDate.getFullYear() === date.getFullYear() &&
+    targetDate.getMonth() === date.getMonth() &&
+    targetDate.getDate() === date.getDate()
+  );
+}
+
+function formatEstimatedMinutes(minutes: number) {
+  if (minutes < 60) return `${minutes.toLocaleString("ko-KR")}분`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (remainingMinutes === 0) return `${hours.toLocaleString("ko-KR")}시간`;
+
+  return `${hours.toLocaleString("ko-KR")}시간 ${remainingMinutes}분`;
+}
+
 function normalizeReplyForLearning(value: string) {
   return value.toLowerCase().replace(/[\s.,!?()[\]{}'"`~:;·…]+/g, "");
 }
@@ -3906,6 +3929,62 @@ export default function Home() {
       valueClassName: "text-indigo-700 dark:text-indigo-300",
     },
   ] as const;
+
+  const todayWorkflowSummaryItems = workflowSummaryItems.filter((item) =>
+    isSameLocalDate(item.createdAt),
+  );
+  const todayAiDraftItems = todayWorkflowSummaryItems.filter(
+    (item) => item.type !== "missing_info" && Boolean(item.reply.trim()),
+  );
+  const todayAutoCompletedItems = todayWorkflowSummaryItems.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      (item.status === "completed" || item.status === "answered") &&
+      item.handlingType === "auto_ready" &&
+      item.riskLevel === "low",
+  );
+  const todayOwnerReviewItems = todayWorkflowSummaryItems.filter(
+    (item) =>
+      item.status === "needs_review" ||
+      item.handlingType === "needs_review" ||
+      item.handlingType === "needs_approval" ||
+      item.riskLevel === "high",
+  );
+  const todayKnowledgeAssistedItems = todayWorkflowSummaryItems.filter(
+    (item) =>
+      item.type === "cs" &&
+      item.usedKnowledgeItems.some((knowledgeItem) =>
+        !isStoreInfoEvidenceItem(knowledgeItem),
+      ),
+  );
+  const todayEstimatedSavedMinutes = Math.round(
+    todayAiDraftItems.length * 1.5 +
+      todayAutoCompletedItems.length * 2 +
+      todayKnowledgeAssistedItems.length * 2,
+  );
+  const aiCsValueSummaryItems = [
+    {
+      label: "AI 초안 작성",
+      value: todayAiDraftItems.length.toLocaleString("ko-KR"),
+      description: "오늘 AI가 먼저 써둔 문의/리뷰 답변",
+    },
+    {
+      label: "자동 완료",
+      value: todayAutoCompletedItems.length.toLocaleString("ko-KR"),
+      description: "낮은 위험도로 앱 안에서 완료 처리",
+    },
+    {
+      label: "확인 필요 분류",
+      value: todayOwnerReviewItems.length.toLocaleString("ko-KR"),
+      description: "사장님이 먼저 봐야 할 항목을 분리",
+    },
+    {
+      label: "학습 지식 활용",
+      value: todayKnowledgeAssistedItems.length.toLocaleString("ko-KR"),
+      description: "사장님이 알려준 지식을 답변에 재사용",
+    },
+  ] as const;
+
   const workflowColumns = [
     {
       status: "needs_review" as const,
@@ -5041,6 +5120,55 @@ export default function Home() {
                   </p>
                 </article>
               ))}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25 sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    AI CS Impact
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                    AI가 오늘 줄여준 업무
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                    오늘 생성된 답변 초안, 자동 완료, 사장님이 알려준 지식
+                    활용을 기준으로 대략 절약한 시간을 추정했습니다.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950 lg:min-w-48 lg:text-right">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    절약 시간 추정
+                  </p>
+                  <p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+                    {workflowSummaryLoading
+                      ? "—"
+                      : formatEstimatedMinutes(todayEstimatedSavedMinutes)}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    실제 업무량에 따라 달라질 수 있어요.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {aiCsValueSummaryItems.map((item) => (
+                  <article
+                    key={item.label}
+                    className="rounded-xl border border-emerald-100 bg-white/85 p-4 dark:border-emerald-900/50 dark:bg-zinc-950/70"
+                  >
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-zinc-950 dark:text-zinc-50">
+                      {workflowSummaryLoading ? "—" : item.value}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
