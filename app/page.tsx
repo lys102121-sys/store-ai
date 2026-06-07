@@ -5595,7 +5595,8 @@ export default function Home() {
                 가게 정보
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                가게명·말투 학습 예시·정책을 입력한 뒤 저장하면 Supabase에 등록됩니다.
+                처음에는 가게명, 업종, 대표 상품만 입력해도 시작할 수 있어요.
+                더 정확한 답변이 필요할 때 아래 고급 설정을 열어 보강하세요.
               </p>
             </div>
             <button
@@ -5646,6 +5647,23 @@ export default function Home() {
               {storeExampleMessage}
             </p>
           ) : null}
+
+          <div className="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              처음엔 3가지만 입력해도 됩니다
+            </p>
+            <div className="mt-3 grid gap-2 text-xs text-zinc-600 dark:text-zinc-300 sm:grid-cols-3">
+              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+                1. 가게명
+              </span>
+              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+                2. 업종
+              </span>
+              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+                3. 대표 상품
+              </span>
+            </div>
+          </div>
 
           <form onSubmit={handleStoreSubmit} className="space-y-5">
             <div className="space-y-2">
@@ -5713,11 +5731,20 @@ export default function Home() {
               </details>
             </div>
 
-            <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+            <details className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-violet-950 dark:text-violet-100">
+                  AI 자동 처리 설정
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                  낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
+                  처음에는 나중에 설정해도 괜찮아요.
+                </span>
+              </summary>
               <div className="space-y-4">
-                <div>
+                <div className="mt-4">
                   <h3 className="text-sm font-semibold text-violet-950 dark:text-violet-100">
-                    AI 자동 처리 설정
+                    자동 처리 범위
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
                     AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
@@ -5811,7 +5838,7 @@ export default function Home() {
                   <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
                 </label>
               </div>
-            </div>
+            </details>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div className="mb-4">
@@ -5819,7 +5846,7 @@ export default function Home() {
                   대표 상품 정보
                 </h3>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  상품 관련 문의에 더 정확히 답할 수 있도록 대표 상품 정보를 입력해 주세요.
+                  처음에는 대표 상품명과 한 줄 설명만 입력해도 됩니다.
                 </p>
               </div>
 
@@ -5859,56 +5886,75 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label
-                    htmlFor="product_details"
-                    className="text-sm font-medium"
-                  >
-                    구성/용량/재질/사이즈 등
-                  </label>
-                  <textarea
-                    id="product_details"
-                    value={productDetails}
-                    onChange={(event) => setProductDetails(event.target.value)}
-                    placeholder="예: 8개입, 240g, 국내산 견과류 사용"
-                    className={textareaClass}
-                  />
-                </div>
+                <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <summary className="cursor-pointer list-none">
+                    <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      정확도를 높이는 추가 정보
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                      가격, 구성, 주의사항, 포장 가능 여부처럼 정확히 답해야
+                      하는 내용을 더 적어둘 수 있어요.
+                    </span>
+                  </summary>
 
-                <div className="space-y-2">
-                  <label
-                    htmlFor="product_caution"
-                    className="text-sm font-medium"
-                  >
-                    보관방법/주의사항/알레르기/사용법 등
-                  </label>
-                  <textarea
-                    id="product_caution"
-                    value={productCaution}
-                    onChange={(event) => setProductCaution(event.target.value)}
-                    placeholder="예: 직사광선을 피해 서늘한 곳에 보관, 견과류 알레르기 주의"
-                    className={textareaClass}
-                  />
-                </div>
+                  <div className="mt-4 grid gap-4">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="product_details"
+                        className="text-sm font-medium"
+                      >
+                        구성/용량/재질/사이즈 등
+                      </label>
+                      <textarea
+                        id="product_details"
+                        value={productDetails}
+                        onChange={(event) =>
+                          setProductDetails(event.target.value)
+                        }
+                        placeholder="예: 8개입, 240g, 국내산 견과류 사용"
+                        className={textareaClass}
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <label
-                    htmlFor="extra_faq"
-                    className="text-sm font-medium"
-                  >
-                    기타 FAQ/포장·옵션
-                  </label>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    선물 포장, 옵션, 자주 묻는 질문처럼 별도로 기억해야 할 내용을 입력하세요.
-                  </p>
-                  <textarea
-                    id="extra_faq"
-                    value={extraFaq}
-                    onChange={(event) => setExtraFaq(event.target.value)}
-                    placeholder="예: 선물 포장 가능합니다. 각인 옵션은 주문 요청사항에 남겨주세요."
-                    className={textareaClass}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="product_caution"
+                        className="text-sm font-medium"
+                      >
+                        보관방법/주의사항/알레르기/사용법 등
+                      </label>
+                      <textarea
+                        id="product_caution"
+                        value={productCaution}
+                        onChange={(event) =>
+                          setProductCaution(event.target.value)
+                        }
+                        placeholder="예: 직사광선을 피해 서늘한 곳에 보관, 견과류 알레르기 주의"
+                        className={textareaClass}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="extra_faq"
+                        className="text-sm font-medium"
+                      >
+                        기타 FAQ/포장·옵션
+                      </label>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        선물 포장, 옵션, 자주 묻는 질문처럼 별도로 기억해야 할
+                        내용을 입력하세요.
+                      </p>
+                      <textarea
+                        id="extra_faq"
+                        value={extraFaq}
+                        onChange={(event) => setExtraFaq(event.target.value)}
+                        placeholder="예: 선물 포장 가능합니다. 각인 옵션은 주문 요청사항에 남겨주세요."
+                        className={textareaClass}
+                      />
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
 
