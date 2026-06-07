@@ -2772,6 +2772,67 @@ export default function Home() {
     }
   }
 
+  async function markUsedWorkflowKnowledgeItemsForReview(item: WorkflowItem) {
+    const knowledgeIds = [
+      ...new Set(
+        item.usedKnowledgeItems
+          .filter((knowledgeItem) => !isStoreInfoEvidenceItem(knowledgeItem))
+          .map((knowledgeItem) => knowledgeItem.id.trim())
+          .filter(Boolean),
+      ),
+    ];
+
+    if (knowledgeIds.length === 0) {
+      return {
+        reviewedItems: [] as StoreKnowledgeItem[],
+        failedCount: 0,
+      };
+    }
+
+    try {
+      const headers = await getAuthenticatedRequestHeaders({
+        "Content-Type": "application/json",
+      });
+      const results = await Promise.all(
+        knowledgeIds.map(async (knowledgeId) => {
+          try {
+            const response = await fetch(`/api/store-knowledge/${knowledgeId}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ status: "needs_review" }),
+            });
+            const data =
+              (await response.json()) as StoreKnowledgeMutationResponse;
+
+            return {
+              success: response.ok && Boolean(data.knowledgeItem),
+              knowledgeItem: data.knowledgeItem ?? null,
+            };
+          } catch {
+            return {
+              success: false,
+              knowledgeItem: null,
+            };
+          }
+        }),
+      );
+
+      return {
+        reviewedItems: results
+          .map((result) => result.knowledgeItem)
+          .filter((knowledgeItem): knowledgeItem is StoreKnowledgeItem =>
+            Boolean(knowledgeItem),
+          ),
+        failedCount: results.filter((result) => !result.success).length,
+      };
+    } catch {
+      return {
+        reviewedItems: [] as StoreKnowledgeItem[],
+        failedCount: knowledgeIds.length,
+      };
+    }
+  }
+
   async function handleDeleteStoreKnowledgeItem(item: StoreKnowledgeItem) {
     if (!window.confirm("이 학습 지식을 삭제할까요?")) return;
 
@@ -3051,10 +3112,34 @@ export default function Home() {
       ].join("\n\n"),
     });
 
+    const suspectKnowledgeReviewResult =
+      await markUsedWorkflowKnowledgeItemsForReview(item);
+    const reviewedKnowledgeMap = new Map(
+      suspectKnowledgeReviewResult.reviewedItems.map((reviewedItem) => [
+        reviewedItem.id,
+        reviewedItem,
+      ]),
+    );
+    const currentStoreKnowledgeItems = storeKnowledgeItems.map(
+      (currentItem) => reviewedKnowledgeMap.get(currentItem.id) ?? currentItem,
+    );
+    const suspectKnowledgeMessage =
+      suspectKnowledgeReviewResult.reviewedItems.length > 0
+        ? ` 기존 답변에 사용된 지식 ${suspectKnowledgeReviewResult.reviewedItems.length.toLocaleString(
+            "ko-KR",
+          )}개는 검토 필요로 표시했습니다.`
+        : "";
+    const suspectKnowledgeFailureMessage =
+      suspectKnowledgeReviewResult.failedCount > 0
+        ? ` 다만 참고 지식 ${suspectKnowledgeReviewResult.failedCount.toLocaleString(
+            "ko-KR",
+          )}개는 검토 필요로 표시하지 못했습니다.`
+        : "";
+
     let nextStoreKnowledgeItem = knowledgeItem;
     const nextStoreKnowledgeItems = [
       nextStoreKnowledgeItem,
-      ...storeKnowledgeItems,
+      ...currentStoreKnowledgeItems,
     ];
     const nextQualityReport = buildStoreKnowledgeQualityReport(
       nextStoreKnowledgeItems,
@@ -3092,9 +3177,12 @@ export default function Home() {
         };
       }
 
-      setStoreKnowledgeItems([nextStoreKnowledgeItem, ...storeKnowledgeItems]);
+      setStoreKnowledgeItems([
+        nextStoreKnowledgeItem,
+        ...currentStoreKnowledgeItems,
+      ]);
       setStoreKnowledgeMessage(
-        "수정한 답변을 가게 지식으로 저장했습니다. 다만 기존 지식과 충돌 가능성이 있어 검토 필요로 표시했습니다.",
+        `수정한 답변을 가게 지식으로 저장했습니다. 다만 기존 지식과 충돌 가능성이 있어 검토 필요로 표시했습니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
       );
       setIsStoreKnowledgePanelOpen(true);
       window.requestAnimationFrame(() => {
@@ -3105,7 +3193,7 @@ export default function Home() {
 
     setStoreKnowledgeItems(nextStoreKnowledgeItems);
     setStoreKnowledgeMessage(
-      "수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.",
+      `수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
     );
   }
 
