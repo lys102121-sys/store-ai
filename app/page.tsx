@@ -245,6 +245,7 @@ type UpdateWorkflowItemResponse = {
 };
 
 type DashboardTab = "start" | "store" | "integrations" | "answer" | "manage";
+type AnswerMode = "cs" | "review" | "batch_review";
 type ManageSupportPanel = "store_knowledge" | "insights";
 
 type IntegrationPlatform =
@@ -1575,6 +1576,8 @@ function interpretBusinessType(value: string): InterpretedBusinessType {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<DashboardTab>("start");
+  const [selectedAnswerMode, setSelectedAnswerMode] =
+    useState<AnswerMode>("cs");
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -4482,6 +4485,38 @@ export default function Home() {
     { id: "answer", label: "답변 작성" },
     { id: "manage", label: "운영 관리" },
   ] as const satisfies ReadonlyArray<{ id: DashboardTab; label: string }>;
+  const answerModeItems = [
+    {
+      id: "cs",
+      label: "문의 답변",
+      title: "고객 문의 하나에 답변하기",
+      description:
+        "처음 테스트할 때는 여기부터 시작하세요. 모르는 정보는 확인 필요로 분리합니다.",
+      targetId: "cs-reply",
+    },
+    {
+      id: "review",
+      label: "리뷰 답글",
+      title: "리뷰 하나에 답글 달기",
+      description:
+        "좋은 리뷰와 아쉬운 리뷰에 맞춰 사장님 말투로 답글을 만듭니다.",
+      targetId: "review-reply",
+    },
+    {
+      id: "batch_review",
+      label: "리뷰 일괄",
+      title: "여러 리뷰 한 번에 처리하기",
+      description:
+        "리뷰가 많이 쌓였을 때 줄바꿈으로 붙여넣고 한 번에 초안을 만듭니다.",
+      targetId: "batch-review-reply",
+    },
+  ] as const satisfies ReadonlyArray<{
+    id: AnswerMode;
+    label: string;
+    title: string;
+    description: string;
+    targetId: string;
+  }>;
 
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
@@ -4491,6 +4526,16 @@ export default function Home() {
   }
 
   function goToTabSection(tab: DashboardTab, targetId: string) {
+    if (tab === "answer") {
+      if (targetId === "review-reply") {
+        setSelectedAnswerMode("review");
+      } else if (targetId === "batch-review-reply") {
+        setSelectedAnswerMode("batch_review");
+      } else {
+        setSelectedAnswerMode("cs");
+      }
+    }
+
     setActiveTab(tab);
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => scrollToSection(targetId));
@@ -7471,10 +7516,66 @@ export default function Home() {
           </section>
         ) : null}
 
+        {activeTab === "answer" ? (
+          <section className="order-[29] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-5">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                답변 작성
+              </p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                오늘 처리할 일을 하나만 골라 시작하세요
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                처음에는 고객 문의 하나로 테스트하고, 익숙해지면 리뷰 답글과
+                일괄 생성으로 넓혀가면 됩니다.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {answerModeItems.map((item) => {
+                const isSelected = selectedAnswerMode === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAnswerMode(item.id);
+                      window.requestAnimationFrame(() => {
+                        window.requestAnimationFrame(() =>
+                          scrollToSection(item.targetId),
+                        );
+                      });
+                    }}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      isSelected
+                        ? "border-sky-500 bg-sky-50 text-sky-950 shadow-sm ring-1 ring-sky-100 dark:border-sky-500 dark:bg-sky-950/30 dark:text-sky-100 dark:ring-sky-900"
+                        : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-sky-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-sky-900 dark:hover:bg-zinc-900"
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="text-xs font-semibold">
+                      {item.label}
+                    </span>
+                    <span className="mt-2 block text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                      {item.title}
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                      {item.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
         <section
           id="cs-reply"
           className={`${cardClass} scroll-mt-32 border-sky-200/70 dark:border-sky-900/50 ${
-            activeTab === "answer" ? "order-[30]" : "hidden"
+            activeTab === "answer" && selectedAnswerMode === "cs"
+              ? "order-[30]"
+              : "hidden"
           }`}
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -9418,7 +9519,9 @@ export default function Home() {
         <section
           id="review-reply"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "answer" ? "order-[31]" : "hidden"
+            activeTab === "answer" && selectedAnswerMode === "review"
+              ? "order-[31]"
+              : "hidden"
           }`}
         >
           <div className="mb-6">
@@ -9493,7 +9596,9 @@ export default function Home() {
         <section
           id="batch-review-reply"
           className={`${cardClass} scroll-mt-32 ${
-            activeTab === "answer" ? "order-[32]" : "hidden"
+            activeTab === "answer" && selectedAnswerMode === "batch_review"
+              ? "order-[32]"
+              : "hidden"
           }`}
         >
           <div className="mb-6">
