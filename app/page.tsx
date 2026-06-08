@@ -1005,6 +1005,84 @@ function inferCorrectionKnowledgeCategory(item: WorkflowItem, correctedReply = "
   return "general";
 }
 
+const repeatedCorrectionGenericTokens = new Set([
+  "고객",
+  "문의",
+  "답변",
+  "수정",
+  "학습",
+  "후보",
+  "정보",
+  "안내",
+  "정확",
+  "필요",
+  "가능",
+  "상품",
+  "제품",
+]);
+
+function normalizeCorrectionPatternText(value: string) {
+  return value.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+}
+
+function stripCorrectionPatternPostposition(value: string) {
+  return value.replace(
+    /(으로|에게|에서|까지|부터|은|는|이|가|을|를|의|에|와|과|도|로|만)$/g,
+    "",
+  );
+}
+
+function getCorrectionPatternTokens(value: string) {
+  return value
+    .toLowerCase()
+    .split(/[^0-9a-z가-힣]+/)
+    .map((token) => stripCorrectionPatternPostposition(token.trim()))
+    .filter(
+      (token) =>
+        token.length >= 2 && !repeatedCorrectionGenericTokens.has(token),
+    );
+}
+
+function areSimilarCorrectionCandidates(
+  left: StoreKnowledgeItem,
+  right: StoreKnowledgeItem,
+) {
+  if (left.category !== right.category) return false;
+
+  const normalizedLeft = normalizeCorrectionPatternText(left.question);
+  const normalizedRight = normalizeCorrectionPatternText(right.question);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+  if (
+    Math.min(normalizedLeft.length, normalizedRight.length) >= 8 &&
+    (normalizedLeft.includes(normalizedRight) ||
+      normalizedRight.includes(normalizedLeft))
+  ) {
+    return true;
+  }
+
+  const leftTokens = getCorrectionPatternTokens(
+    `${left.question}\n${left.source_text ?? ""}`,
+  );
+  const rightTokens = getCorrectionPatternTokens(
+    `${right.question}\n${right.source_text ?? ""}`,
+  );
+
+  if (leftTokens.length === 0 || rightTokens.length === 0) return false;
+
+  const overlapCount = leftTokens.filter((leftToken) =>
+    rightTokens.some(
+      (rightToken) =>
+        leftToken === rightToken ||
+        (Math.min(leftToken.length, rightToken.length) >= 2 &&
+          (leftToken.includes(rightToken) || rightToken.includes(leftToken))),
+    ),
+  ).length;
+
+  return overlapCount >= Math.min(2, leftTokens.length, rightTokens.length);
+}
+
 function workflowAttentionPriority(item: WorkflowItem) {
   if (item.type === "missing_info") return 70;
   if (item.riskLevel === "high") return 100;
@@ -3804,6 +3882,53 @@ export default function Home() {
       ),
     [storeKnowledgeItems],
   );
+  const repeatedCorrectionPatterns = useMemo(() => {
+    const candidates = storeKnowledgeItems
+      .filter(
+        (item) =>
+          item.source_type === "owner_correction" &&
+          normalizeStoreKnowledgeStatus(item.status) === "needs_review",
+      )
+      .sort(
+        (left, right) =>
+          new Date(right.updated_at).getTime() -
+          new Date(left.updated_at).getTime(),
+      );
+    const visitedIds = new Set<string>();
+    const patterns: Array<{
+      key: string;
+      category: string;
+      items: StoreKnowledgeItem[];
+      hasDifferentAnswers: boolean;
+    }> = [];
+
+    for (const candidate of candidates) {
+      if (visitedIds.has(candidate.id)) continue;
+
+      const relatedItems = candidates.filter(
+        (otherCandidate) =>
+          candidate.id === otherCandidate.id ||
+          areSimilarCorrectionCandidates(candidate, otherCandidate),
+      );
+
+      if (relatedItems.length < 2) continue;
+
+      relatedItems.forEach((item) => visitedIds.add(item.id));
+
+      const normalizedAnswers = new Set(
+        relatedItems.map((item) => normalizeReplyForLearning(item.answer)),
+      );
+
+      patterns.push({
+        key: `${candidate.category}-${candidate.id}`,
+        category: candidate.category,
+        items: relatedItems,
+        hasDifferentAnswers: normalizedAnswers.size > 1,
+      });
+    }
+
+    return patterns.slice(0, 3);
+  }, [storeKnowledgeItems]);
   const storeKnowledgeReviewItemCount = useMemo(() => {
     const reviewIds = new Set<string>();
 
@@ -8949,7 +9074,7 @@ export default function Home() {
                   {isStoreKnowledgePanelOpen ? "접기" : "열기"}
                 </button>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
                   <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
                     전체 지식
@@ -8978,6 +9103,14 @@ export default function Home() {
                     {storeKnowledgeQualityReport.summary.conflictCount.toLocaleString(
                       "ko-KR",
                     )}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    반복 수정
+                  </p>
+                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
+                    {repeatedCorrectionPatterns.length.toLocaleString("ko-KR")}
                   </p>
                 </div>
               </div>
@@ -9057,6 +9190,59 @@ export default function Home() {
           {storeKnowledgeError ? (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
               {storeKnowledgeError}
+            </div>
+          ) : null}
+
+          {!storeKnowledgeLoading && repeatedCorrectionPatterns.length > 0 ? (
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                    반복 수정 감지
+                  </p>
+                  <p className="mt-1 max-w-3xl text-xs leading-5 text-amber-800 dark:text-amber-200">
+                    비슷한 문의에서 사장님이 여러 번 답변을 고쳤습니다. 하나의
+                    기준으로 정리해 다시 사용하면 AI가 다음 답변에서 같은 실수를
+                    줄일 수 있어요.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openStoreKnowledgeReviewCandidates}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-semibold text-white transition hover:bg-amber-800 dark:bg-amber-600 dark:hover:bg-amber-500"
+                >
+                  후보 검토하기
+                </button>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                {repeatedCorrectionPatterns.map((pattern) => (
+                  <article
+                    key={pattern.key}
+                    className="rounded-xl border border-amber-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-amber-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+                        {storeKnowledgeCategoryLabel(pattern.category)}
+                      </span>
+                      <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                        {pattern.items.length.toLocaleString("ko-KR")}건 반복
+                      </span>
+                    </div>
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {pattern.hasDifferentAnswers
+                        ? "서로 다른 수정 답변이 쌓였습니다"
+                        : "같은 방향의 수정이 반복됐습니다"}
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {pattern.items.slice(0, 3).map((item) => (
+                        <li key={item.id}>
+                          {truncateSummaryText(item.question, 70)}
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
             </div>
           ) : null}
 
