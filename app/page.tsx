@@ -91,6 +91,13 @@ type StoreKnowledgeItem = {
   updated_at: string;
 };
 
+type RepeatedCorrectionPattern = {
+  key: string;
+  category: string;
+  items: StoreKnowledgeItem[];
+  hasDifferentAnswers: boolean;
+};
+
 type UsedKnowledgeItem = {
   id: string;
   category: string;
@@ -1083,6 +1090,24 @@ function areSimilarCorrectionCandidates(
   return overlapCount >= Math.min(2, leftTokens.length, rightTokens.length);
 }
 
+function cleanCorrectionQuestion(value: string) {
+  return value.replace(/^고객 문의:\s*/u, "").trim();
+}
+
+function createCorrectionPatternDraftQuestion(pattern: RepeatedCorrectionPattern) {
+  const firstQuestion = cleanCorrectionQuestion(pattern.items[0]?.question ?? "");
+
+  if (!firstQuestion) {
+    return `${storeKnowledgeCategoryLabel(pattern.category)} 반복 문의 응대 기준`;
+  }
+
+  return `${firstQuestion} 문의 응대 기준`;
+}
+
+function createCorrectionPatternDraftAnswer(pattern: RepeatedCorrectionPattern) {
+  return pattern.items[0]?.answer.trim() ?? "";
+}
+
 function workflowAttentionPriority(item: WorkflowItem) {
   if (item.type === "missing_info") return 70;
   if (item.riskLevel === "high") return 100;
@@ -1890,6 +1915,11 @@ export default function Home() {
   >(null);
   const [resolvingStoreKnowledgeConflictId, setResolvingStoreKnowledgeConflictId] =
     useState<string | null>(null);
+  const [mergingCorrectionPatternKey, setMergingCorrectionPatternKey] =
+    useState<string | null>(null);
+  const [correctionPatternDrafts, setCorrectionPatternDrafts] = useState<
+    Record<string, { question: string; answer: string }>
+  >({});
   const [isStoreKnowledgePanelOpen, setIsStoreKnowledgePanelOpen] =
     useState(false);
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
@@ -3163,6 +3193,160 @@ export default function Home() {
     }
   }
 
+  function handleStartMergeCorrectionPattern(pattern: RepeatedCorrectionPattern) {
+    setCorrectionPatternDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [pattern.key]: currentDrafts[pattern.key] ?? {
+        question: createCorrectionPatternDraftQuestion(pattern),
+        answer: createCorrectionPatternDraftAnswer(pattern),
+      },
+    }));
+    setStoreKnowledgeError("");
+    setStoreKnowledgeMessage("");
+  }
+
+  function handleCancelMergeCorrectionPattern(patternKey: string) {
+    setCorrectionPatternDrafts((currentDrafts) => {
+      const nextDrafts = { ...currentDrafts };
+      delete nextDrafts[patternKey];
+      return nextDrafts;
+    });
+  }
+
+  async function handleSaveMergedCorrectionPattern(
+    pattern: RepeatedCorrectionPattern,
+  ) {
+    const draft = correctionPatternDrafts[pattern.key];
+    const question = draft?.question.trim() ?? "";
+    const answer = draft?.answer.trim() ?? "";
+
+    if (!question || !answer) {
+      setStoreKnowledgeError("정리할 질문과 답변을 모두 입력해 주세요.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `반복 수정 후보 ${pattern.items.length.toLocaleString(
+          "ko-KR",
+        )}건을 하나의 지식으로 정리하고 기존 후보는 보관할까요?`,
+      )
+    ) {
+      return;
+    }
+
+    setMergingCorrectionPatternKey(pattern.key);
+    setStoreKnowledgeError("");
+    setStoreKnowledgeMessage("");
+
+    try {
+      const sourceText = [
+        "반복 수정 후보를 하나의 지식으로 정리했습니다.",
+        ...pattern.items.map((item, index) =>
+          [
+            `후보 ${index + 1}`,
+            `질문: ${item.question}`,
+            `답변: ${item.answer}`,
+            item.source_text ? `출처: ${item.source_text}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        ),
+      ].join("\n\n");
+      const mergedItem = await createStoreKnowledgeItem({
+        question,
+        answer,
+        category: pattern.category,
+        sourceId: `merged-correction-${pattern.items
+          .map((item) => item.id)
+          .join("-")}`,
+        sourceText,
+        status: "active",
+      });
+      const headers = await getAuthenticatedRequestHeaders({
+        "Content-Type": "application/json",
+      });
+      const archiveResults = await Promise.allSettled(
+        pattern.items.map(async (item) => {
+          const response = await fetch(`/api/store-knowledge/${item.id}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ status: "archived" }),
+          });
+          const data = (await response.json()) as StoreKnowledgeMutationResponse;
+
+          if (!response.ok || !data.knowledgeItem) {
+            throw new Error(data.error ?? "기존 후보를 보관하지 못했습니다.");
+          }
+
+          return data.knowledgeItem;
+        }),
+      );
+      const archivedItems = archiveResults
+        .filter(
+          (
+            result,
+          ): result is PromiseFulfilledResult<StoreKnowledgeItem> =>
+            result.status === "fulfilled",
+        )
+        .map((result) => result.value);
+      const failedArchiveCount = archiveResults.length - archivedItems.length;
+
+      setStoreKnowledgeItems((currentItems) => {
+        const archivedItemMap = new Map(
+          archivedItems.map((item) => [item.id, item]),
+        );
+        return [
+          mergedItem,
+          ...currentItems.map(
+            (item) => archivedItemMap.get(item.id) ?? item,
+          ),
+        ];
+      });
+      handleCancelMergeCorrectionPattern(pattern.key);
+      setSelectedStoreKnowledgeStatus("active");
+
+      const reprocessResult =
+        await reprocessRelatedCsMessagesForKnowledge(mergedItem);
+      const reprocessMessage = reprocessResult.success
+        ? reprocessResult.updatedCount > 0
+          ? ` 관련 문의 ${reprocessResult.updatedCount.toLocaleString(
+              "ko-KR",
+            )}건의 답변 초안을 새 지식 기준으로 다시 만들었습니다.`
+          : " 새로 반영할 관련 문의는 없었습니다."
+        : " 다만 관련 문의 답변 재생성은 실패했습니다.";
+      const archiveMessage =
+        failedArchiveCount > 0
+          ? ` 기존 후보 ${failedArchiveCount.toLocaleString(
+              "ko-KR",
+            )}건은 보관하지 못했습니다.`
+          : "";
+
+      setStoreKnowledgeMessage(
+        `반복 수정 후보를 하나의 지식으로 정리했습니다.${reprocessMessage}${archiveMessage}`,
+      );
+
+      await Promise.allSettled([
+        loadCsMessages(),
+        loadMissingInfos(),
+        loadInsights(),
+        loadAiActivityLogs(),
+      ]);
+
+      if (!reprocessResult.success) {
+        setStoreKnowledgeError(reprocessResult.error ?? "");
+      }
+    } catch (error) {
+      setStoreKnowledgeError(
+        error instanceof Error
+          ? error.message
+          : "반복 수정 후보를 정리하지 못했습니다.",
+      );
+    } finally {
+      setMergingCorrectionPatternKey(null);
+    }
+  }
+
   async function reprocessRelatedCsMessagesForKnowledge(
     item: StoreKnowledgeItem,
   ) {
@@ -3895,12 +4079,7 @@ export default function Home() {
           new Date(left.updated_at).getTime(),
       );
     const visitedIds = new Set<string>();
-    const patterns: Array<{
-      key: string;
-      category: string;
-      items: StoreKnowledgeItem[];
-      hasDifferentAnswers: boolean;
-    }> = [];
+    const patterns: RepeatedCorrectionPattern[] = [];
 
     for (const candidate of candidates) {
       if (visitedIds.has(candidate.id)) continue;
@@ -9215,33 +9394,116 @@ export default function Home() {
                 </button>
               </div>
               <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                {repeatedCorrectionPatterns.map((pattern) => (
-                  <article
-                    key={pattern.key}
-                    className="rounded-xl border border-amber-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-amber-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
-                  >
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
-                        {storeKnowledgeCategoryLabel(pattern.category)}
-                      </span>
-                      <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
-                        {pattern.items.length.toLocaleString("ko-KR")}건 반복
-                      </span>
-                    </div>
-                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                      {pattern.hasDifferentAnswers
-                        ? "서로 다른 수정 답변이 쌓였습니다"
-                        : "같은 방향의 수정이 반복됐습니다"}
-                    </p>
-                    <ul className="mt-2 space-y-1.5">
-                      {pattern.items.slice(0, 3).map((item) => (
-                        <li key={item.id}>
-                          {truncateSummaryText(item.question, 70)}
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
+                {repeatedCorrectionPatterns.map((pattern) => {
+                    const draft = correctionPatternDrafts[pattern.key];
+                    const isMerging =
+                      mergingCorrectionPatternKey === pattern.key;
+
+                    return (
+                      <article
+                        key={pattern.key}
+                        className="rounded-xl border border-amber-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-amber-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
+                      >
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900">
+                            {storeKnowledgeCategoryLabel(pattern.category)}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                            {pattern.items.length.toLocaleString("ko-KR")}건 반복
+                          </span>
+                        </div>
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          {pattern.hasDifferentAnswers
+                            ? "서로 다른 수정 답변이 쌓였습니다"
+                            : "같은 방향의 수정이 반복됐습니다"}
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {pattern.items.slice(0, 3).map((item) => (
+                            <li key={item.id}>
+                              {truncateSummaryText(item.question, 70)}
+                            </li>
+                          ))}
+                        </ul>
+
+                        {draft ? (
+                          <div className="mt-3 space-y-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                            <p className="font-semibold text-amber-950 dark:text-amber-100">
+                              하나의 지식으로 정리
+                            </p>
+                            <label className="block">
+                              <span className="font-medium text-amber-900 dark:text-amber-100">
+                                AI가 기억할 질문
+                              </span>
+                              <input
+                                type="text"
+                                value={draft.question}
+                                onChange={(event) =>
+                                  setCorrectionPatternDrafts((currentDrafts) => ({
+                                    ...currentDrafts,
+                                    [pattern.key]: {
+                                      ...draft,
+                                      question: event.target.value,
+                                    },
+                                  }))
+                                }
+                                className="mt-1 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs outline-none transition focus:border-amber-500 dark:border-amber-900 dark:bg-zinc-950"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="font-medium text-amber-900 dark:text-amber-100">
+                                AI가 참고할 답변
+                              </span>
+                              <textarea
+                                value={draft.answer}
+                                onChange={(event) =>
+                                  setCorrectionPatternDrafts((currentDrafts) => ({
+                                    ...currentDrafts,
+                                    [pattern.key]: {
+                                      ...draft,
+                                      answer: event.target.value,
+                                    },
+                                  }))
+                                }
+                                className="mt-1 min-h-24 w-full resize-y rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs outline-none transition focus:border-amber-500 dark:border-amber-900 dark:bg-zinc-950"
+                              />
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleSaveMergedCorrectionPattern(pattern)
+                                }
+                                disabled={isMerging}
+                                className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-semibold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                              >
+                                {isMerging ? "정리 중..." : "저장하고 다시 사용"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCancelMergeCorrectionPattern(pattern.key)
+                                }
+                                disabled={isMerging}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:opacity-60 dark:border-amber-800 dark:bg-zinc-950 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleStartMergeCorrectionPattern(pattern)
+                            }
+                            className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-zinc-950 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                          >
+                            정리 제안 열기
+                          </button>
+                        )}
+                      </article>
+                    );
+                  })}
               </div>
             </div>
           ) : null}
