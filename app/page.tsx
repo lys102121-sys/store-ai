@@ -4067,6 +4067,48 @@ export default function Home() {
   const activeMissingInfoHoldItems = activeWorkflowSummaryItems.filter(
     (item) => item.type === "missing_info",
   );
+  const needsReviewSummaryCount = aiCsWorkSummaryItems[0].value;
+  const pendingSummaryCount = aiCsWorkSummaryItems[1].value;
+  const completedSummaryCount = aiCsWorkSummaryItems[3].value;
+  const urgentWorkCount = needsReviewSummaryCount + pendingSummaryCount;
+  const blockedWorkCount =
+    activeHighRiskHoldItems.length + activeMissingInfoHoldItems.length;
+  const aiCsTopSummaryItems = [
+    {
+      label: "지금 확인할 일",
+      value: urgentWorkCount,
+      description: "확인 필요와 승인 대기를 합친 항목",
+      className:
+        urgentWorkCount > 0
+          ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
+          : "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100",
+      valueClassName:
+        urgentWorkCount > 0
+          ? "text-amber-700 dark:text-amber-300"
+          : "text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      label: "AI가 처리한 일",
+      value: completedSummaryCount,
+      description: "답변 완료 상태로 관리 중인 항목",
+      className:
+        "border-emerald-200 bg-white text-emerald-950 dark:border-emerald-900/60 dark:bg-zinc-950 dark:text-emerald-100",
+      valueClassName: "text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      label: "위험해서 멈춘 일",
+      value: blockedWorkCount,
+      description: "고위험 또는 정보 부족으로 자동 처리하지 않음",
+      className:
+        blockedWorkCount > 0
+          ? "border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
+          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50",
+      valueClassName:
+        blockedWorkCount > 0
+          ? "text-red-700 dark:text-red-300"
+          : "text-zinc-950 dark:text-zinc-50",
+    },
+  ] as const;
   const postedPlatformItems = workflowSummaryItems.filter(
     (item) =>
       item.type !== "missing_info" &&
@@ -5167,11 +5209,9 @@ export default function Home() {
           </section>
         ) : null}
 
-        {(activeTab === "start" || activeTab === "manage") && authUser ? (
+        {activeTab === "start" && authUser ? (
           <section
-            className={`rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${
-              activeTab === "manage" ? "order-[40]" : "order-[30]"
-            }`}
+            className="order-[30] rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
           >
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -5249,8 +5289,8 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              {aiCsWorkSummaryItems.map((item) => (
+            <div className="grid gap-3 lg:grid-cols-3">
+              {aiCsTopSummaryItems.map((item) => (
                 <article
                   key={item.label}
                   className={`rounded-xl border p-4 ${item.className}`}
@@ -5271,6 +5311,40 @@ export default function Home() {
                 </article>
               ))}
             </div>
+
+            <details className="mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  자세한 지표 보기
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  자동 완료, 플랫폼 연동, 절약 시간, 안전장치 내역을 더 자세히
+                  확인합니다.
+                </span>
+              </summary>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {aiCsWorkSummaryItems.map((item) => (
+                  <article
+                    key={item.label}
+                    className={`rounded-xl border p-4 ${item.className}`}
+                  >
+                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                      {item.label}
+                    </p>
+                    <p
+                      className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight ${item.valueClassName}`}
+                    >
+                      {workflowSummaryLoading
+                        ? "—"
+                        : item.value.toLocaleString("ko-KR")}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+              </div>
 
             <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25 sm:p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -5398,6 +5472,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            </details>
 
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
