@@ -7480,15 +7480,12 @@ export default function Home() {
                 AI CS 처리함
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                AI가 답변 초안을 만들고, 각 항목이 바로 답변 가능한지 또는
-                사장님 확인이 필요한지 함께 판단합니다. 확인 필요한 정보,
-                주의 필요한 리뷰, 최근 문의와 리뷰 답글은 이곳에서 상태별로
-                관리할 수 있습니다.
+                AI가 만든 답변 초안을 상태별로 모아두는 업무함입니다. 먼저
+                확인할 항목부터 승인하거나 수정하세요.
               </p>
               <p className="mt-2 max-w-3xl text-xs leading-5 text-indigo-700 dark:text-indigo-300">
-                각 카드에서 AI 판단 이유와 답변 근거를 확인할 수 있고, 플랫폼
-                연동 후에는 배민, 요기요, 쿠팡이츠, 스마트스토어 문의와 리뷰를
-                함께 관리할 수 있습니다.
+                판단 이유, 답변 근거, 플랫폼 상태는 카드의 자세히 보기에서
+                확인할 수 있습니다.
                 <span className="mt-1 block">
                   플랫폼 연동 탭에서 불러온 샘플 데이터에는 ‘데모 데이터’ 배지가
                   표시됩니다.
@@ -7707,8 +7704,7 @@ export default function Home() {
                       const evidenceMessage = workflowEvidenceMessage(item);
                       const isWorkflowDetailExpanded =
                         Boolean(expandedWorkflowDetailKeys[item.key]) ||
-                        item.type === "missing_info" ||
-                        isEditing;
+                        item.type === "missing_info";
 
                       return (
                         <article
@@ -7733,13 +7729,6 @@ export default function Home() {
                                 </span>
                               ) : null}
                               <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${platformStatusBadgeClass(
-                                  item.platformStatus,
-                                )}`}
-                              >
-                                {platformStatusLabel(item.platformStatus)}
-                              </span>
-                              <span
                                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(
                                   item.status,
                                 )}`}
@@ -7761,13 +7750,32 @@ export default function Home() {
                                 위험도: {riskLevelLabel(item.riskLevel)}
                               </span>
                             </div>
-                            <time
-                              dateTime={item.createdAt}
-                              className="text-xs text-zinc-500 dark:text-zinc-400"
-                            >
-                              {formatDate(item.createdAt)}
-                            </time>
                           </div>
+
+                          {item.type !== "missing_info" ? (
+                            <div className="mb-3 space-y-2">
+                              {item.handlingType === "auto_ready" &&
+                              !isCompleted ? (
+                                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                  AI가 바로 답변 가능하다고 판단했습니다.
+                                </p>
+                              ) : null}
+
+                              {isAutoCompleted ? (
+                                <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
+                                  AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
+                                  자동 완료 처리했습니다.
+                                </p>
+                              ) : null}
+
+                              {needsAttention ? (
+                                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                                  사장님 확인이 필요한 항목입니다. 답변 내용과 정책을
+                                  한 번 더 확인해 주세요.
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
 
                           <div className="space-y-3 text-sm">
                             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
@@ -7936,19 +7944,13 @@ export default function Home() {
                               aria-expanded={isWorkflowDetailExpanded}
                             >
                               {isWorkflowDetailExpanded
-                                ? "상세 접기"
-                                : "AI 판단·근거 보기"}
+                                ? "자세히 접기"
+                                : "자세히 보기"}
                             </button>
                           ) : null}
 
                           {isWorkflowDetailExpanded ? (
                             <div className="mt-3 space-y-3">
-                              {item.handlingType === "auto_ready" ? (
-                                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
-                                  AI가 바로 답변 가능하다고 판단했습니다.
-                                </p>
-                              ) : null}
-
                               {item.aiReason ? (
                                 <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
                                   <p className="font-semibold">AI 판단 이유</p>
@@ -8008,17 +8010,29 @@ export default function Home() {
                                             )}
                                           </p>
                                         </li>
-                                      ))}
+                                    ))}
                                   </ul>
                                 ) : null}
                               </div>
 
-                              {isAutoCompleted ? (
-                                <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
-                                  AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
-                                  자동 완료 처리했습니다.
+                              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                                <p>
+                                  생성 시간:{" "}
+                                  <time dateTime={item.createdAt}>
+                                    {formatDate(item.createdAt)}
+                                  </time>
                                 </p>
-                              ) : null}
+                                <p className="mt-1">
+                                  플랫폼 상태:{" "}
+                                  <span
+                                    className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${platformStatusBadgeClass(
+                                      item.platformStatus,
+                                    )}`}
+                                  >
+                                    {platformStatusLabel(item.platformStatus)}
+                                  </span>
+                                </p>
+                              </div>
 
                               {isDemoData ? (
                                 <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
@@ -8035,12 +8049,6 @@ export default function Home() {
                                   승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
                                   실제 플랫폼 API 등록은 연동 단계에서 연결될
                                   예정입니다.
-                                </p>
-                              ) : null}
-
-                              {needsAttention ? (
-                                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                                  사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요.
                                 </p>
                               ) : null}
                             </div>
