@@ -6,6 +6,7 @@ type PostBody = {
   category?: unknown;
   sourceId?: unknown;
   sourceText?: unknown;
+  status?: unknown;
 };
 
 const allowedCategories = new Set([
@@ -19,6 +20,8 @@ const allowedCategories = new Set([
   "product",
   "general",
 ]);
+
+const allowedStatuses = new Set(["active", "needs_review", "archived"]);
 
 const storeKnowledgeStatusSql =
   "alter table store_knowledge_items add column if not exists status text not null default 'active';";
@@ -39,6 +42,14 @@ function normalizeCategory(value: unknown) {
   const category = value.trim();
 
   return allowedCategories.has(category) ? category : "general";
+}
+
+function normalizeStatus(value: unknown) {
+  if (typeof value !== "string") return "active";
+
+  const status = value.trim();
+
+  return allowedStatuses.has(status) ? status : "active";
 }
 
 export async function GET(request: Request) {
@@ -156,6 +167,7 @@ export async function POST(request: Request) {
     typeof body.sourceText === "string" && body.sourceText.trim()
       ? body.sourceText.trim()
       : null;
+  const status = normalizeStatus(body.status);
 
   const query = auth.supabase
     .from("store_knowledge_items")
@@ -169,7 +181,7 @@ export async function POST(request: Request) {
       source_id: sourceId,
       source_text: sourceText,
       confidence: "owner_confirmed",
-      status: "active",
+      status,
       created_at: now,
       updated_at: now,
     })
@@ -181,6 +193,18 @@ export async function POST(request: Request) {
 
   if (isMissingStatusColumnError(error)) {
     warnMissingStatusColumn();
+
+    if (status !== "active") {
+      return Response.json(
+        {
+          error:
+            "Store knowledge status column is missing. Run the required SQL before saving review-needed knowledge.",
+          detail: storeKnowledgeStatusSql,
+        },
+        { status: 500 },
+      );
+    }
+
     const fallback = await auth.supabase
       .from("store_knowledge_items")
       .insert({
@@ -201,7 +225,7 @@ export async function POST(request: Request) {
       )
       .maybeSingle();
 
-    data = fallback.data ? { ...fallback.data, status: "active" } : null;
+    data = fallback.data ? { ...fallback.data, status } : null;
     error = fallback.error;
   }
 

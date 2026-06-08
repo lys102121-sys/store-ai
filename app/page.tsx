@@ -206,6 +206,7 @@ type StoreKnowledgeCreateInput = {
   category: string;
   sourceId?: string;
   sourceText?: string;
+  status?: "active" | "needs_review" | "archived";
 };
 
 type ResolveMissingInfoResponse = {
@@ -3434,7 +3435,7 @@ export default function Home() {
     if (!hasMeaningfulReplyCorrection(item.reply, trimmedReply)) return;
 
     const shouldSave = window.confirm(
-      "수정한 답변이 기존 AI 답변과 많이 달라졌습니다. 이 내용을 가게 지식으로 저장해서 다음 비슷한 문의에 반영할까요?",
+      "수정한 답변이 기존 AI 답변과 많이 달라졌습니다. 이 내용을 검토 필요 학습 후보로 저장할까요?",
     );
 
     if (!shouldSave) return;
@@ -3449,6 +3450,7 @@ export default function Home() {
         `AI 기존 답변: ${item.reply}`,
         `사장님 수정 답변: ${trimmedReply}`,
       ].join("\n\n"),
+      status: "needs_review",
     });
 
     const suspectKnowledgeReviewResult =
@@ -3475,9 +3477,8 @@ export default function Home() {
           )}개는 검토 필요로 표시하지 못했습니다.`
         : "";
 
-    let nextStoreKnowledgeItem = knowledgeItem;
     const nextStoreKnowledgeItems = [
-      nextStoreKnowledgeItem,
+      knowledgeItem,
       ...currentStoreKnowledgeItems,
     ];
     const nextQualityReport = buildStoreKnowledgeQualityReport(
@@ -3487,62 +3488,19 @@ export default function Home() {
       nextQualityReport.byId[knowledgeItem.id] ??
       createEmptyStoreKnowledgeQuality();
 
-    if (newItemQuality.conflictCount > 0) {
-      try {
-        const response = await fetch(
-          `/api/store-knowledge/${knowledgeItem.id}`,
-          {
-            method: "PATCH",
-            headers: await getAuthenticatedRequestHeaders({
-              "Content-Type": "application/json",
-            }),
-            body: JSON.stringify({ status: "needs_review" }),
-          },
-        );
-        const data = (await response.json()) as StoreKnowledgeMutationResponse;
-
-        if (response.ok && data.knowledgeItem) {
-          nextStoreKnowledgeItem = data.knowledgeItem;
-        } else {
-          nextStoreKnowledgeItem = {
-            ...knowledgeItem,
-            status: "needs_review",
-          };
-        }
-      } catch {
-        nextStoreKnowledgeItem = {
-          ...knowledgeItem,
-          status: "needs_review",
-        };
-      }
-
-      setStoreKnowledgeItems([
-        nextStoreKnowledgeItem,
-        ...currentStoreKnowledgeItems,
-      ]);
-      setStoreKnowledgeMessage(
-        `수정한 답변을 가게 지식으로 저장했습니다. 다만 기존 지식과 충돌 가능성이 있어 검토 필요로 표시했습니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
-      );
-      setSelectedStoreKnowledgeStatus("needs_review");
-      setIsStoreKnowledgePanelOpen(true);
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
-      });
-      return;
-    }
-
     setStoreKnowledgeItems(nextStoreKnowledgeItems);
     setStoreKnowledgeMessage(
-      `수정한 답변을 가게 지식으로 저장했습니다. 다음 비슷한 문의에 참고됩니다.${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
+      `수정한 답변을 검토 필요 학습 후보로 저장했습니다. 내용을 확인한 뒤 다시 사용으로 바꾸면 다음 비슷한 문의에 참고됩니다.${
+        newItemQuality.conflictCount > 0
+          ? " 기존 지식과 충돌 가능성도 함께 표시했습니다."
+          : ""
+      }${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
     );
-
-    if (suspectKnowledgeReviewResult.reviewedItems.length > 0) {
-      setSelectedStoreKnowledgeStatus("needs_review");
-      setIsStoreKnowledgePanelOpen(true);
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
-      });
-    }
+    setSelectedStoreKnowledgeStatus("needs_review");
+    setIsStoreKnowledgePanelOpen(true);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
+    });
   }
 
   async function handleUpdateWorkflowItem(
