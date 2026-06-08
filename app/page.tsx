@@ -430,11 +430,15 @@ function EmptyStateCard({
   description,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: {
   title: string;
   description: string;
   actionLabel: string;
   onAction: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 }) {
   return (
     <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
@@ -447,10 +451,19 @@ function EmptyStateCard({
       <button
         type="button"
         onClick={onAction}
-        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
         {actionLabel}
       </button>
+      {secondaryActionLabel && onSecondaryAction ? (
+        <button
+          type="button"
+          onClick={onSecondaryAction}
+          className="mt-4 ml-2 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        >
+          {secondaryActionLabel}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -4218,21 +4231,99 @@ export default function Home() {
     needs_review: {
       title: "현재 확인이 필요한 항목이 없습니다",
       description:
-        "AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다.",
+        "AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다. 지금은 샘플 데이터나 첫 문의로 처리함 흐름을 만들어볼 수 있어요.",
     },
     pending: {
       title: "현재 승인 대기 중인 답변이 없습니다",
-      description: "AI가 새 답변 초안을 만들면 이곳에서 확인할 수 있습니다.",
+      description:
+        "AI가 새 답변 초안을 만들면 이곳에서 확인할 수 있습니다. 고객 문의를 하나 입력하거나 샘플 데이터를 불러와 테스트해보세요.",
     },
     completed: {
       title: "아직 답변 완료된 항목이 없습니다",
-      description: "승인 완료한 답변이 이곳에 쌓입니다.",
+      description:
+        "승인 완료한 답변이 이곳에 쌓입니다. 승인 대기 항목이 있다면 먼저 승인해보세요.",
     },
     answered: {
       title: "아직 답변 완료된 항목이 없습니다",
-      description: "승인 완료한 답변이 이곳에 쌓입니다.",
+      description:
+        "승인 완료한 답변이 이곳에 쌓입니다. 승인 대기 항목이 있다면 먼저 승인해보세요.",
     },
   }[selectedWorkflowColumn.status];
+  const openWorkflowStatus = (status: WorkflowStatus) => {
+    setSelectedWorkflowStatus(status);
+    setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+    setEditingWorkflowKey(null);
+    setEditingWorkflowReply("");
+    setWorkflowBulkApprovalResult(null);
+  };
+  const selectedWorkflowEmptyAction =
+    !authUser
+      ? {
+          actionLabel: "카카오로 로그인",
+          onAction: () => void handleKakaoLogin(),
+          secondaryActionLabel: undefined,
+          onSecondaryAction: undefined,
+        }
+      : !hasStore
+      ? {
+          actionLabel: "가게 정보 입력하기",
+          onAction: () => goToTabSection("store", "store-info"),
+          secondaryActionLabel: undefined,
+          onSecondaryAction: undefined,
+        }
+      : selectedWorkflowColumn.status === "needs_review"
+        ? workflowPendingItems.length > 0
+          ? {
+              actionLabel: "승인 대기 보기",
+              onAction: () => openWorkflowStatus("pending"),
+              secondaryActionLabel: "샘플 데이터로 체험",
+              onSecondaryAction: () =>
+                goToTabSection("integrations", "platform-integrations"),
+            }
+          : {
+              actionLabel: "샘플 데이터로 체험",
+              onAction: () =>
+                goToTabSection("integrations", "platform-integrations"),
+              secondaryActionLabel: "문의 답변 테스트",
+              onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
+            }
+        : selectedWorkflowColumn.status === "pending"
+          ? workflowNeedsReviewItems.length > 0
+            ? {
+                actionLabel: "확인 필요 보기",
+                onAction: () => openWorkflowStatus("needs_review"),
+                secondaryActionLabel: "문의 답변 테스트",
+                onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
+              }
+            : {
+                actionLabel: "문의 답변 테스트",
+                onAction: () => goToTabSection("answer", "cs-reply"),
+                secondaryActionLabel: "샘플 데이터로 체험",
+                onSecondaryAction: () =>
+                  goToTabSection("integrations", "platform-integrations"),
+              }
+          : workflowPendingItems.length > 0
+            ? {
+                actionLabel: "승인 대기 보기",
+                onAction: () => openWorkflowStatus("pending"),
+                secondaryActionLabel: "문의 답변 테스트",
+                onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
+              }
+            : workflowNeedsReviewItems.length > 0
+              ? {
+                  actionLabel: "확인 필요 보기",
+                  onAction: () => openWorkflowStatus("needs_review"),
+                  secondaryActionLabel: "샘플 데이터로 체험",
+                  onSecondaryAction: () =>
+                    goToTabSection("integrations", "platform-integrations"),
+                }
+              : {
+                  actionLabel: "샘플 데이터로 체험",
+                  onAction: () =>
+                    goToTabSection("integrations", "platform-integrations"),
+                  secondaryActionLabel: "문의 답변 테스트",
+                  onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
+                };
 
   const operationSummaryItems = [
     {
@@ -7903,18 +7994,12 @@ export default function Home() {
             <EmptyStateCard
               title={selectedWorkflowEmptyState.title}
               description={selectedWorkflowEmptyState.description}
-              actionLabel={
-                selectedWorkflowColumn.status === "pending"
-                  ? "답변 작성하기"
-                  : selectedWorkflowColumn.status === "needs_review"
-                    ? "확인 필요 정보 보기"
-                    : "문의 답변 작성하기"
+              actionLabel={selectedWorkflowEmptyAction.actionLabel}
+              onAction={selectedWorkflowEmptyAction.onAction}
+              secondaryActionLabel={
+                selectedWorkflowEmptyAction.secondaryActionLabel
               }
-              onAction={() =>
-                selectedWorkflowColumn.status === "needs_review"
-                  ? goToTabSection("store", "store-info")
-                  : goToTabSection("answer", "cs-reply")
-              }
+              onSecondaryAction={selectedWorkflowEmptyAction.onSecondaryAction}
             />
           ) : (
             <div className="space-y-4">
