@@ -1,3 +1,4 @@
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 type PostBody = {
@@ -234,6 +235,24 @@ export async function POST(request: Request) {
       { error: "Failed to save store knowledge.", detail: error.message },
       { status: 500 },
     );
+  }
+
+  if (data && status === "needs_review") {
+    await recordAiActivityLog(auth.supabase, {
+      userId: auth.userId,
+      eventType: "store_knowledge_candidate_created",
+      title: "수정 답변을 학습 후보로 저장",
+      description:
+        "사장님이 수정한 답변을 바로 적용하지 않고 검토 필요 지식으로 저장했습니다.",
+      relatedType: "store_knowledge",
+      relatedId: data.id,
+      status: "needs_review",
+      sourcePlatform: "manual",
+      metadata: {
+        category: data.category,
+        sourceId,
+      },
+    });
   }
 
   return Response.json({ knowledgeItem: data });

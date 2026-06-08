@@ -754,6 +754,13 @@ function aiActivityRiskLabel(value?: string | null) {
   return value;
 }
 
+function isStoreKnowledgeCandidateLog(log: AiActivityLogItem) {
+  return (
+    log.event_type === "store_knowledge_candidate_created" ||
+    (log.related_type === "store_knowledge" && log.status === "needs_review")
+  );
+}
+
 function isDemoExternalId(value?: string | null) {
   return value?.startsWith("mock-") ?? false;
 }
@@ -4499,10 +4506,14 @@ export default function Home() {
       log.risk_level === "high",
   );
   const todayLearningActivityCount = todayAiActivityLogs.filter(
-    (log) => log.event_type === "missing_info_resolved",
+    (log) =>
+      log.event_type === "missing_info_resolved" ||
+      log.event_type === "store_knowledge_candidate_created",
   ).length;
   const todayOwnerInterventionLogs = todayAiActivityLogs.filter((log) =>
-    /edited|completed|marked_needs_review|resolved/.test(log.event_type),
+    /edited|completed|marked_needs_review|resolved|candidate_created/.test(
+      log.event_type,
+    ),
   );
   const aiStaffDiarySummaryItems = [
     {
@@ -4785,6 +4796,16 @@ export default function Home() {
         window.requestAnimationFrame(() => scrollToSection(targetId));
       });
     }
+  }
+
+  function openStoreKnowledgeReviewCandidates() {
+    setActiveTab("manage");
+    setSelectedStoreKnowledgeStatus("needs_review");
+    setIsStoreKnowledgePanelOpen(true);
+    void loadStoreKnowledge();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
+    });
   }
 
   async function handleKakaoLogin() {
@@ -6015,9 +6036,24 @@ export default function Home() {
                               <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                                 {truncateSummaryText(log.title, 58)}
                               </p>
+                              {isStoreKnowledgeCandidateLog(log) ? (
+                                <p className="mt-1 text-emerald-700 dark:text-emerald-300">
+                                  확인하면 다음 비슷한 문의에 사용할 수 있는 학습
+                                  후보입니다.
+                                </p>
+                              ) : null}
                               <p className="mt-1 text-zinc-500 dark:text-zinc-400">
                                 {formatDate(log.created_at)}
                               </p>
+                              {isStoreKnowledgeCandidateLog(log) ? (
+                                <button
+                                  type="button"
+                                  onClick={openStoreKnowledgeReviewCandidates}
+                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                >
+                                  검토 필요 지식 보기
+                                </button>
+                              ) : null}
                             </li>
                           ))}
                         </ul>
@@ -6079,6 +6115,21 @@ export default function Home() {
                                 </span>
                               ) : null}
                             </div>
+                            {isStoreKnowledgeCandidateLog(log) ? (
+                              <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                                <p>
+                                  이 후보를 확인해 다시 사용으로 바꾸면 AI가 다음
+                                  비슷한 문의에 참고합니다.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={openStoreKnowledgeReviewCandidates}
+                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                >
+                                  검토 필요 지식 보기
+                                </button>
+                              </div>
+                            ) : null}
                           </li>
                         ))}
                       </ol>
