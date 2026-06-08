@@ -1387,19 +1387,19 @@ function hasStoreDraftContent(draft: StoreDraft) {
 }
 
 const kpiCardClass =
-  "rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition dark:border-zinc-800 dark:bg-zinc-900";
+  "rounded-[1.35rem] border border-white/70 bg-white/85 p-5 shadow-[0_22px_70px_-42px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10";
 
 const cardClass =
-  "rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8";
+  "rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10 sm:p-8";
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-zinc-300 bg-white px-4 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
+  "h-11 w-full rounded-xl border border-slate-200 bg-white/90 px-4 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
 
 const textareaClass =
-  "min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950";
+  "min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
 
 const copyButtonClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-slate-900";
 
 const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
@@ -5644,17 +5644,28 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-              Supabase Auth
-            </p>
+    <div className="relative min-h-screen overflow-hidden bg-[#f7f8ff] px-4 py-8 text-slate-950 dark:bg-[#070817] dark:text-slate-100 sm:py-10">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-24 top-[-10rem] h-80 w-80 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-600/25" />
+        <div className="absolute right-[-8rem] top-20 h-96 w-96 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/15" />
+        <div className="absolute bottom-[-12rem] left-1/3 h-96 w-96 rounded-full bg-fuchsia-200/45 blur-3xl dark:bg-fuchsia-600/15" />
+        <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0))] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.7),rgba(15,23,42,0))]" />
+      </div>
+
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <section className="rounded-[1.75rem] border border-white/70 bg-white/80 p-4 shadow-[0_24px_90px_-55px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-400 text-sm font-black text-white shadow-lg shadow-indigo-500/20">
+              AI
+            </div>
+            <div>
+              <p className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-200 dark:ring-indigo-900/70">
+                Store AI CS
+              </p>
             {authUser ? (
               <div className="mt-2">
                 <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  로그인됨
+                  AI CS 직원이 대기 중입니다
                 </h2>
                 <p className="mt-1 break-all text-sm text-zinc-600 dark:text-zinc-300">
                   {authUser.email ?? authUser.id}
@@ -5663,7 +5674,7 @@ export default function Home() {
             ) : (
               <div className="mt-2">
                 <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  로그인
+                  내 가게 전용 AI CS 직원을 시작하세요
                 </h2>
                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
                   로그인하면 내 가게 데이터로 분리됩니다
@@ -5675,6 +5686,7 @@ export default function Home() {
                 {authError}
               </p>
             ) : null}
+            </div>
           </div>
 
           <div className="mt-4 sm:mt-0">
@@ -5683,7 +5695,7 @@ export default function Home() {
                 type="button"
                 onClick={() => void handleLogout()}
                 disabled={authLoading || authActionLoading}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
               >
                 {authActionLoading ? "처리 중..." : "로그아웃"}
               </button>
@@ -5692,7 +5704,7 @@ export default function Home() {
                 type="button"
                 onClick={() => void handleKakaoLogin()}
                 disabled={authLoading || authActionLoading}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-yellow-400 px-5 text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-yellow-300 to-amber-300 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-300/30 transition hover:-translate-y-0.5 hover:shadow-amber-300/50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
               >
                 {authActionLoading ? "연결 중..." : "카카오로 로그인"}
               </button>
@@ -5700,15 +5712,18 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/25 sm:flex sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-sm leading-6 text-sky-950 dark:text-sky-100">
+        <section className="rounded-[1.5rem] border border-cyan-200/70 bg-cyan-50/70 p-4 shadow-sm ring-1 ring-white/70 backdrop-blur-xl dark:border-cyan-900/40 dark:bg-cyan-950/20 dark:ring-white/10 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-sm leading-6 text-slate-700 dark:text-cyan-50">
+            <span className="mr-2 inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-800 ring-1 ring-cyan-200 dark:bg-cyan-950 dark:text-cyan-200 dark:ring-cyan-800">
+              Beta
+            </span>
             현재는 생성된 답변을 복사해 배민, 스마트스토어, 네이버 등 실제
             플랫폼에 붙여넣어 사용하는 베타 버전입니다. 답변 품질과 정보 학습
             기능을 먼저 검증 중이며, 이후 플랫폼 연동 기능을 준비할 예정입니다.
           </p>
           <a
             href={betaFeedbackHref}
-            className="mt-3 inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-sky-300 bg-white px-3 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 dark:border-sky-800 dark:bg-zinc-950 dark:text-sky-200 dark:hover:bg-sky-950/60 sm:mt-0"
+            className="mt-3 inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-cyan-200 bg-white/85 px-4 text-xs font-bold text-cyan-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white dark:border-cyan-800 dark:bg-slate-950/80 dark:text-cyan-200 dark:hover:bg-cyan-950/70 sm:mt-0"
           >
             피드백 남기기
           </a>
@@ -5716,7 +5731,7 @@ export default function Home() {
 
         <nav
           aria-label="대시보드 탭"
-          className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+          className="sticky top-4 z-20 rounded-[1.4rem] border border-white/75 bg-white/80 p-2 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10"
         >
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {dashboardTabs.map((tab) => {
@@ -5727,10 +5742,10 @@ export default function Home() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                  className={`rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                     isSelected
-                      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-950"
-                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                      ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/25"
+                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                   }`}
                   aria-pressed={isSelected}
                 >
@@ -5755,47 +5770,64 @@ export default function Home() {
         ) : null}
 
         <section
-          className={`overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${
+          className={`overflow-hidden rounded-[2rem] border border-white/75 bg-white/90 shadow-[0_35px_120px_-65px_rgba(15,23,42,0.75)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10 ${
             activeTab === "start" ? "order-[10]" : "hidden"
           }`}
         >
-          <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <div>
-              <p className="mb-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+          <div className="relative grid gap-6 overflow-hidden p-6 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-200/60 blur-3xl dark:bg-indigo-600/20" />
+            <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-cyan-200/60 blur-3xl dark:bg-cyan-500/15" />
+            <div className="relative">
+              <p className="mb-4 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-200 dark:ring-indigo-900">
                 AI 운영 도우미
               </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-3xl">
-                소상공인을 위한 AI 리뷰·문의 응대 도우미
+              <h1 className="max-w-3xl text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+                사장님 대신 밤에도 일하는
+                <span className="block bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                  AI CS 직원
+                </span>
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
                 가게 정보와 운영 정책을 등록하면, AI가 리뷰 답글과 고객
                 문의 답변을 우리 가게 말투에 맞춰 작성해드립니다. 부족한
                 정보는 AI가 사장님에게 질문하고, 답변을 학습해 다음 응대에
                 반영합니다.
               </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {["문의·리뷰 통합 처리", "위험도 판단", "사장님 말투 학습"].map(
+                  (label) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                    >
+                      {label}
+                    </span>
+                  ),
+                )}
+              </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => goToTabSection("store", "store-info")}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:shadow-indigo-500/40"
                 >
                   가게 정보 등록하기
                 </button>
                 <button
                   type="button"
                   onClick={() => goToTabSection("answer", "cs-reply")}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-5 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
                 >
                   문의 답변 써보기
                 </button>
               </div>
             </div>
 
-            <div className="grid gap-3">
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+            <div className="relative grid gap-3">
+              <div className="rounded-[1.35rem] border border-white/75 bg-white/80 p-4 shadow-[0_24px_70px_-45px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
                       처음 시작 체크리스트
                     </p>
                     <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
@@ -5803,13 +5835,13 @@ export default function Home() {
                       완료
                     </p>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-zinc-950 dark:text-emerald-300 dark:ring-emerald-900">
+                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950 dark:text-indigo-200 dark:ring-indigo-900">
                     {startGuideProgressPercent}%
                   </span>
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950">
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
-                    className="h-full rounded-full bg-emerald-600 transition-all dark:bg-emerald-400"
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400 transition-all"
                     style={{ width: `${startGuideProgressPercent}%` }}
                   />
                 </div>
