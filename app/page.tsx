@@ -1646,6 +1646,7 @@ export default function Home() {
     useState("");
   const [storeError, setStoreError] = useState("");
   const [storeExampleMessage, setStoreExampleMessage] = useState("");
+  const [storeSuccessMessage, setStoreSuccessMessage] = useState("");
   const [isExamplePickerOpen, setIsExamplePickerOpen] = useState(false);
   const [storeSaving, setStoreSaving] = useState(false);
   const [hasStore, setHasStore] = useState(false);
@@ -2645,6 +2646,7 @@ export default function Home() {
     setAiWorkStartTime("09:00");
     setAiWorkEndTime("22:00");
     setStoreError("");
+    setStoreSuccessMessage("");
     setStoreExampleMessage(
       "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
     );
@@ -2667,6 +2669,7 @@ export default function Home() {
 
     setStoreSaving(true);
     setStoreError("");
+    setStoreSuccessMessage("");
 
     try {
       const response = await fetch("/api/store", {
@@ -2705,7 +2708,9 @@ export default function Home() {
       setHasStore(true);
       removeStoreDraft(authUser.id);
       setStoreExampleMessage("");
-      alert("저장되었습니다.");
+      setStoreSuccessMessage(
+        "가게 정보가 저장되었습니다. 이제 샘플 문의나 실제 고객 문의로 AI 답변을 테스트해보세요.",
+      );
     } catch {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -5888,6 +5893,22 @@ export default function Home() {
           </div>
 
           <form onSubmit={handleStoreSubmit} className="space-y-5">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  먼저 입력
+                </p>
+                <h3 className="mt-1 text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                  처음 답변 테스트에 필요한 핵심 정보
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                  가게명만 있어도 저장할 수 있지만, 업종과 대표 상품까지
+                  넣으면 첫 AI 답변 테스트가 훨씬 자연스러워집니다.
+                  정책과 말투 학습은 나중에 보강해도 괜찮아요.
+                </p>
+              </div>
+
+              <div className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="store_name" className="text-sm font-medium">
                 가게명
@@ -5952,115 +5973,6 @@ export default function Home() {
                 </div>
               </details>
             </div>
-
-            <details className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
-              <summary className="cursor-pointer list-none">
-                <span className="block text-sm font-semibold text-violet-950 dark:text-violet-100">
-                  AI 자동 처리 설정
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
-                  낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
-                  처음에는 나중에 설정해도 괜찮아요.
-                </span>
-              </summary>
-              <div className="space-y-4">
-                <div className="mt-4">
-                  <h3 className="text-sm font-semibold text-violet-950 dark:text-violet-100">
-                    자동 처리 범위
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
-                    AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
-                    긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
-                    모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-violet-100 bg-white p-3 dark:border-violet-900/60 dark:bg-zinc-950">
-                  <label
-                    htmlFor="ai_work_mode"
-                    className="text-sm font-medium text-zinc-900 dark:text-zinc-100"
-                  >
-                    AI 근무 모드
-                  </label>
-                  <select
-                    id="ai_work_mode"
-                    value={aiWorkMode}
-                    onChange={(event) =>
-                      setAiWorkMode(normalizeAiWorkMode(event.target.value))
-                    }
-                    className={`${inputClass} mt-2`}
-                  >
-                    <option value="approval_only">
-                      항상 승인 대기로 모으기
-                    </option>
-                    <option value="safe_auto">
-                      안전 항목은 항상 자동 완료
-                    </option>
-                    <option value="after_hours_conservative">
-                      영업시간 안에서만 자동 완료
-                    </option>
-                  </select>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    고위험, 정보 부족, 승인 필수 항목은 어떤 모드에서도 자동
-                    완료하지 않습니다.
-                  </p>
-
-                  {aiWorkMode === "after_hours_conservative" ? (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                        자동 근무 시작
-                        <input
-                          type="time"
-                          value={aiWorkStartTime}
-                          onChange={(event) =>
-                            setAiWorkStartTime(event.target.value)
-                          }
-                          className={inputClass}
-                        />
-                      </label>
-                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                        자동 근무 종료
-                        <input
-                          type="time"
-                          value={aiWorkEndTime}
-                          onChange={(event) =>
-                            setAiWorkEndTime(event.target.value)
-                          }
-                          className={inputClass}
-                        />
-                      </label>
-                    </div>
-                  ) : null}
-                </div>
-
-                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
-                  <input
-                    type="checkbox"
-                    checked={autoCompleteLowRiskCs}
-                    onChange={(event) =>
-                      setAutoCompleteLowRiskCs(event.target.checked)
-                    }
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
-                  />
-                  <span>
-                    위험도 낮고 바로 답변 가능한 고객 문의는 자동으로 답변 완료
-                    처리
-                  </span>
-                </label>
-
-                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
-                  <input
-                    type="checkbox"
-                    checked={autoCompletePositiveReviews}
-                    onChange={(event) =>
-                      setAutoCompletePositiveReviews(event.target.checked)
-                    }
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
-                  />
-                  <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
-                </label>
-              </div>
-            </details>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div className="mb-4">
@@ -6179,6 +6091,117 @@ export default function Home() {
                 </details>
               </div>
             </div>
+              </div>
+            </div>
+
+            <details className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-violet-950 dark:text-violet-100">
+                  AI 자동 처리 설정
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                  낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
+                  처음에는 나중에 설정해도 괜찮아요.
+                </span>
+              </summary>
+              <div className="space-y-4">
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-violet-950 dark:text-violet-100">
+                    자동 처리 범위
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                    AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
+                    긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
+                    모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-violet-100 bg-white p-3 dark:border-violet-900/60 dark:bg-zinc-950">
+                  <label
+                    htmlFor="ai_work_mode"
+                    className="text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                  >
+                    AI 근무 모드
+                  </label>
+                  <select
+                    id="ai_work_mode"
+                    value={aiWorkMode}
+                    onChange={(event) =>
+                      setAiWorkMode(normalizeAiWorkMode(event.target.value))
+                    }
+                    className={`${inputClass} mt-2`}
+                  >
+                    <option value="approval_only">
+                      항상 승인 대기로 모으기
+                    </option>
+                    <option value="safe_auto">
+                      안전 항목은 항상 자동 완료
+                    </option>
+                    <option value="after_hours_conservative">
+                      영업시간 안에서만 자동 완료
+                    </option>
+                  </select>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    고위험, 정보 부족, 승인 필수 항목은 어떤 모드에서도 자동
+                    완료하지 않습니다.
+                  </p>
+
+                  {aiWorkMode === "after_hours_conservative" ? (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        자동 근무 시작
+                        <input
+                          type="time"
+                          value={aiWorkStartTime}
+                          onChange={(event) =>
+                            setAiWorkStartTime(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        자동 근무 종료
+                        <input
+                          type="time"
+                          value={aiWorkEndTime}
+                          onChange={(event) =>
+                            setAiWorkEndTime(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+
+                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                  <input
+                    type="checkbox"
+                    checked={autoCompleteLowRiskCs}
+                    onChange={(event) =>
+                      setAutoCompleteLowRiskCs(event.target.checked)
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                  />
+                  <span>
+                    위험도 낮고 바로 답변 가능한 고객 문의는 자동으로 답변 완료
+                    처리
+                  </span>
+                </label>
+
+                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                  <input
+                    type="checkbox"
+                    checked={autoCompletePositiveReviews}
+                    onChange={(event) =>
+                      setAutoCompletePositiveReviews(event.target.checked)
+                    }
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                  />
+                  <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
+                </label>
+              </div>
+            </details>
 
             <details className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
               <summary className="cursor-pointer list-none">
@@ -6805,6 +6828,33 @@ export default function Home() {
               {storeSaving ? "저장 중..." : "가게 정보 저장"}
             </button>
           </form>
+
+          {storeSuccessMessage ? (
+            <div
+              className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200"
+              role="status"
+            >
+              <p className="font-semibold">{storeSuccessMessage}</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => goToTabSection("answer", "cs-reply")}
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                >
+                  문의 답변 테스트하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    goToTabSection("integrations", "platform-integrations")
+                  }
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-200 dark:hover:bg-emerald-950/70"
+                >
+                  샘플 데이터로 체험하기
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {storeError ? (
             <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
