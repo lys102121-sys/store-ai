@@ -4336,33 +4336,72 @@ export default function Home() {
   const policyOptionButtonClass =
     "rounded-lg border px-3 py-2 text-xs font-medium transition";
 
+  const onboardingWorkflowItems = workflowSummaryItems.filter(
+    (item) => item.type !== "missing_info",
+  );
+  const onboardingPendingWorkflowItems = onboardingWorkflowItems.filter(
+    (item) => item.status === "pending",
+  );
+  const hasOnboardingWorkflowItem =
+    onboardingWorkflowItems.length > 0 || pendingMissingInfoCount > 0;
+  const hasOnboardingCompletedItem = onboardingWorkflowItems.some(
+    (item) => item.status === "completed" || item.status === "answered",
+  );
+
   const startGuideItems = [
     {
-      step: "1단계",
-      title: hasStore ? "가게 정보 확인" : "가게 정보 준비",
-      description: hasStore
-        ? "등록된 가게 정보와 정책을 확인하고, 필요한 정보만 보강합니다."
-        : "예시 데이터로 먼저 체험하거나, 우리 가게 정보를 직접 입력합니다.",
-      actionLabel: hasStore ? "가게 설정 보기" : "가게 정보 입력하기",
+      id: "login",
+      step: "1",
+      title: "로그인",
+      description: "가게 정보, 답변 기록, 학습 지식을 내 계정에 저장합니다.",
+      isComplete: Boolean(authUser),
+      actionLabel: "카카오로 로그인",
+      onAction: () => void handleKakaoLogin(),
+    },
+    {
+      id: "store",
+      step: "2",
+      title: "가게 정보 저장",
+      description: "가게명, 업종, 대표 상품만 입력해도 먼저 시작할 수 있습니다.",
+      isComplete: Boolean(authUser && hasStore),
+      actionLabel: hasStore ? "가게 설정 확인" : "가게 정보 입력",
       onAction: () => goToTabSection("store", "store-info"),
     },
     {
-      step: "2단계",
-      title: "답변 생성 테스트",
+      id: "sample",
+      step: "3",
+      title: "샘플이나 첫 문의 넣어보기",
       description:
-        "고객 문의나 리뷰를 넣어보고 AI가 어떤 초안을 만드는지 확인합니다.",
-      actionLabel: "답변 작성하기",
-      onAction: () => goToTabSection("answer", "cs-reply"),
+        "샘플 데이터 또는 실제 문의로 AI가 초안을 만드는 흐름을 확인합니다.",
+      isComplete: hasOnboardingWorkflowItem,
+      actionLabel: "샘플로 체험",
+      onAction: () => goToTabSection("integrations", "platform-integrations"),
     },
     {
-      step: "3단계",
-      title: "AI CS 처리함 확인",
+      id: "complete",
+      step: "4",
+      title: "첫 답변 처리 완료",
       description:
-        "승인 대기, 확인 필요, 답변 완료 상태를 보며 실제 CS 업무처럼 관리합니다.",
-      actionLabel: "처리함 보기",
-      onAction: () => goToTabSection("manage", "ai-cs-inbox"),
+        "승인하거나 수정해 답변 하나가 완료되는 과정을 확인합니다.",
+      isComplete: hasOnboardingCompletedItem,
+      actionLabel: "처리함에서 확인",
+      onAction: () => {
+        setSelectedWorkflowStatus(
+          pendingMissingInfoCount > 0 ? "needs_review" : "pending",
+        );
+        goToTabSection("manage", "ai-cs-inbox");
+      },
     },
   ];
+  const completedStartGuideCount = startGuideItems.filter(
+    (item) => item.isComplete,
+  ).length;
+  const startGuideProgressPercent = Math.round(
+    (completedStartGuideCount / startGuideItems.length) * 100,
+  );
+  const nextStartGuideItem =
+    startGuideItems.find((item) => !item.isComplete) ??
+    startGuideItems[startGuideItems.length - 1];
 
   const startRecommendedAction = !authUser
     ? {
@@ -4406,7 +4445,7 @@ export default function Home() {
                 goToTabSection("manage", "ai-cs-inbox");
               },
             }
-          : workflowPendingItems.length > 0
+          : onboardingPendingWorkflowItems.length > 0
             ? {
                 eyebrow: "다음 작업",
                 title: "승인 대기 답변 확인하기",
@@ -4418,7 +4457,16 @@ export default function Home() {
                   goToTabSection("manage", "ai-cs-inbox");
                 },
               }
-            : {
+            : hasOnboardingCompletedItem
+              ? {
+                  eyebrow: "준비 완료",
+                  title: "이제 AI CS 처리함을 업무판처럼 쓰면 됩니다",
+                  description:
+                    "새 문의와 리뷰가 쌓이면 AI가 답변 가능 여부와 위험도를 나눠 정리해드립니다.",
+                  actionLabel: "운영 관리 보기",
+                  onAction: () => goToTabSection("manage", "ai-cs-inbox"),
+                }
+              : {
                 eyebrow: "다음 테스트",
                 title: "문의 답변을 하나 만들어보기",
                 description:
@@ -5150,33 +5198,87 @@ export default function Home() {
             </div>
 
             <div className="grid gap-3">
-              {startGuideItems.map((item) => (
-                <article
-                  key={item.step}
-                  className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/60"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 px-2.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                      {item.step}
-                    </span>
-                    <div>
-                      <h3 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                        {item.title}
-                      </h3>
-                      <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                        {item.description}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={item.onAction}
-                        className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                      >
-                        {item.actionLabel}
-                      </button>
-                    </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                      처음 시작 체크리스트
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                      {completedStartGuideCount}/{startGuideItems.length}단계
+                      완료
+                    </p>
                   </div>
-                </article>
-              ))}
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-zinc-950 dark:text-emerald-300 dark:ring-emerald-900">
+                    {startGuideProgressPercent}%
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950">
+                  <div
+                    className="h-full rounded-full bg-emerald-600 transition-all dark:bg-emerald-400"
+                    style={{ width: `${startGuideProgressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {startGuideItems.map((item) => {
+                const isNextStep =
+                  !item.isComplete && nextStartGuideItem.id === item.id;
+
+                return (
+                  <article
+                    key={item.id}
+                    className={`rounded-xl border p-4 transition ${
+                      isNextStep
+                        ? "border-indigo-200 bg-indigo-50/80 dark:border-indigo-900/60 dark:bg-indigo-950/25"
+                        : item.isComplete
+                          ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                          : "border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-950/60"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={`inline-flex h-8 shrink-0 items-center justify-center rounded-lg px-2.5 text-xs font-semibold ${
+                          item.isComplete
+                            ? "bg-emerald-600 text-white dark:bg-emerald-500"
+                            : isNextStep
+                              ? "bg-indigo-700 text-white dark:bg-indigo-500"
+                              : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                        }`}
+                      >
+                        {item.isComplete ? "완료" : item.step}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                            {item.title}
+                          </h3>
+                          {isNextStep ? (
+                            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                              다음 단계
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                          {item.description}
+                        </p>
+                        {isNextStep ? (
+                          <button
+                            type="button"
+                            onClick={item.onAction}
+                            disabled={item.id === "login" && authActionLoading}
+                            className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-indigo-800 dark:bg-zinc-950 dark:text-indigo-300 dark:hover:bg-indigo-950"
+                          >
+                            {item.id === "login" && authActionLoading
+                              ? "처리 중..."
+                              : item.actionLabel}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -5186,7 +5288,7 @@ export default function Home() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                  {startRecommendedAction.eyebrow}
+                  {startRecommendedAction.eyebrow} · 다음 할 일
                 </p>
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
                   {startRecommendedAction.title}
