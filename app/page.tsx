@@ -4523,6 +4523,57 @@ export default function Home() {
     },
   ] as const;
   const recentAiActivityLogs = aiActivityLogs.slice(0, 5);
+  const todayAiActivityLogs = aiActivityLogs.filter((log) =>
+    isSameLocalDate(log.created_at),
+  );
+  const todayGeneratedActivityCount = todayAiActivityLogs.filter((log) =>
+    /generated/.test(log.event_type),
+  ).length;
+  const todayCompletedActivityCount = todayAiActivityLogs.filter((log) =>
+    /completed/.test(log.event_type),
+  ).length;
+  const todayStoppedActivityLogs = todayAiActivityLogs.filter(
+    (log) =>
+      log.event_type === "cs_reply_needs_info" ||
+      log.status === "needs_review" ||
+      log.handling_type === "needs_review" ||
+      log.handling_type === "needs_approval" ||
+      log.risk_level === "high",
+  );
+  const todayLearningActivityCount = todayAiActivityLogs.filter(
+    (log) => log.event_type === "missing_info_resolved",
+  ).length;
+  const todayOwnerInterventionLogs = todayAiActivityLogs.filter((log) =>
+    /edited|completed|marked_needs_review|resolved/.test(log.event_type),
+  );
+  const aiStaffDiarySummaryItems = [
+    {
+      label: "초안 작성",
+      value: todayGeneratedActivityCount,
+      description: "AI가 먼저 작성한 답변",
+    },
+    {
+      label: "완료 처리",
+      value: todayCompletedActivityCount,
+      description: "승인 또는 완료된 업무",
+    },
+    {
+      label: "멈추고 확인",
+      value: todayStoppedActivityLogs.length,
+      description: "위험하거나 정보가 부족한 업무",
+    },
+    {
+      label: "학습 반영",
+      value: todayLearningActivityCount,
+      description: "사장님 답변을 지식에 저장",
+    },
+  ] as const;
+  const aiStaffDiarySentence =
+    todayAiActivityLogs.length === 0
+      ? "오늘 기록된 AI 업무가 아직 없습니다. 문의 답변을 만들거나 처리함에서 승인하면 일지가 쌓입니다."
+      : `오늘 AI는 답변 초안 ${todayGeneratedActivityCount}건을 만들고, ${todayCompletedActivityCount}건을 완료 처리했으며, ${todayStoppedActivityLogs.length}건은 안전을 위해 멈췄습니다.`;
+  const stoppedReasonLogs = todayStoppedActivityLogs.slice(0, 3);
+  const ownerInterventionLogs = todayOwnerInterventionLogs.slice(0, 3);
 
   const categoryItems = [
     { label: "우리 가게 정보", targetId: "store-info" },
@@ -5907,11 +5958,11 @@ export default function Home() {
               <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    최근 AI 업무 이력
+                    오늘의 AI 직원 일지
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    AI가 만든 초안, 사장님이 승인한 항목, 학습 반영 내역을
-                    시간순으로 남깁니다.
+                    AI가 무엇을 처리했고, 왜 멈췄고, 사장님이 어디에
+                    개입했는지 기록합니다.
                   </p>
                 </div>
                 <button
@@ -5932,59 +5983,150 @@ export default function Home() {
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
                   {aiActivityLogsError}
                 </p>
-              ) : recentAiActivityLogs.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm leading-6 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-                  아직 기록된 AI 업무 이력이 없습니다. 문의 답변을 만들거나
-                  처리함에서 답변을 승인하면 이곳에 이력이 쌓입니다.
-                </p>
               ) : (
-                <ol className="space-y-3">
-                  {recentAiActivityLogs.map((log) => (
-                    <li
-                      key={log.id}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
-                    >
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                            {log.title}
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25">
+                    <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
+                      {aiStaffDiarySentence}
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      {aiStaffDiarySummaryItems.map((item) => (
+                        <article
+                          key={item.label}
+                          className="rounded-lg border border-white/80 bg-white/85 p-3 dark:border-indigo-900/50 dark:bg-zinc-950/70"
+                        >
+                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                            {item.label}
                           </p>
-                          {log.description ? (
-                            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                              {truncateSummaryText(log.description, 110)}
-                            </p>
-                          ) : null}
-                        </div>
-                        <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
-                          {formatDate(log.created_at)}
-                        </span>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
-                          {sourcePlatformLabel(log.source_platform)}
-                        </span>
-                        {log.status ? (
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
-                            {aiActivityStatusLabel(log.status)}
-                          </span>
-                        ) : null}
-                        {log.risk_level ? (
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              log.risk_level === "low" ||
-                              log.risk_level === "normal" ||
-                              log.risk_level === "high"
-                                ? riskLevelBadgeClass(log.risk_level)
-                                : "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
-                            }`}
+                          <p className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                            {item.value.toLocaleString("ko-KR")}
+                          </p>
+                          <p className="mt-1 text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">
+                            {item.description}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/25">
+                      <h4 className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                        AI가 멈춘 이유
+                      </h4>
+                      {stoppedReasonLogs.length === 0 ? (
+                        <p className="mt-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                          오늘은 위험하거나 정보 부족으로 멈춘 기록이 없습니다.
+                        </p>
+                      ) : (
+                        <ul className="mt-3 space-y-2">
+                          {stoppedReasonLogs.map((log) => (
+                            <li
+                              key={log.id}
+                              className="rounded-lg border border-amber-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-amber-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
+                            >
+                              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                {truncateSummaryText(log.title, 58)}
+                              </p>
+                              {log.description ? (
+                                <p className="mt-1">
+                                  {truncateSummaryText(log.description, 96)}
+                                </p>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                      <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                        사장님 개입 패턴
+                      </h4>
+                      {ownerInterventionLogs.length === 0 ? (
+                        <p className="mt-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                          오늘은 수정, 승인, 학습 반영 기록이 아직 없습니다.
+                        </p>
+                      ) : (
+                        <ul className="mt-3 space-y-2">
+                          {ownerInterventionLogs.map((log) => (
+                            <li
+                              key={log.id}
+                              className="rounded-lg border border-emerald-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-emerald-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
+                            >
+                              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                {truncateSummaryText(log.title, 58)}
+                              </p>
+                              <p className="mt-1 text-zinc-500 dark:text-zinc-400">
+                                {formatDate(log.created_at)}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+
+                  {recentAiActivityLogs.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm leading-6 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                      아직 기록된 AI 업무 이력이 없습니다. 문의 답변을 만들거나
+                      처리함에서 답변을 승인하면 이곳에 이력이 쌓입니다.
+                    </p>
+                  ) : (
+                    <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                      <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        최근 이력 자세히 보기
+                      </summary>
+                      <ol className="mt-3 space-y-3">
+                        {recentAiActivityLogs.map((log) => (
+                          <li
+                            key={log.id}
+                            className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
                           >
-                            {aiActivityRiskLabel(log.risk_level)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                  {log.title}
+                                </p>
+                                {log.description ? (
+                                  <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                                    {truncateSummaryText(log.description, 110)}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                                {formatDate(log.created_at)}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                                {sourcePlatformLabel(log.source_platform)}
+                              </span>
+                              {log.status ? (
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                                  {aiActivityStatusLabel(log.status)}
+                                </span>
+                              ) : null}
+                              {log.risk_level ? (
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                    log.risk_level === "low" ||
+                                    log.risk_level === "normal" ||
+                                    log.risk_level === "high"
+                                      ? riskLevelBadgeClass(log.risk_level)
+                                      : "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
+                                  }`}
+                                >
+                                  {aiActivityRiskLabel(log.risk_level)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                  )}
+                </div>
               )}
             </div>
           </section>
