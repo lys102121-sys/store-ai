@@ -1,4 +1,5 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -217,6 +218,44 @@ export async function PATCH(
       { status: 500 },
     );
   }
+
+  await recordAiActivityLog(auth.supabase, {
+    userId: auth.userId,
+    eventType:
+      payload.status === "completed"
+        ? "review_completed"
+        : payload.status === "needs_review"
+          ? "review_marked_needs_review"
+          : payload.reply !== undefined
+            ? "review_reply_edited"
+            : "review_updated",
+    title:
+      payload.status === "completed"
+        ? "리뷰 답글을 승인 완료했습니다"
+        : payload.status === "needs_review"
+          ? "리뷰를 확인 필요로 표시했습니다"
+          : payload.reply !== undefined
+            ? "리뷰 답글 초안을 수정했습니다"
+            : "리뷰 처리 상태를 변경했습니다",
+    description:
+      typeof data?.ai_reason === "string" ? data.ai_reason : undefined,
+    relatedType: "review",
+    relatedId: id,
+    status: typeof data?.status === "string" ? data.status : payload.status,
+    handlingType:
+      typeof data?.handling_type === "string" ? data.handling_type : null,
+    riskLevel: typeof data?.risk_level === "string" ? data.risk_level : null,
+    sourcePlatform:
+      typeof data?.source_platform === "string" ? data.source_platform : "manual",
+    metadata: {
+      review: typeof data?.review === "string" ? data.review : undefined,
+      platformStatus:
+        typeof data?.platform_status === "string"
+          ? data.platform_status
+          : undefined,
+      changedReply: payload.reply !== undefined,
+    },
+  });
 
   return Response.json({ review: data });
 }

@@ -178,6 +178,28 @@ type StoreKnowledgeReprocessResponse = {
   detail?: string;
 };
 
+type AiActivityLogItem = {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string | null;
+  related_type: string | null;
+  related_id: string | null;
+  status: WorkflowStatus | string | null;
+  handling_type: HandlingType | string | null;
+  risk_level: RiskLevel | string | null;
+  source_platform: SourcePlatform | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+};
+
+type AiActivityLogsResponse = {
+  logs?: AiActivityLogItem[];
+  missingTableSql?: string;
+  error?: string;
+  detail?: string;
+};
+
 type StoreKnowledgeCreateInput = {
   question: string;
   answer: string;
@@ -704,6 +726,33 @@ function sourcePlatformLabel(value?: string | null) {
   }
 }
 
+function aiActivityStatusLabel(value?: string | null) {
+  if (!value) return "";
+
+  if (
+    value === "pending" ||
+    value === "needs_review" ||
+    value === "completed" ||
+    value === "answered"
+  ) {
+    return workflowStatusLabel(value);
+  }
+
+  if (value === "resolved") return "해결됨";
+
+  return value;
+}
+
+function aiActivityRiskLabel(value?: string | null) {
+  if (!value) return "";
+
+  if (value === "low" || value === "normal" || value === "high") {
+    return `위험도: ${riskLevelLabel(value)}`;
+  }
+
+  return value;
+}
+
 function isDemoExternalId(value?: string | null) {
   return value?.startsWith("mock-") ?? false;
 }
@@ -1010,6 +1059,19 @@ async function fetchCsMessageHistory() {
   }
 
   return data.csMessages ?? [];
+}
+
+async function fetchAiActivityLogs() {
+  const response = await fetch("/api/ai-activity-logs", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
+  const data = (await response.json()) as AiActivityLogsResponse;
+
+  if (!response.ok) {
+    throw new Error(data.error ?? "AI 업무 이력을 불러오지 못했습니다.");
+  }
+
+  return data.logs ?? [];
 }
 
 async function fetchMissingInfoList() {
@@ -1677,6 +1739,9 @@ export default function Home() {
   const [deletingCsMessageId, setDeletingCsMessageId] = useState<
     number | null
   >(null);
+  const [aiActivityLogs, setAiActivityLogs] = useState<AiActivityLogItem[]>([]);
+  const [aiActivityLogsLoading, setAiActivityLogsLoading] = useState(true);
+  const [aiActivityLogsError, setAiActivityLogsError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [copyError, setCopyError] = useState("");
   const [workflowError, setWorkflowError] = useState("");
@@ -2027,6 +2092,25 @@ export default function Home() {
     }
   }, []);
 
+  const loadAiActivityLogs = useCallback(async () => {
+    setAiActivityLogsLoading(true);
+    setAiActivityLogsError("");
+
+    try {
+      const logs = await fetchAiActivityLogs();
+      setAiActivityLogs(logs);
+    } catch (error) {
+      setAiActivityLogsError(
+        error instanceof Error
+          ? error.message
+          : "AI 업무 이력을 불러오지 못했습니다.",
+      );
+      setAiActivityLogs([]);
+    } finally {
+      setAiActivityLogsLoading(false);
+    }
+  }, []);
+
   const loadMissingInfos = useCallback(async () => {
     setMissingInfosLoading(true);
     setMissingInfosError("");
@@ -2239,6 +2323,9 @@ export default function Home() {
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
+        setAiActivityLogs([]);
+        setAiActivityLogsError("");
+        setAiActivityLogsLoading(false);
         setDeletingCsMessageId(null);
         setWorkflowError("");
         setWorkflowUpdatingKey(null);
@@ -2280,6 +2367,7 @@ export default function Home() {
       setStoreStatusLoading(true);
       setMissingInfosLoading(true);
       setStoreKnowledgeLoading(true);
+      setAiActivityLogsLoading(true);
       setStoreDraftReady(false);
 
       const draft = readStoreDraft(authUser.id);
@@ -2372,6 +2460,25 @@ export default function Home() {
       .finally(() => {
         if (!isActive) return;
         setCsMessagesLoading(false);
+      });
+
+    void fetchAiActivityLogs()
+      .then((logs) => {
+        if (!isActive) return;
+        setAiActivityLogs(logs);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setAiActivityLogsError(
+          error instanceof Error
+            ? error.message
+            : "AI 업무 이력을 불러오지 못했습니다.",
+        );
+        setAiActivityLogs([]);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setAiActivityLogsLoading(false);
       });
 
     void fetchMissingInfoList()
@@ -2501,6 +2608,7 @@ export default function Home() {
       setReply(data.reply);
       void loadHistory();
       void loadInsights();
+      void loadAiActivityLogs();
     } catch {
       setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -2575,7 +2683,7 @@ export default function Home() {
       }
 
       setBatchReviewResults(data.results);
-      await Promise.all([loadHistory(), loadInsights()]);
+      await Promise.all([loadHistory(), loadInsights(), loadAiActivityLogs()]);
     } catch {
       setBatchReviewError(
         "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
@@ -2633,6 +2741,7 @@ export default function Home() {
       setCsReply(data.reply);
       void loadCsMessages();
       void loadMissingInfos();
+      void loadAiActivityLogs();
     } catch {
       setCsError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -2799,6 +2908,7 @@ export default function Home() {
         loadCsMessages(),
         loadStoreKnowledge(),
         loadInsights(),
+        loadAiActivityLogs(),
       ]);
     } catch {
       const errorMessage = "정보 저장 또는 답변 반영에 실패했습니다.";
@@ -3458,6 +3568,7 @@ export default function Home() {
             loadHistory(),
             loadCsMessages(),
             loadInsights(),
+            loadAiActivityLogs(),
           ]);
         }
         return;
@@ -3478,7 +3589,12 @@ export default function Home() {
         }
       }
 
-      await Promise.all([loadHistory(), loadCsMessages(), loadInsights()]);
+      await Promise.all([
+        loadHistory(),
+        loadCsMessages(),
+        loadInsights(),
+        loadAiActivityLogs(),
+      ]);
       setEditingWorkflowKey(null);
       setEditingWorkflowReply("");
     } finally {
@@ -3527,6 +3643,7 @@ export default function Home() {
         loadHistory(),
         loadCsMessages(),
         loadInsights(),
+        loadAiActivityLogs(),
       ]);
       setWorkflowBulkApprovalResult({
         message:
@@ -3542,6 +3659,7 @@ export default function Home() {
         loadHistory(),
         loadCsMessages(),
         loadInsights(),
+        loadAiActivityLogs(),
       ]);
       setWorkflowBulkApprovalResult({
         message: `${successCount}건은 승인 완료했고, ${
@@ -4404,6 +4522,7 @@ export default function Home() {
       accent: "bg-indigo-50 dark:bg-indigo-950/50",
     },
   ] as const;
+  const recentAiActivityLogs = aiActivityLogs.slice(0, 5);
 
   const categoryItems = [
     { label: "우리 가게 정보", targetId: "store-info" },
@@ -5781,6 +5900,91 @@ export default function Home() {
                     </article>
                   ))}
                 </div>
+              )}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    최근 AI 업무 이력
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    AI가 만든 초안, 사장님이 승인한 항목, 학습 반영 내역을
+                    시간순으로 남깁니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadAiActivityLogs()}
+                  disabled={aiActivityLogsLoading}
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  {aiActivityLogsLoading ? "불러오는 중" : "새로고침"}
+                </button>
+              </div>
+
+              {aiActivityLogsLoading ? (
+                <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  AI 업무 이력을 불러오는 중...
+                </p>
+              ) : aiActivityLogsError ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                  {aiActivityLogsError}
+                </p>
+              ) : recentAiActivityLogs.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm leading-6 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                  아직 기록된 AI 업무 이력이 없습니다. 문의 답변을 만들거나
+                  처리함에서 답변을 승인하면 이곳에 이력이 쌓입니다.
+                </p>
+              ) : (
+                <ol className="space-y-3">
+                  {recentAiActivityLogs.map((log) => (
+                    <li
+                      key={log.id}
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                            {log.title}
+                          </p>
+                          {log.description ? (
+                            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                              {truncateSummaryText(log.description, 110)}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                          {formatDate(log.created_at)}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                          {sourcePlatformLabel(log.source_platform)}
+                        </span>
+                        {log.status ? (
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-200 dark:ring-zinc-700">
+                            {aiActivityStatusLabel(log.status)}
+                          </span>
+                        ) : null}
+                        {log.risk_level ? (
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              log.risk_level === "low" ||
+                              log.risk_level === "normal" ||
+                              log.risk_level === "high"
+                                ? riskLevelBadgeClass(log.risk_level)
+                                : "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
+                            }`}
+                          >
+                            {aiActivityRiskLabel(log.risk_level)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
               )}
             </div>
           </section>

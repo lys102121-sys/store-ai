@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -266,6 +267,25 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    await recordAiActivityLog(auth.supabase, {
+      userId: auth.userId,
+      eventType: "batch_review_replies_generated",
+      title: "리뷰 답글을 일괄 생성했습니다",
+      description: `리뷰 ${resultsWithStatus.length}건의 AI 답글 초안을 만들었습니다.`,
+      relatedType: "review",
+      status: "pending",
+      sourcePlatform: "manual",
+      metadata: {
+        count: resultsWithStatus.length,
+        highRiskCount: resultsWithStatus.filter(
+          (result) => result.riskLevel === "high",
+        ).length,
+        autoReadyCount: resultsWithStatus.filter(
+          (result) => result.handlingType === "auto_ready",
+        ).length,
+      },
+    });
 
     return Response.json({
       results: resultsWithStatus.map((result) => ({

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -223,6 +224,23 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    await recordAiActivityLog(auth.supabase, {
+      userId: auth.userId,
+      eventType: "review_reply_generated",
+      title: "리뷰 답글 초안을 만들었습니다",
+      description: result.aiReason,
+      relatedType: "review",
+      status,
+      handlingType: result.handlingType,
+      riskLevel: result.riskLevel,
+      sourcePlatform: "manual",
+      metadata: {
+        review,
+        replyPreview: result.reply.slice(0, 160),
+        sentiment: result.sentiment,
+      },
+    });
 
     return Response.json({
       reply: result.reply,

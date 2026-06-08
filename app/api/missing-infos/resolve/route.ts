@@ -1,4 +1,5 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -398,6 +399,24 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  await recordAiActivityLog(auth.supabase, {
+    userId: auth.userId,
+    eventType: "missing_info_resolved",
+    title: "확인 필요 정보를 학습했습니다",
+    description: `사장님 답변을 가게 지식에 저장하고 관련 문의 ${regeneratedReplies.length}건에 반영했습니다.`,
+    relatedType: "missing_info",
+    relatedId: missingInfoId,
+    status: "resolved",
+    sourcePlatform: "manual",
+    metadata: {
+      topic: resolvedTopic,
+      targetField,
+      resolvedMissingInfoCount: resolvedIds.length,
+      updatedCsMessages: regeneratedReplies.length,
+      question: missingInfoRow.question,
+    },
+  });
 
   return Response.json({
     success: true,

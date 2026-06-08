@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -796,6 +797,28 @@ export async function POST(request: Request) {
         topic,
       });
     }
+
+    await recordAiActivityLog(auth.supabase, {
+      userId: auth.userId,
+      eventType: shouldCreateMissingInfo
+        ? "cs_reply_needs_info"
+        : "cs_reply_generated",
+      title: shouldCreateMissingInfo
+        ? "고객 문의를 확인 필요로 분류했습니다"
+        : "고객 문의 답변 초안을 만들었습니다",
+      description: aiReason,
+      relatedType: "cs_message",
+      status,
+      handlingType: decision.handlingType,
+      riskLevel: decision.riskLevel,
+      sourcePlatform: "manual",
+      metadata: {
+        customerMessage,
+        replyPreview: reply.slice(0, 160),
+        hasMissingInfo: shouldCreateMissingInfo,
+        usedKnowledgeCount: usedKnowledgeItemsWithStoreEvidence.length,
+      },
+    });
 
     return Response.json({
       reply,
