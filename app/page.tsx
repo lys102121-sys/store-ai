@@ -6602,16 +6602,15 @@ export default function Home() {
               플랫폼 연동
             </p>
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              연동 희망 플랫폼을 알려주세요
+              플랫폼 연동은 샘플로 먼저 체험해보세요
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              앞으로 배민, 요기요, 쿠팡이츠, 스마트스토어, 쿠팡 등에 들어온
-              문의와 리뷰를 AI CS 처리함에서 함께 관리할 수 있도록 연동을 준비
-              중입니다.
+              실제 연동 전에도 샘플 문의와 리뷰를 AI CS 처리함에 넣어 흐름을
+              확인할 수 있습니다.
             </p>
             <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              현재는 연동 희망 플랫폼을 등록하는 단계이며, 계정 비밀번호나 API
-              키는 입력받지 않습니다.
+              연동 희망 등록과 API 설정은 필요할 때만 열어보세요. 플랫폼 계정
+              비밀번호는 입력받지 않습니다.
             </p>
           </div>
 
@@ -6680,7 +6679,17 @@ export default function Home() {
                     {platform.description}
                   </p>
 
-                  <div className="mt-5 space-y-4">
+                  <details className="mt-5 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                    <summary className="cursor-pointer list-none">
+                      <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        연동 희망 등록
+                      </span>
+                      <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                        실제 연동이 준비되면 안내받고 싶을 때만 입력하세요.
+                      </span>
+                    </summary>
+
+                    <div className="mt-4 space-y-4">
                     <div className="space-y-1.5">
                       <label
                         htmlFor={`${platform.id}_store_url`}
@@ -6727,20 +6736,21 @@ export default function Home() {
                         className={textareaClass}
                       />
                     </div>
-                  </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    disabled={isRegistered || isSaving || integrationsLoading}
-                    onClick={() => void handleRequestIntegration(platform.id)}
-                    className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
-                  >
-                    {isRegistered
-                      ? "등록 완료"
-                      : isSaving
-                        ? "등록 중..."
-                        : "연동 희망 등록"}
-                  </button>
+                    <button
+                      type="button"
+                      disabled={isRegistered || isSaving || integrationsLoading}
+                      onClick={() => void handleRequestIntegration(platform.id)}
+                      className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                    >
+                      {isRegistered
+                        ? "등록 완료"
+                        : isSaving
+                          ? "등록 중..."
+                          : "연동 희망 등록"}
+                    </button>
+                  </details>
 
                   {deliveryMockReviewPlatform ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
@@ -6853,19 +6863,37 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <div className="rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/60 dark:bg-zinc-950">
-                        <div className="mb-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                            실제 연동
-                          </p>
-                          <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                            쿠팡 Open API 연결
-                          </h4>
-                          <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                            저장된 쿠팡 API 설정으로 연결을 테스트하고, 연결 후 실제
-                            상품 문의를 AI CS 처리함으로 가져옵니다.
-                          </p>
-                        </div>
+                      <details className="rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/60 dark:bg-zinc-950">
+                        <summary className="cursor-pointer list-none">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                                고급 설정
+                              </p>
+                              <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                                쿠팡 실제 연동 설정
+                              </h4>
+                              <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                                쿠팡 Open API 키가 있을 때만 열어 설정합니다.
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                coupangCredential?.status === "connected"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                  : coupangCredential?.status === "error"
+                                    ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
+                                    : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                              }`}
+                            >
+                              {getCoupangConnectionStatusLabel(
+                                coupangCredential?.status,
+                              )}
+                            </span>
+                          </div>
+                        </summary>
+
+                        <div className="mt-4">
 
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                           <div>
@@ -7128,6 +7156,7 @@ export default function Home() {
                         </p>
                       ) : null}
                       </div>
+                      </details>
 
                       <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-900/60 dark:bg-violet-950/25">
                         <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
