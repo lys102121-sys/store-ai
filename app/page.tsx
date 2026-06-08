@@ -8734,76 +8734,53 @@ export default function Home() {
                       const isWorkflowDetailExpanded =
                         Boolean(expandedWorkflowDetailKeys[item.key]) ||
                         item.type === "missing_info";
+                      const canApproveWorkflowItem =
+                        !isCompleted &&
+                        item.canMutate &&
+                        item.type !== "missing_info";
 
                       return (
                         <article
                           key={item.key}
-                          className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-900 ${
+                          className={`rounded-[1.35rem] border bg-white/90 p-4 shadow-[0_18px_65px_-48px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:bg-slate-950/70 dark:ring-white/10 ${
                             needsAttention
-                              ? "border-amber-300 ring-1 ring-amber-200 dark:border-amber-800 dark:ring-amber-900/60"
-                              : "border-zinc-200 dark:border-zinc-800"
+                              ? "border-amber-300/80 dark:border-amber-700/70"
+                              : "border-white/80 dark:border-white/10"
                           }`}
                         >
-                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10">
                                 {item.typeLabel}
                               </span>
-                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                              <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
                                 {sourcePlatformLabel(item.sourcePlatform)}
                               </span>
                               {isDemoData ? (
-                                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
+                                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
                                   데모 데이터
                                 </span>
                               ) : null}
                               <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workflowStatusBadgeClass(
+                                className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
                                   item.status,
                                 )}`}
                               >
                                 {workflowStatusLabel(item.status)}
                               </span>
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${handlingTypeBadgeClass(
-                                  item.handlingType,
-                                )}`}
-                              >
-                                {handlingTypeLabel(item.handlingType)}
-                              </span>
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${riskLevelBadgeClass(
-                                  item.riskLevel,
-                                )}`}
-                              >
-                                위험도: {riskLevelLabel(item.riskLevel)}
-                              </span>
                             </div>
+                            <time
+                              dateTime={item.createdAt}
+                              className="text-xs text-slate-500 dark:text-slate-400"
+                            >
+                              {formatDate(item.createdAt)}
+                            </time>
                           </div>
 
-                          {item.type !== "missing_info" ? (
-                            <div className="mb-3 space-y-2">
-                              {item.handlingType === "auto_ready" &&
-                              !isCompleted ? (
-                                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
-                                  AI가 바로 답변 가능하다고 판단했습니다.
-                                </p>
-                              ) : null}
-
-                              {isAutoCompleted ? (
-                                <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-200">
-                                  AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해
-                                  자동 완료 처리했습니다.
-                                </p>
-                              ) : null}
-
-                              {needsAttention ? (
-                                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                                  사장님 확인이 필요한 항목입니다. 답변 내용과 정책을
-                                  한 번 더 확인해 주세요.
-                                </p>
-                              ) : null}
-                            </div>
+                          {needsAttention && item.type !== "missing_info" ? (
+                            <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">
+                              확인 후 처리하면 안전한 항목입니다.
+                            </p>
                           ) : null}
 
                           <div className="space-y-3 text-sm">
@@ -8980,6 +8957,55 @@ export default function Home() {
 
                           {isWorkflowDetailExpanded ? (
                             <div className="mt-3 space-y-3">
+                              {item.type !== "missing_info" ? (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs leading-5 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+                                  <p className="font-bold text-slate-900 dark:text-white">
+                                    AI 판단
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    <span
+                                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${handlingTypeBadgeClass(
+                                        item.handlingType,
+                                      )}`}
+                                    >
+                                      {handlingTypeLabel(item.handlingType)}
+                                    </span>
+                                    <span
+                                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${riskLevelBadgeClass(
+                                        item.riskLevel,
+                                      )}`}
+                                    >
+                                      위험도: {riskLevelLabel(item.riskLevel)}
+                                    </span>
+                                    <span
+                                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${platformStatusBadgeClass(
+                                        item.platformStatus,
+                                      )}`}
+                                    >
+                                      {platformStatusLabel(item.platformStatus)}
+                                    </span>
+                                  </div>
+                                  {item.handlingType === "auto_ready" &&
+                                  !isCompleted ? (
+                                    <p className="mt-2 text-emerald-700 dark:text-emerald-300">
+                                      AI가 바로 답변 가능하다고 판단했습니다.
+                                    </p>
+                                  ) : null}
+                                  {isAutoCompleted ? (
+                                    <p className="mt-2 text-indigo-700 dark:text-indigo-300">
+                                      AI가 낮은 위험도의 바로 답변 가능한 항목으로
+                                      판단해 자동 완료 처리했습니다.
+                                    </p>
+                                  ) : null}
+                                  {needsAttention ? (
+                                    <p className="mt-2 text-amber-700 dark:text-amber-300">
+                                      사장님 확인이 필요한 항목입니다. 답변 내용과
+                                      정책을 한 번 더 확인해 주세요.
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : null}
+
                               {item.aiReason ? (
                                 <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
                                   <p className="font-semibold">AI 판단 이유</p>
@@ -9053,13 +9079,7 @@ export default function Home() {
                                 </p>
                                 <p className="mt-1">
                                   플랫폼 상태:{" "}
-                                  <span
-                                    className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${platformStatusBadgeClass(
-                                      item.platformStatus,
-                                    )}`}
-                                  >
-                                    {platformStatusLabel(item.platformStatus)}
-                                  </span>
+                                  {platformStatusLabel(item.platformStatus)}
                                 </p>
                               </div>
 
@@ -9083,7 +9103,7 @@ export default function Home() {
                             </div>
                           ) : null}
 
-                          <div className="mt-4 flex flex-wrap gap-2">
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             {item.type === "missing_info" ? (
                               <button
                                 type="button"
@@ -9091,12 +9111,12 @@ export default function Home() {
                                   void handleDeleteWorkflowItem(item)
                                 }
                                 disabled={isUpdating}
-                                className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                                className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white/85 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30"
                               >
                                 삭제
                               </button>
                             ) : isEditing ? (
-                              <>
+                              <div className="flex flex-wrap gap-2">
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -9105,7 +9125,7 @@ export default function Home() {
                                     })
                                   }
                                   disabled={isUpdating}
-                                  className="rounded-lg bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                                  className="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-700 px-3 text-xs font-semibold text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
                                 >
                                   {isUpdating ? "저장 중..." : "수정 저장"}
                                 </button>
@@ -9115,15 +9135,14 @@ export default function Home() {
                                     setEditingWorkflowKey(null);
                                     setEditingWorkflowReply("");
                                   }}
-                                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-slate-900"
                                 >
                                   취소
                                 </button>
-                              </>
+                              </div>
                             ) : (
                               <>
-                                {!isCompleted &&
-                                item.status === "pending" ? (
+                                {canApproveWorkflowItem ? (
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -9132,62 +9151,68 @@ export default function Home() {
                                       })
                                     }
                                     disabled={!item.canMutate || isUpdating}
-                                    className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                    className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:shadow-emerald-500/30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50 sm:w-auto"
                                   >
-                                    승인 완료
+                                    {isUpdating ? "처리 중..." : "승인 완료"}
                                   </button>
                                 ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartWorkflowEdit(item)}
-                                  disabled={!item.canMutate || isUpdating}
-                                  className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/60 dark:bg-zinc-900 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
-                                >
-                                  수정하기
-                                </button>
-                                {!isCompleted ? (
+                                <div className="flex flex-wrap gap-2">
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      void handleUpdateWorkflowItem(item, {
-                                        status: "needs_review",
-                                      })
-                                    }
+                                    onClick={() => handleStartWorkflowEdit(item)}
                                     disabled={!item.canMutate || isUpdating}
-                                    className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                    className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-white/85 px-3 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/60 dark:bg-slate-950/70 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
                                   >
-                                    확인 필요로 표시
+                                    수정하기
                                   </button>
-                                ) : item.canMutate ? (
+                                  {!isCompleted &&
+                                  item.status !== "needs_review" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void handleUpdateWorkflowItem(item, {
+                                          status: "needs_review",
+                                        })
+                                      }
+                                      disabled={!item.canMutate || isUpdating}
+                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-white/85 px-3 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-slate-950/70 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                    >
+                                      확인 필요
+                                    </button>
+                                  ) : null}
+                                  {isCompleted &&
+                                  item.canMutate &&
+                                  isWorkflowDetailExpanded ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void handleUpdateWorkflowItem(item, {
+                                          status: "needs_review",
+                                        })
+                                      }
+                                      disabled={isUpdating}
+                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-500 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-400 dark:hover:bg-slate-900"
+                                    >
+                                      확인 필요로 되돌리기
+                                    </button>
+                                  ) : null}
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      void handleUpdateWorkflowItem(item, {
-                                        status: "needs_review",
-                                      })
+                                      void handleDeleteWorkflowItem(item)
                                     }
-                                    disabled={isUpdating}
-                                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                    disabled={
+                                      isUpdating ||
+                                      (item.type === "review" &&
+                                        deletingReviewId === item.id) ||
+                                      (item.type === "cs" &&
+                                        deletingCsMessageId === item.id)
+                                    }
+                                    className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white/85 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30"
                                   >
-                                    확인 필요로 되돌리기
+                                    삭제
                                   </button>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleDeleteWorkflowItem(item)
-                                  }
-                                  disabled={
-                                    isUpdating ||
-                                    (item.type === "review" &&
-                                      deletingReviewId === item.id) ||
-                                    (item.type === "cs" &&
-                                      deletingCsMessageId === item.id)
-                                  }
-                                  className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
-                                >
-                                  삭제
-                                </button>
+                                </div>
                               </>
                             )}
                           </div>
