@@ -539,16 +539,35 @@ function sentimentCardClass(sentiment: string) {
 function sentimentBadgeClass(sentiment: string) {
   switch (sentiment) {
     case "positive":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+      return semanticBadgeClass("success");
     case "negative":
-      return "bg-red-100 text-red-800 ring-1 ring-red-200/80 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800";
+      return semanticBadgeClass("danger");
     default:
-      return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700";
+      return semanticBadgeClass("neutral");
   }
 }
 
 const urgentBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm dark:bg-red-500";
+
+type SemanticTone = "neutral" | "info" | "success" | "warning" | "danger";
+
+const semanticBadgeClasses: Record<SemanticTone, string> = {
+  neutral:
+    "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
+  info:
+    "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-200 dark:ring-indigo-800",
+  success:
+    "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800",
+  warning:
+    "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800",
+  danger:
+    "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800",
+};
+
+function semanticBadgeClass(tone: SemanticTone) {
+  return semanticBadgeClasses[tone];
+}
 
 function normalizeWorkflowStatus(status?: string | null): WorkflowStatus {
   if (
@@ -578,12 +597,28 @@ function workflowStatusLabel(status: WorkflowStatus) {
 function workflowStatusBadgeClass(status: WorkflowStatus) {
   switch (status) {
     case "needs_review":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800";
+      return semanticBadgeClass("warning");
     case "completed":
     case "answered":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+      return semanticBadgeClass("success");
     default:
-      return "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-900/50 dark:text-sky-200 dark:ring-sky-800";
+      return semanticBadgeClass("info");
+  }
+}
+
+function workflowStatusTabClass(status: WorkflowStatus, isSelected: boolean) {
+  if (!isSelected) {
+    return "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900";
+  }
+
+  switch (status) {
+    case "needs_review":
+      return "border-amber-400 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-200 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-900";
+    case "completed":
+    case "answered":
+      return "border-emerald-400 bg-emerald-50 text-emerald-950 shadow-sm ring-1 ring-emerald-200 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-900";
+    default:
+      return "border-indigo-400 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900";
   }
 }
 
@@ -694,23 +729,52 @@ function riskLevelLabel(value: RiskLevel) {
 function handlingTypeBadgeClass(value: HandlingType) {
   switch (value) {
     case "auto_ready":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+      return semanticBadgeClass("success");
     case "needs_review":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800";
+      return semanticBadgeClass("warning");
     default:
-      return "bg-purple-100 text-purple-800 ring-1 ring-purple-200 dark:bg-purple-900/50 dark:text-purple-200 dark:ring-purple-800";
+      return semanticBadgeClass("warning");
   }
 }
 
 function riskLevelBadgeClass(value: RiskLevel) {
   switch (value) {
     case "low":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+      return semanticBadgeClass("success");
     case "high":
-      return "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800";
+      return semanticBadgeClass("danger");
     default:
-      return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700";
+      return semanticBadgeClass("neutral");
   }
+}
+
+function workflowAttentionTone(
+  handlingType: HandlingType,
+  riskLevel: RiskLevel,
+): "warning" | "danger" | null {
+  if (riskLevel === "high") return "danger";
+  if (handlingType === "needs_review" || handlingType === "needs_approval") {
+    return "warning";
+  }
+
+  return null;
+}
+
+function workflowCardAttentionClass(tone: "warning" | "danger" | null) {
+  if (tone === "danger") {
+    return "border-red-300/90 ring-red-100/80 dark:border-red-700/80 dark:ring-red-900/50";
+  }
+  if (tone === "warning") {
+    return "border-amber-300/80 ring-amber-100/70 dark:border-amber-700/70 dark:ring-amber-900/40";
+  }
+
+  return "border-white/80 dark:border-white/10";
+}
+
+function workflowAttentionNoticeClass(tone: "warning" | "danger") {
+  return tone === "danger"
+    ? "border-red-200 bg-red-50/90 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+    : "border-amber-200 bg-amber-50/80 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200";
 }
 
 function sourcePlatformLabel(value?: string | null) {
@@ -792,14 +856,21 @@ function platformStatusLabel(value?: string | null) {
 function platformStatusBadgeClass(value?: string | null) {
   switch (value) {
     case "posted":
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900";
+      return semanticBadgeClass("success");
     case "synced":
-      return "bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900";
+      return semanticBadgeClass("info");
     case "failed":
-      return "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900";
+      return semanticBadgeClass("danger");
     default:
-      return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700";
+      return semanticBadgeClass("neutral");
   }
+}
+
+function connectionStatusBadgeClass(value?: string | null) {
+  if (value === "connected") return semanticBadgeClass("success");
+  if (value === "error") return semanticBadgeClass("danger");
+
+  return semanticBadgeClass("neutral");
 }
 
 function storeKnowledgeCategoryLabel(value?: string | null) {
@@ -849,11 +920,11 @@ function storeKnowledgeStatusLabel(value?: string | null) {
 function storeKnowledgeStatusBadgeClass(value?: string | null) {
   switch (normalizeStoreKnowledgeStatus(value)) {
     case "needs_review":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-900";
+      return semanticBadgeClass("warning");
     case "archived":
-      return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700";
+      return semanticBadgeClass("neutral");
     default:
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900";
+      return semanticBadgeClass("success");
   }
 }
 
@@ -4414,8 +4485,8 @@ export default function Home() {
       ).length,
       description: "사장님 승인 후 완료할 답변",
       className:
-        "border-sky-200 bg-sky-50/80 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100",
-      valueClassName: "text-sky-700 dark:text-sky-300",
+        "border-indigo-200 bg-indigo-50/80 text-indigo-950 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100",
+      valueClassName: "text-indigo-700 dark:text-indigo-300",
     },
     {
       label: "위험도 높음",
@@ -6182,16 +6253,20 @@ export default function Home() {
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${semanticBadgeClass(
                         aiWorkMode !== "approval_only" &&
-                        (autoCompleteLowRiskCs || autoCompletePositiveReviews)
-                          ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200 dark:ring-emerald-900"
-                          : "bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900"
-                      }`}
+                          (autoCompleteLowRiskCs || autoCompletePositiveReviews)
+                          ? "success"
+                          : "info",
+                      )}`}
                     >
                       {automationModeLabel}
                     </span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-300 dark:ring-zinc-700">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${semanticBadgeClass(
+                        "neutral",
+                      )}`}
+                    >
                       실수 방지 우선
                     </span>
                   </div>
@@ -7987,13 +8062,9 @@ export default function Home() {
                               </p>
                             </div>
                             <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                coupangCredential?.status === "connected"
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                  : coupangCredential?.status === "error"
-                                    ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
-                                    : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                              }`}
+                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                                coupangCredential?.status,
+                              )}`}
                             >
                               {getCoupangConnectionStatusLabel(
                                 coupangCredential?.status,
@@ -8017,13 +8088,9 @@ export default function Home() {
                           ) : null}
                         </div>
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            coupangCredential?.status === "connected"
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : coupangCredential?.status === "error"
-                                ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
-                                : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                          }`}
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                            coupangCredential?.status,
+                          )}`}
                         >
                           {getCoupangConnectionStatusLabel(
                             coupangCredential?.status,
@@ -8662,11 +8729,10 @@ export default function Home() {
                       setEditingWorkflowReply("");
                       setWorkflowBulkApprovalResult(null);
                     }}
-                    className={`rounded-xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${
-                      isSelected
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900"
-                        : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
-                    }`}
+                    className={`rounded-xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${workflowStatusTabClass(
+                      column.status,
+                      isSelected,
+                    )}`}
                     aria-pressed={isSelected}
                   >
                     <span className="block text-xs font-medium">
@@ -8786,9 +8852,11 @@ export default function Home() {
                     item.riskLevel === "low";
                   const isCompleted =
                     item.status === "completed" || item.status === "answered";
-                  const needsAttention =
-                    item.handlingType === "needs_review" ||
-                    item.riskLevel === "high";
+                  const attentionTone = workflowAttentionTone(
+                    item.handlingType,
+                    item.riskLevel,
+                  );
+                  const needsAttention = attentionTone !== null;
                   const isDemoData = isDemoExternalId(item.externalId);
                   const evidenceTitle = workflowEvidenceTitle(item);
                   const evidenceMessage = workflowEvidenceMessage(item);
@@ -8803,11 +8871,9 @@ export default function Home() {
                   return (
                     <article
                       key={item.key}
-                      className={`flex h-full flex-col rounded-[1.35rem] border bg-white/90 p-4 shadow-[0_18px_65px_-48px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:bg-slate-950/70 dark:ring-white/10 sm:p-5 ${
-                        needsAttention
-                          ? "border-amber-300/80 dark:border-amber-700/70"
-                          : "border-white/80 dark:border-white/10"
-                      }`}
+                      className={`flex h-full flex-col rounded-[1.35rem] border bg-white/90 p-4 shadow-[0_18px_65px_-48px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:bg-slate-950/70 dark:ring-white/10 sm:p-5 ${workflowCardAttentionClass(
+                        attentionTone,
+                      )}`}
                     >
                       <div className="mb-4 flex flex-col gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -8838,9 +8904,15 @@ export default function Home() {
                         </time>
                       </div>
 
-                      {needsAttention && item.type !== "missing_info" ? (
-                        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-semibold leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">
-                          확인 후 처리하면 안전한 항목입니다.
+                      {attentionTone && item.type !== "missing_info" ? (
+                        <p
+                          className={`mb-4 rounded-xl border px-4 py-3 text-xs font-semibold leading-5 ${workflowAttentionNoticeClass(
+                            attentionTone,
+                          )}`}
+                        >
+                          {attentionTone === "danger"
+                            ? "위험도가 높은 항목입니다. 답변과 관련 정책을 반드시 확인해 주세요."
+                            : "사장님 확인 후 처리해야 하는 항목입니다."}
                         </p>
                       ) : null}
 
@@ -9064,15 +9136,22 @@ export default function Home() {
                                     </p>
                                   ) : null}
                                   {isAutoCompleted ? (
-                                    <p className="mt-2 text-indigo-700 dark:text-indigo-300">
+                                    <p className="mt-2 text-emerald-700 dark:text-emerald-300">
                                       AI가 낮은 위험도의 바로 답변 가능한 항목으로
                                       판단해 자동 완료 처리했습니다.
                                     </p>
                                   ) : null}
                                   {needsAttention ? (
-                                    <p className="mt-2 text-amber-700 dark:text-amber-300">
-                                      사장님 확인이 필요한 항목입니다. 답변 내용과
-                                      정책을 한 번 더 확인해 주세요.
+                                    <p
+                                      className={`mt-2 ${
+                                        attentionTone === "danger"
+                                          ? "text-red-700 dark:text-red-300"
+                                          : "text-amber-700 dark:text-amber-300"
+                                      }`}
+                                    >
+                                      {attentionTone === "danger"
+                                        ? "고위험 항목입니다. 승인 전 답변 내용과 관련 정책을 반드시 확인해 주세요."
+                                        : "사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요."}
                                     </p>
                                   ) : null}
                                 </div>
