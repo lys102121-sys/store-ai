@@ -1442,6 +1442,12 @@ function buttonClass(
 
 const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 
+const workflowCardSectionClass =
+  "rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.04]";
+
+const workflowCardDetailClass =
+  "rounded-xl border px-4 py-3 text-xs leading-5";
+
 const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
 const integrationPlatforms: ReadonlyArray<{
@@ -8768,92 +8774,91 @@ export default function Home() {
                 {selectedWorkflowTotalCount.toLocaleString("ko-KR")}개 표시 중
               </p>
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid items-stretch gap-5 xl:grid-cols-2">
                 {visibleWorkflowItems.map((item) => {
-                      const isEditing = editingWorkflowKey === item.key;
-                      const isUpdating =
-                        workflowBulkApproving ||
-                        workflowUpdatingKey === item.key;
-                      const isAutoCompleted =
-                        (item.status === "completed" ||
-                          item.status === "answered") &&
-                        item.handlingType === "auto_ready" &&
-                        item.riskLevel === "low";
-                      const isCompleted =
-                        item.status === "completed" ||
-                        item.status === "answered";
-                      const needsAttention =
-                        item.handlingType === "needs_review" ||
-                        item.riskLevel === "high";
-                      const isDemoData = isDemoExternalId(item.externalId);
-                      const evidenceTitle = workflowEvidenceTitle(item);
-                      const evidenceMessage = workflowEvidenceMessage(item);
-                      const isWorkflowDetailExpanded =
-                        Boolean(expandedWorkflowDetailKeys[item.key]) ||
-                        item.type === "missing_info";
-                      const canApproveWorkflowItem =
-                        !isCompleted &&
-                        item.canMutate &&
-                        item.type !== "missing_info";
+                  const isEditing = editingWorkflowKey === item.key;
+                  const isUpdating =
+                    workflowBulkApproving || workflowUpdatingKey === item.key;
+                  const isAutoCompleted =
+                    (item.status === "completed" ||
+                      item.status === "answered") &&
+                    item.handlingType === "auto_ready" &&
+                    item.riskLevel === "low";
+                  const isCompleted =
+                    item.status === "completed" || item.status === "answered";
+                  const needsAttention =
+                    item.handlingType === "needs_review" ||
+                    item.riskLevel === "high";
+                  const isDemoData = isDemoExternalId(item.externalId);
+                  const evidenceTitle = workflowEvidenceTitle(item);
+                  const evidenceMessage = workflowEvidenceMessage(item);
+                  const isWorkflowDetailExpanded =
+                    Boolean(expandedWorkflowDetailKeys[item.key]) ||
+                    item.type === "missing_info";
+                  const canApproveWorkflowItem =
+                    !isCompleted &&
+                    item.canMutate &&
+                    item.type !== "missing_info";
 
-                      return (
-                        <article
-                          key={item.key}
-                          className={`rounded-[1.35rem] border bg-white/90 p-4 shadow-[0_18px_65px_-48px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:bg-slate-950/70 dark:ring-white/10 ${
-                            needsAttention
-                              ? "border-amber-300/80 dark:border-amber-700/70"
-                              : "border-white/80 dark:border-white/10"
-                          }`}
-                        >
-                          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10">
-                                {item.typeLabel}
-                              </span>
-                              <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
-                                {sourcePlatformLabel(item.sourcePlatform)}
-                              </span>
-                              {isDemoData ? (
-                                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
-                                  데모 데이터
-                                </span>
-                              ) : null}
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
-                                  item.status,
-                                )}`}
-                              >
-                                {workflowStatusLabel(item.status)}
-                              </span>
-                            </div>
-                            <time
-                              dateTime={item.createdAt}
-                              className="text-xs text-slate-500 dark:text-slate-400"
-                            >
-                              {formatDate(item.createdAt)}
-                            </time>
-                          </div>
-
-                          {needsAttention && item.type !== "missing_info" ? (
-                            <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">
-                              확인 후 처리하면 안전한 항목입니다.
-                            </p>
+                  return (
+                    <article
+                      key={item.key}
+                      className={`flex h-full flex-col rounded-[1.35rem] border bg-white/90 p-4 shadow-[0_18px_65px_-48px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:bg-slate-950/70 dark:ring-white/10 sm:p-5 ${
+                        needsAttention
+                          ? "border-amber-300/80 dark:border-amber-700/70"
+                          : "border-white/80 dark:border-white/10"
+                      }`}
+                    >
+                      <div className="mb-4 flex flex-col gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10">
+                            {item.typeLabel}
+                          </span>
+                          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
+                            {sourcePlatformLabel(item.sourcePlatform)}
+                          </span>
+                          {isDemoData ? (
+                            <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
+                              데모 데이터
+                            </span>
                           ) : null}
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
+                              item.status,
+                            )}`}
+                          >
+                            {workflowStatusLabel(item.status)}
+                          </span>
+                        </div>
+                        <time
+                          dateTime={item.createdAt}
+                          className="shrink-0 text-xs leading-6 text-slate-500 dark:text-slate-400"
+                        >
+                          {formatDate(item.createdAt)}
+                        </time>
+                      </div>
 
-                          <div className="space-y-3 text-sm">
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
-                              <p className="mb-1 font-medium text-zinc-800 dark:text-zinc-200">
-                                원문
-                              </p>
-                              <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
-                                {item.original}
-                              </p>
-                            </div>
+                      {needsAttention && item.type !== "missing_info" ? (
+                        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-semibold leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200">
+                          확인 후 처리하면 안전한 항목입니다.
+                        </p>
+                      ) : null}
+
+                      <div className="flex flex-1 flex-col">
+                        <div className="space-y-4 text-sm">
+                          <div className={workflowCardSectionClass}>
+                            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                              원문
+                            </p>
+                            <p className="whitespace-pre-wrap leading-6 text-slate-700 dark:text-slate-200">
+                              {item.original}
+                            </p>
+                          </div>
 
                             {item.type === "missing_info" && item.missingInfo ? (
                               <>
-                                <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
-                                  <p className="mb-1 font-medium text-amber-800 dark:text-amber-200">
+                                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+                                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                                     확인 필요한 질문
                                   </p>
                                   <p className="whitespace-pre-wrap leading-6 text-zinc-800 dark:text-zinc-200">
@@ -8862,16 +8867,16 @@ export default function Home() {
                                 </div>
                                 {item.missingInfo.source_messages &&
                                 item.missingInfo.source_messages.length > 0 ? (
-                                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
-                                    <p className="mb-2 font-medium text-zinc-800 dark:text-zinc-200">
+                                  <div className={workflowCardSectionClass}>
+                                    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                       관련 문의 예시
                                     </p>
-                                    <ul className="space-y-1.5 text-zinc-700 dark:text-zinc-300">
+                                    <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
                                       {item.missingInfo.source_messages
                                         .slice(0, 3)
                                         .map((message) => (
-                                          <li key={message} className="flex gap-2">
-                                            <span aria-hidden> - </span>
+                                          <li key={message} className="flex gap-2.5">
+                                            <span className="text-slate-400" aria-hidden>•</span>
                                             <span className="whitespace-pre-wrap leading-6">
                                               {message}
                                             </span>
@@ -8880,7 +8885,7 @@ export default function Home() {
                                     </ul>
                                   </div>
                                 ) : null}
-                                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                <div className={workflowCardSectionClass}>
                                   <label
                                     htmlFor={`workflow_missing_info_answer_${item.id}`}
                                     className="mb-2 block font-medium text-zinc-800 dark:text-zinc-200"
@@ -8949,7 +8954,11 @@ export default function Home() {
                                     disabled={
                                       missingInfoResolvingId === String(item.id)
                                     }
-                                    className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-amber-700 px-4 text-sm font-medium text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                    className={buttonClass(
+                                      "warning",
+                                      "md",
+                                      "mt-4 w-full sm:w-auto",
+                                    )}
                                   >
                                     {missingInfoResolvingId === String(item.id)
                                       ? "반영 중..."
@@ -8958,9 +8967,9 @@ export default function Home() {
                                 </div>
                               </>
                             ) : (
-                              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                  <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                              <div className={workflowCardSectionClass}>
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                     AI 답변 초안
                                   </p>
                                   <button
@@ -9003,7 +9012,11 @@ export default function Home() {
                                   [item.key]: !current[item.key],
                                 }))
                               }
-                              className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                              className={buttonClass(
+                                "secondary",
+                                "sm",
+                                "mt-4 h-8 w-fit rounded-lg",
+                              )}
                               aria-expanded={isWorkflowDetailExpanded}
                             >
                               {isWorkflowDetailExpanded
@@ -9013,13 +9026,15 @@ export default function Home() {
                           ) : null}
 
                           {isWorkflowDetailExpanded ? (
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-4 space-y-3 border-t border-slate-200/70 pt-4 dark:border-white/10">
                               {item.type !== "missing_info" ? (
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs leading-5 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+                                <div
+                                  className={`${workflowCardDetailClass} border-slate-200 bg-slate-50/80 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200`}
+                                >
                                   <p className="font-bold text-slate-900 dark:text-white">
                                     AI 판단
                                   </p>
-                                  <div className="mt-2 flex flex-wrap gap-2">
+                                  <div className="mt-3 flex flex-wrap gap-2">
                                     <span
                                       className={`rounded-full px-2.5 py-1 text-xs font-bold ${handlingTypeBadgeClass(
                                         item.handlingType,
@@ -9064,21 +9079,23 @@ export default function Home() {
                               ) : null}
 
                               {item.aiReason ? (
-                                <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                                <div
+                                  className={`${workflowCardDetailClass} border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200`}
+                                >
                                   <p className="font-semibold">AI 판단 이유</p>
                                   <p className="mt-1">{item.aiReason}</p>
                                 </div>
                               ) : null}
 
                               <div
-                                className={`rounded-lg border px-3 py-2 text-xs leading-5 ${
+                                className={`${workflowCardDetailClass} ${
                                   item.usedKnowledgeItems.length > 0 ||
                                   item.handlingType === "auto_ready"
                                     ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
                                     : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
                                 }`}
                               >
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
                                   <p className="font-semibold">
                                     {evidenceTitle}
                                   </p>
@@ -9092,9 +9109,9 @@ export default function Home() {
                                     </span>
                                   ) : null}
                                 </div>
-                                <p className="mt-1">{evidenceMessage}</p>
+                                <p className="mt-2">{evidenceMessage}</p>
                                 {item.usedKnowledgeItems.length > 0 ? (
-                                  <ul className="mt-2 space-y-2">
+                                  <ul className="mt-3 space-y-2">
                                     {item.usedKnowledgeItems
                                       .slice(0, 3)
                                       .map((knowledgeItem) => (
@@ -9127,21 +9144,25 @@ export default function Home() {
                                 ) : null}
                               </div>
 
-                              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-                                <p>
+                              <div
+                                className={`${workflowCardDetailClass} grid gap-2 border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 sm:grid-cols-2`}
+                              >
+                                <p className="min-w-0">
                                   생성 시간:{" "}
                                   <time dateTime={item.createdAt}>
                                     {formatDate(item.createdAt)}
                                   </time>
                                 </p>
-                                <p className="mt-1">
+                                <p className="min-w-0 sm:text-right">
                                   플랫폼 상태:{" "}
                                   {platformStatusLabel(item.platformStatus)}
                                 </p>
                               </div>
 
                               {isDemoData ? (
-                                <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium leading-5 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
+                                <p
+                                  className={`${workflowCardDetailClass} border-violet-200 bg-violet-50 font-medium text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200`}
+                                >
                                   {item.platformStatus === "posted"
                                     ? "샘플 데이터가 플랫폼 등록 완료 상태로 처리되었습니다. 실제 플랫폼 API 등록은 실연동 단계에서 연결됩니다."
                                     : "이 항목은 실제 플랫폼에서 가져온 데이터가 아니라, 연동 흐름을 체험하기 위한 샘플 데이터입니다."}
@@ -9151,7 +9172,7 @@ export default function Home() {
                               {!isDemoData &&
                               item.sourcePlatform !== "manual" &&
                               item.platformStatus === "posted" ? (
-                                <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                                <p className="px-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                                   승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다.
                                   실제 플랫폼 API 등록은 연동 단계에서 연결될
                                   예정입니다.
@@ -9160,7 +9181,7 @@ export default function Home() {
                             </div>
                           ) : null}
 
-                          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="mt-auto flex flex-col gap-3 border-t border-slate-200/70 pt-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
                             {item.type === "missing_info" ? (
                               <button
                                 type="button"
@@ -9168,12 +9189,16 @@ export default function Home() {
                                   void handleDeleteWorkflowItem(item)
                                 }
                                 disabled={isUpdating}
-                                className={buttonClass("danger", "sm", "rounded-lg")}
+                                className={buttonClass(
+                                  "danger",
+                                  "sm",
+                                  "w-full rounded-lg sm:ml-auto sm:w-auto",
+                                )}
                               >
                                 삭제
                               </button>
                             ) : isEditing ? (
-                              <div className="flex flex-wrap gap-2">
+                              <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap">
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -9217,7 +9242,7 @@ export default function Home() {
                                     {isUpdating ? "처리 중..." : "승인 완료"}
                                   </button>
                                 ) : null}
-                                <div className="flex flex-wrap gap-2">
+                                <div className="grid grid-cols-2 gap-2 sm:ml-auto sm:flex sm:flex-wrap sm:justify-end">
                                   <button
                                     type="button"
                                     onClick={() => handleStartWorkflowEdit(item)}
@@ -9295,11 +9320,12 @@ export default function Home() {
                           </div>
 
                           {!item.canMutate && item.type !== "missing_info" ? (
-                            <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
+                            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                               missing_infos에서 온 확인 필요 항목입니다. 아래
                               확인 필요 정보 섹션에서 내용을 보강해 주세요.
                             </p>
                           ) : null}
+                          </div>
                         </article>
                       );
                     })}
