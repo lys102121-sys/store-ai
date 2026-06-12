@@ -7829,19 +7829,13 @@ export default function Home() {
           }`}
         >
           <div className="max-w-3xl">
-            <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
-              플랫폼 연동
-            </p>
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              플랫폼 연동은 샘플로 먼저 체험해보세요
+              연결할 플랫폼을 선택하세요
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              실제 연동 전에도 샘플 문의와 리뷰를 AI CS 처리함에 넣어 흐름을
-              확인할 수 있습니다.
-            </p>
-            <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              연동 희망 등록과 API 설정은 필요할 때만 열어보세요. 플랫폼 계정
-              비밀번호는 입력받지 않습니다.
+              플랫폼 카드를 열면 샘플 데이터로 먼저 체험하거나 연동 희망을
+              등록할 수 있습니다. 실제 API 설정은 지원되는 플랫폼에서만
+              표시됩니다.
             </p>
           </div>
 
@@ -7888,29 +7882,53 @@ export default function Home() {
                 isDeliveryMockReviewPlatform(platform.id) ? platform.id : null;
 
               return (
-                <article
+                <details
                   key={platform.id}
-                  className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-950/50"
+                  className="group rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 transition open:border-indigo-200 open:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:open:border-indigo-900/70 dark:open:bg-zinc-900"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-semibold">{platform.name}</h3>
-                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
-                        연동 준비 중
-                      </span>
+                  <summary className="cursor-pointer list-none">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-semibold">
+                          {platform.name}
+                        </h3>
+                        {platform.id === "coupang" ? (
+                          <span
+                            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                              coupangCredential?.status,
+                            )}`}
+                          >
+                            {getCoupangConnectionStatusLabel(
+                              coupangCredential?.status,
+                            )}
+                          </span>
+                        ) : (
+                          <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
+                            연동 준비 중
+                          </span>
+                        )}
+                      </div>
+                      {isRegistered ? (
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          희망 등록됨
+                        </span>
+                      ) : null}
                     </div>
-                    {isRegistered ? (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                        희망 등록됨
-                      </span>
-                    ) : null}
-                  </div>
 
-                  <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                    {platform.description}
-                  </p>
+                    <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                      {platform.description}
+                    </p>
+                    <span className="mt-3 inline-flex text-xs font-semibold text-indigo-700 group-open:hidden dark:text-indigo-300">
+                      설정과 샘플 체험 보기
+                    </span>
+                    <span className="mt-3 hidden text-xs font-semibold text-indigo-700 group-open:inline-flex dark:text-indigo-300">
+                      접기
+                    </span>
+                  </summary>
 
-                  <details className="mt-5 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                  <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+
+                  <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                     <summary className="cursor-pointer list-none">
                       <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                         연동 희망 등록
@@ -8492,16 +8510,16 @@ export default function Home() {
                       </div>
                     </div>
                   ) : null}
-                </article>
+                  </div>
+                </details>
               );
             })}
           </div>
 
-          <div className="mt-6 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-sm leading-6 text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100">
-            플랫폼 연동이 연결되면 각 플랫폼에서 들어온 문의와 리뷰가 AI CS
-            처리함에 자동으로 모이고, AI가 답변 가능 여부와 위험도를 판단해
-            사장님 확인이 필요한 항목을 구분할 예정입니다.
-          </div>
+          <p className="mt-6 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+            연동된 문의와 리뷰는 AI CS 처리함에 모이고, AI가 답변 가능 여부와
+            위험도를 판단합니다.
+          </p>
         </section>
 
         {activeTab === "answer" && needsStoreInfo ? (
