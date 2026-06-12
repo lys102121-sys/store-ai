@@ -4603,7 +4603,9 @@ export default function Home() {
     {
       label: "지금 확인할 일",
       value: urgentWorkCount,
-      description: "확인 필요와 승인 대기를 합친 항목",
+      description: "확인 필요 + 승인 대기",
+      targetStatus:
+        needsReviewSummaryCount > 0 ? "needs_review" : "pending",
       className:
         urgentWorkCount > 0
           ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
@@ -4616,7 +4618,8 @@ export default function Home() {
     {
       label: "AI가 처리한 일",
       value: completedSummaryCount,
-      description: "답변 완료 상태로 관리 중인 항목",
+      description: "답변 완료",
+      targetStatus: "completed",
       className:
         "border-emerald-200 bg-white text-emerald-950 dark:border-emerald-900/60 dark:bg-zinc-950 dark:text-emerald-100",
       valueClassName: "text-emerald-700 dark:text-emerald-300",
@@ -4624,7 +4627,8 @@ export default function Home() {
     {
       label: "위험해서 멈춘 일",
       value: blockedWorkCount,
-      description: "고위험 또는 정보 부족으로 자동 처리하지 않음",
+      description: "고위험 + 정보 부족",
+      targetStatus: "needs_review",
       className:
         blockedWorkCount > 0
           ? "border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
@@ -6126,8 +6130,7 @@ export default function Home() {
                   오늘의 AI CS 업무 요약
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  AI가 처리한 문의와 리뷰 중 사장님이 먼저 확인해야 할 항목을
-                  정리했습니다.
+                  지금 처리할 일과 AI가 멈춘 항목만 먼저 보여드립니다.
                 </p>
               </div>
               <button
@@ -6141,35 +6144,47 @@ export default function Home() {
 
             <div className="grid gap-3 lg:grid-cols-3">
               {aiCsTopSummaryItems.map((item) => (
-                <article
+                <button
                   key={item.label}
-                  className={`rounded-xl border p-4 ${item.className}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedWorkflowStatus(item.targetStatus);
+                    setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+                    scrollToSection("ai-cs-inbox");
+                  }}
+                  className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${item.className}`}
                 >
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                    {item.label}
-                  </p>
-                  <p
-                    className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight ${item.valueClassName}`}
-                  >
-                    {workflowSummaryLoading
-                      ? "—"
-                      : item.value.toLocaleString("ko-KR")}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                        {item.label}
+                      </p>
+                      <p
+                        className={`mt-1 text-2xl font-semibold tabular-nums tracking-tight ${item.valueClassName}`}
+                      >
+                        {workflowSummaryLoading
+                          ? "—"
+                          : item.value.toLocaleString("ko-KR")}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                      보기
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                     {item.description}
                   </p>
-                </article>
+                </button>
               ))}
             </div>
 
             <details className="mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  자세한 지표 보기
+                  성과와 자동화 기록
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  자동 완료, 플랫폼 연동, 절약 시간, 안전장치 내역을 더 자세히
-                  확인합니다.
+                  자동 완료, 절약 시간, 안전장치가 궁금할 때 펼쳐보세요.
                 </span>
               </summary>
 
@@ -6329,20 +6344,9 @@ export default function Home() {
             </details>
 
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
-              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    먼저 확인할 항목
-                  </h3>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    위험도, 승인 필요 여부, 확인 이유, 오래된 승인 대기 순으로
-                    골랐습니다.
-                  </p>
-                </div>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  최대 3개 표시
-                </span>
-              </div>
+              <h3 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                먼저 확인할 항목
+              </h3>
 
               {workflowSummaryLoading ? (
                 <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -6389,23 +6393,50 @@ export default function Home() {
                           {truncateSummaryText(item.aiReason, 82)}
                         </p>
                       ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedWorkflowStatus(
+                            item.status === "pending"
+                              ? "pending"
+                              : "needs_review",
+                          );
+                          setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+                          scrollToSection("ai-cs-inbox");
+                        }}
+                        className={buttonClass(
+                          item.riskLevel === "high" ? "danger" : "secondary",
+                          "sm",
+                          "mt-3 w-full rounded-lg",
+                        )}
+                      >
+                        처리함에서 확인
+                      </button>
                     </article>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    오늘의 AI 직원 일지
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    AI가 무엇을 처리했고, 왜 멈췄고, 사장님이 어디에
-                    개입했는지 기록합니다.
-                  </p>
-                </div>
+            <details className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+              <summary className="cursor-pointer list-none">
+                <span className="flex items-center justify-between gap-3">
+                  <span>
+                    <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      AI 직원 일지
+                    </span>
+                    <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                      오늘 AI가 처리하고 멈춘 기록
+                    </span>
+                  </span>
+                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                    펼쳐보기
+                  </span>
+                </span>
+              </summary>
+
+              <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                <div className="mb-3 flex justify-end">
                 <button
                   type="button"
                   onClick={() => void loadAiActivityLogs()}
@@ -6418,7 +6449,7 @@ export default function Home() {
                 >
                   {aiActivityLogsLoading ? "불러오는 중" : "새로고침"}
                 </button>
-              </div>
+                </div>
 
               {aiActivityLogsLoading ? (
                 <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -6603,7 +6634,8 @@ export default function Home() {
                   )}
                 </div>
               )}
-            </div>
+              </div>
+            </details>
           </section>
         ) : null}
 
@@ -8641,16 +8673,8 @@ export default function Home() {
                 AI CS 처리함
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                AI가 만든 답변 초안을 상태별로 모아두는 업무함입니다. 먼저
-                확인할 항목부터 승인하거나 수정하세요.
-              </p>
-              <p className="mt-2 max-w-3xl text-xs leading-5 text-indigo-700 dark:text-indigo-300">
-                판단 이유, 답변 근거, 플랫폼 상태는 카드의 자세히 보기에서
-                확인할 수 있습니다.
-                <span className="mt-1 block">
-                  플랫폼 연동 탭에서 불러온 샘플 데이터에는 ‘데모 데이터’ 배지가
-                  표시됩니다.
-                </span>
+                상태를 고르고 답변을 승인하거나 수정하세요. 세부 판단은 카드의
+                자세히 보기에서 확인할 수 있습니다.
               </p>
             </div>
             <button
@@ -9460,19 +9484,13 @@ export default function Home() {
             activeTab === "manage" ? "order-[42]" : "hidden"
           }`}
         >
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Support Tools
-              </p>
-              <h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                보조 관리
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                자주 보는 업무는 AI CS 처리함에 모아두고, 지식 점검과 운영 분석은
-                필요할 때만 펼쳐서 확인합니다.
-              </p>
-            </div>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+              더 보기
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              필요할 때만 지식과 분석을 열어보세요.
+            </p>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
@@ -9480,10 +9498,10 @@ export default function Home() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
-                    AI가 학습한 가게 지식
+                    가게 지식
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
-                    사장님이 알려준 답변과 AI가 실제 답변에 사용한 기록을 관리합니다.
+                    AI가 답변에 사용하는 정보를 점검합니다.
                   </p>
                 </div>
                 <button
@@ -9496,45 +9514,19 @@ export default function Home() {
                   {isStoreKnowledgePanelOpen ? "접기" : "열기"}
                 </button>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
-                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                    전체 지식
-                  </p>
-                  <p className="mt-0.5 text-lg font-semibold text-emerald-950 dark:text-emerald-100">
-                    {storeKnowledgeQualityReport.summary.totalCount.toLocaleString(
-                      "ko-KR",
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
-                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                    검토 필요
-                  </p>
-                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
-                    {storeKnowledgeQualityReport.summary.reviewCount.toLocaleString(
-                      "ko-KR",
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
-                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                    충돌 가능
-                  </p>
-                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
-                    {storeKnowledgeQualityReport.summary.conflictCount.toLocaleString(
-                      "ko-KR",
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70">
-                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                    반복 수정
-                  </p>
-                  <p className="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">
-                    {repeatedCorrectionPatterns.length.toLocaleString("ko-KR")}
-                  </p>
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <span className={`rounded-full px-3 py-1.5 ${semanticBadgeClass("neutral")}`}>
+                  전체 {storeKnowledgeQualityReport.summary.totalCount.toLocaleString("ko-KR")}
+                </span>
+                <span className={`rounded-full px-3 py-1.5 ${semanticBadgeClass("warning")}`}>
+                  검토 {storeKnowledgeQualityReport.summary.reviewCount.toLocaleString("ko-KR")}
+                </span>
+                <span className={`rounded-full px-3 py-1.5 ${semanticBadgeClass("warning")}`}>
+                  충돌 {storeKnowledgeQualityReport.summary.conflictCount.toLocaleString("ko-KR")}
+                </span>
+                <span className={`rounded-full px-3 py-1.5 ${semanticBadgeClass("info")}`}>
+                  반복 수정 {repeatedCorrectionPatterns.length.toLocaleString("ko-KR")}
+                </span>
               </div>
             </article>
 
@@ -9545,7 +9537,7 @@ export default function Home() {
                     AI 운영 분석
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-indigo-800 dark:text-indigo-200">
-                    최근 리뷰 흐름을 바탕으로 운영에서 볼 만한 신호를 요약합니다.
+                    최근 리뷰에서 운영 신호를 찾습니다.
                   </p>
                 </div>
                 <button
@@ -9558,15 +9550,13 @@ export default function Home() {
                   {isInsightsPanelOpen ? "접기" : "열기"}
                 </button>
               </div>
-              <div className="mt-4 rounded-lg bg-white/80 px-3 py-2 ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70">
-                <p className="text-xs font-medium text-indigo-800 dark:text-indigo-200">
-                  {insightsLoading
-                    ? "분석을 불러오는 중입니다."
-                    : insightsError
-                      ? "분석을 다시 불러와야 합니다."
-                      : "분석 결과를 접힌 상태로 보관 중입니다."}
-                </p>
-              </div>
+              <p className="mt-4 text-xs font-medium text-indigo-800 dark:text-indigo-200">
+                {insightsLoading
+                  ? "불러오는 중"
+                  : insightsError
+                    ? "다시 분석 필요"
+                    : "분석 준비됨"}
+              </p>
             </article>
           </div>
         </section>
