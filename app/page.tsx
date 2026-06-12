@@ -1398,8 +1398,49 @@ const inputClass =
 const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
 
-const copyButtonClass =
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-slate-900";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "ghost";
+
+type ButtonSize = "sm" | "md" | "lg";
+
+const buttonBaseClass =
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition duration-200 focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50";
+
+const buttonVariantClasses: Record<ButtonVariant, string> = {
+  primary:
+    "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 focus-visible:ring-indigo-200 dark:focus-visible:ring-indigo-950",
+  secondary:
+    "border border-slate-200 bg-white/85 text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:text-slate-950 focus-visible:ring-indigo-100 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-slate-900 dark:hover:text-white dark:focus-visible:ring-indigo-950",
+  success:
+    "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-emerald-500/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 focus-visible:ring-emerald-200 dark:focus-visible:ring-emerald-950",
+  warning:
+    "border border-amber-200 bg-amber-50 text-amber-800 hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-100 focus-visible:ring-amber-100 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200 dark:hover:bg-amber-950/60 dark:focus-visible:ring-amber-950",
+  danger:
+    "border border-red-200 bg-white/85 text-red-700 hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50 focus-visible:ring-red-100 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-red-950",
+  ghost:
+    "bg-transparent text-slate-600 shadow-none hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-indigo-100 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-indigo-950",
+};
+
+const buttonSizeClasses: Record<ButtonSize, string> = {
+  sm: "h-9 px-3 text-xs",
+  md: "h-10 px-4 text-sm",
+  lg: "h-12 px-5 text-sm",
+};
+
+function buttonClass(
+  variant: ButtonVariant = "secondary",
+  size: ButtonSize = "md",
+  extraClass = "",
+) {
+  return `${buttonBaseClass} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]} ${extraClass}`.trim();
+}
+
+const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 
 const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
@@ -4876,7 +4917,7 @@ export default function Home() {
   const isFoodPolicyHelper = interpretedBusinessType === "배달 음식점";
 
   const policyOptionButtonClass =
-    "rounded-lg border px-3 py-2 text-xs font-medium transition";
+    "inline-flex min-h-9 items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-indigo-950";
 
   const onboardingWorkflowItems = workflowSummaryItems.filter(
     (item) => item.type !== "missing_info",
@@ -5695,7 +5736,7 @@ export default function Home() {
                 type="button"
                 onClick={() => void handleLogout()}
                 disabled={authLoading || authActionLoading}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
+                className={buttonClass("secondary", "lg", "h-11")}
               >
                 {authActionLoading ? "처리 중..." : "로그아웃"}
               </button>
@@ -5704,7 +5745,7 @@ export default function Home() {
                 type="button"
                 onClick={() => void handleKakaoLogin()}
                 disabled={authLoading || authActionLoading}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-yellow-300 to-amber-300 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-300/30 transition hover:-translate-y-0.5 hover:shadow-amber-300/50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+                className={`${buttonBaseClass} ${buttonSizeClasses.lg} h-11 bg-gradient-to-r from-yellow-300 to-amber-300 font-bold text-slate-950 shadow-lg shadow-amber-300/30 hover:-translate-y-0.5 hover:shadow-amber-300/50 focus-visible:ring-amber-200`}
               >
                 {authActionLoading ? "연결 중..." : "카카오로 로그인"}
               </button>
@@ -5742,7 +5783,7 @@ export default function Home() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                  className={`rounded-xl px-3 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${
                     isSelected
                       ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/25"
                       : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
@@ -5809,14 +5850,14 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => goToTabSection("store", "store-info")}
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:shadow-indigo-500/40"
+                  className={buttonClass("primary", "lg", "font-bold")}
                 >
                   가게 정보 등록하기
                 </button>
                 <button
                   type="button"
                   onClick={() => goToTabSection("answer", "cs-reply")}
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-white/80 px-5 text-sm font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
+                  className={buttonClass("secondary", "lg", "font-bold")}
                 >
                   문의 답변 써보기
                 </button>
@@ -5893,7 +5934,11 @@ export default function Home() {
                             type="button"
                             onClick={item.onAction}
                             disabled={item.id === "login" && authActionLoading}
-                            className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-indigo-800 dark:bg-zinc-950 dark:text-indigo-300 dark:hover:bg-indigo-950"
+                            className={buttonClass(
+                              "secondary",
+                              "sm",
+                              "mt-3 h-8 rounded-lg text-indigo-700 dark:text-indigo-300",
+                            )}
                           >
                             {item.id === "login" && authActionLoading
                               ? "처리 중..."
@@ -5927,7 +5972,7 @@ export default function Home() {
                 type="button"
                 onClick={startRecommendedAction.onAction}
                 disabled={authActionLoading}
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                className={buttonClass("primary")}
               >
                 {authActionLoading
                   ? "처리 중..."
@@ -6011,7 +6056,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => scrollToSection("ai-cs-inbox")}
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                className={buttonClass("primary")}
               >
                 AI CS 처리함에서 확인하기
               </button>
@@ -6174,7 +6219,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => goToTabSection("store", "store-info")}
-                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                      className={buttonClass("secondary", "sm", "rounded-lg")}
                     >
                       자동 처리 설정 보기
                     </button>
@@ -6284,7 +6329,11 @@ export default function Home() {
                   type="button"
                   onClick={() => void loadAiActivityLogs()}
                   disabled={aiActivityLogsLoading}
-                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className={buttonClass(
+                    "secondary",
+                    "sm",
+                    "h-8 rounded-lg",
+                  )}
                 >
                   {aiActivityLogsLoading ? "불러오는 중" : "새로고침"}
                 </button>
@@ -6611,7 +6660,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsExamplePickerOpen((current) => !current)}
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/70"
+              className={buttonClass("secondary")}
               aria-expanded={isExamplePickerOpen}
             >
               예시 데이터로 체험하기
@@ -7605,7 +7654,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={storeSaving}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className={buttonClass("success", "lg", "h-11")}
             >
               {storeSaving ? "저장 중..." : "가게 정보 저장"}
             </button>
@@ -7621,7 +7670,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => goToTabSection("answer", "cs-reply")}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className={buttonClass("success", "sm", "rounded-lg")}
                 >
                   문의 답변 테스트하기
                 </button>
@@ -7630,7 +7679,7 @@ export default function Home() {
                   onClick={() =>
                     goToTabSection("integrations", "platform-integrations")
                   }
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-200 dark:hover:bg-emerald-950/70"
+                  className={buttonClass("secondary", "sm", "rounded-lg")}
                 >
                   샘플 데이터로 체험하기
                 </button>
@@ -7981,7 +8030,11 @@ export default function Home() {
                         onClick={() =>
                           setIsCoupangSettingsOpen((isOpen) => !isOpen)
                         }
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-indigo-300 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-800 dark:bg-zinc-950 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                        className={buttonClass(
+                          "secondary",
+                          "md",
+                          "w-full text-indigo-700 dark:text-indigo-300",
+                        )}
                         aria-expanded={isCoupangSettingsOpen}
                       >
                         {isCoupangSettingsOpen
@@ -8340,7 +8393,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => goToTabSection("store", "store-info")}
-                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                className={buttonClass("success", "sm", "w-fit rounded-lg")}
               >
                 가게 설정하기
               </button>
@@ -8448,7 +8501,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={csLoading || aiGenerationBlocked}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-sky-700 px-5 text-sm font-medium text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                className={buttonClass("primary", "lg", "h-11")}
               >
                 {csLoading ? "생성 중..." : "문의 답변 작성하기"}
               </button>
@@ -8537,7 +8590,7 @@ export default function Home() {
                 ])
               }
               disabled={historyLoading || csMessagesLoading || missingInfosLoading}
-              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className={buttonClass("secondary", "sm", "rounded-lg")}
             >
               새로고침
             </button>
@@ -8563,7 +8616,7 @@ export default function Home() {
                         setEditingWorkflowReply("");
                         setWorkflowBulkApprovalResult(null);
                       }}
-                      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition ${
+                      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${
                         isSelected
                           ? "border-indigo-500 bg-indigo-600 text-white shadow-sm dark:border-indigo-400 dark:bg-indigo-500"
                           : "border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40"
@@ -8603,7 +8656,7 @@ export default function Home() {
                       setEditingWorkflowReply("");
                       setWorkflowBulkApprovalResult(null);
                     }}
-                    className={`rounded-xl border px-3 py-3 text-left transition ${
+                    className={`rounded-xl border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${
                       isSelected
                         ? "border-indigo-500 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900"
                         : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
@@ -8642,7 +8695,11 @@ export default function Home() {
                     workflowUpdatingKey !== null ||
                     editingWorkflowKey !== null
                   }
-                  className="inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500 sm:w-auto"
+                  className={buttonClass(
+                    "success",
+                    "lg",
+                    "h-11 w-full sm:w-auto",
+                  )}
                 >
                   {workflowBulkApproving
                     ? "안전 항목 일괄 승인 중..."
@@ -9111,7 +9168,7 @@ export default function Home() {
                                   void handleDeleteWorkflowItem(item)
                                 }
                                 disabled={isUpdating}
-                                className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white/85 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30"
+                                className={buttonClass("danger", "sm", "rounded-lg")}
                               >
                                 삭제
                               </button>
@@ -9125,7 +9182,7 @@ export default function Home() {
                                     })
                                   }
                                   disabled={isUpdating}
-                                  className="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-700 px-3 text-xs font-semibold text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                                  className={buttonClass("primary", "sm", "rounded-lg")}
                                 >
                                   {isUpdating ? "저장 중..." : "수정 저장"}
                                 </button>
@@ -9135,7 +9192,7 @@ export default function Home() {
                                     setEditingWorkflowKey(null);
                                     setEditingWorkflowReply("");
                                   }}
-                                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-slate-900"
+                                  className={buttonClass("secondary", "sm", "rounded-lg")}
                                 >
                                   취소
                                 </button>
@@ -9151,7 +9208,11 @@ export default function Home() {
                                       })
                                     }
                                     disabled={!item.canMutate || isUpdating}
-                                    className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:shadow-emerald-500/30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50 sm:w-auto"
+                                    className={buttonClass(
+                                      "success",
+                                      "md",
+                                      "w-full font-bold sm:w-auto",
+                                    )}
                                   >
                                     {isUpdating ? "처리 중..." : "승인 완료"}
                                   </button>
@@ -9161,7 +9222,11 @@ export default function Home() {
                                     type="button"
                                     onClick={() => handleStartWorkflowEdit(item)}
                                     disabled={!item.canMutate || isUpdating}
-                                    className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-white/85 px-3 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900/60 dark:bg-slate-950/70 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                                    className={buttonClass(
+                                      "secondary",
+                                      "sm",
+                                      "rounded-lg text-indigo-700 dark:text-indigo-300",
+                                    )}
                                   >
                                     수정하기
                                   </button>
@@ -9175,7 +9240,11 @@ export default function Home() {
                                         })
                                       }
                                       disabled={!item.canMutate || isUpdating}
-                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-white/85 px-3 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/60 dark:bg-slate-950/70 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                                      className={buttonClass(
+                                        "warning",
+                                        "sm",
+                                        "rounded-lg",
+                                      )}
                                     >
                                       확인 필요
                                     </button>
@@ -9191,7 +9260,11 @@ export default function Home() {
                                         })
                                       }
                                       disabled={isUpdating}
-                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white/85 px-3 text-xs font-semibold text-slate-500 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-400 dark:hover:bg-slate-900"
+                                      className={buttonClass(
+                                        "secondary",
+                                        "sm",
+                                        "rounded-lg text-slate-500 dark:text-slate-400",
+                                      )}
                                     >
                                       확인 필요로 되돌리기
                                     </button>
@@ -9208,7 +9281,11 @@ export default function Home() {
                                       (item.type === "cs" &&
                                         deletingCsMessageId === item.id)
                                     }
-                                    className="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white/85 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30"
+                                    className={buttonClass(
+                                      "danger",
+                                      "sm",
+                                      "rounded-lg",
+                                    )}
                                   >
                                     삭제
                                   </button>
@@ -9247,7 +9324,11 @@ export default function Home() {
                             ),
                           )
                         }
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 dark:border-indigo-900/60 dark:bg-zinc-900 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                        className={buttonClass(
+                          "secondary",
+                          "md",
+                          "text-indigo-700 dark:text-indigo-300",
+                        )}
                       >
                         더 보기
                       </button>
@@ -9256,7 +9337,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={handleCollapseWorkflowItems}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        className={buttonClass("secondary")}
                       >
                         접기
                       </button>
@@ -9303,7 +9384,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => toggleManageSupportPanel("store_knowledge")}
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className={buttonClass("success", "sm", "rounded-lg")}
                   aria-expanded={isStoreKnowledgePanelOpen}
                   aria-controls="store-knowledge"
                 >
@@ -9365,7 +9446,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => toggleManageSupportPanel("insights")}
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-indigo-700 px-3 text-xs font-semibold text-white transition hover:bg-indigo-800 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                  className={buttonClass("primary", "sm", "rounded-lg")}
                   aria-expanded={isInsightsPanelOpen}
                   aria-controls="ai-insights"
                 >
@@ -9411,7 +9492,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadStoreKnowledge()}
               disabled={storeKnowledgeLoading}
-              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950"
+              className={buttonClass("secondary", "sm", "rounded-lg")}
             >
               {storeKnowledgeLoading ? "불러오는 중..." : "새로고침"}
             </button>
@@ -9445,7 +9526,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={openStoreKnowledgeReviewCandidates}
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-semibold text-white transition hover:bg-amber-800 dark:bg-amber-600 dark:hover:bg-amber-500"
+                  className={buttonClass("warning", "sm", "rounded-lg")}
                 >
                   후보 검토하기
                 </button>
@@ -9531,7 +9612,11 @@ export default function Home() {
                                   void handleSaveMergedCorrectionPattern(pattern)
                                 }
                                 disabled={isMerging}
-                                className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-semibold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                className={buttonClass(
+                                  "warning",
+                                  "sm",
+                                  "h-8 rounded-lg",
+                                )}
                               >
                                 {isMerging ? "정리 중..." : "저장하고 다시 사용"}
                               </button>
@@ -9541,7 +9626,11 @@ export default function Home() {
                                   handleCancelMergeCorrectionPattern(pattern.key)
                                 }
                                 disabled={isMerging}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:opacity-60 dark:border-amber-800 dark:bg-zinc-950 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                                className={buttonClass(
+                                  "secondary",
+                                  "sm",
+                                  "h-8 rounded-lg",
+                                )}
                               >
                                 취소
                               </button>
@@ -9823,7 +9912,7 @@ export default function Home() {
                                   )
                                 }
                                 disabled={isDeleting || isSaving}
-                                className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                className={buttonClass("success", "sm", "h-auto py-1.5")}
                               >
                                 {isSaving ? "처리 중..." : "문제 없음, 다시 사용"}
                               </button>
@@ -9946,7 +10035,11 @@ export default function Home() {
                                     )
                                   }
                                   disabled={isResolvingConflict || isDeleting}
-                                  className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-medium text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                  className={buttonClass(
+                                    "warning",
+                                    "sm",
+                                    "h-8 rounded-lg",
+                                  )}
                                 >
                                   {isResolvingConflict
                                     ? "정리 중..."
@@ -10026,7 +10119,7 @@ export default function Home() {
                               void handleSaveStoreKnowledgeItem(item)
                             }
                             disabled={isSaving}
-                            className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                            className={buttonClass("success", "sm", "h-auto py-1.5")}
                           >
                             {isSaving ? "저장 중..." : "수정 저장"}
                           </button>
@@ -10105,7 +10198,7 @@ export default function Home() {
                               void handleDeleteStoreKnowledgeItem(item)
                             }
                             disabled={isDeleting || isSaving}
-                            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                            className={buttonClass("danger", "sm", "h-auto py-1.5")}
                           >
                             {isDeleting ? "삭제 중..." : "삭제"}
                           </button>
@@ -10138,7 +10231,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadCsMessages()}
               disabled={csMessagesLoading}
-              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className={buttonClass("secondary", "sm", "h-auto py-1.5")}
             >
               새로고침
             </button>
@@ -10174,7 +10267,7 @@ export default function Home() {
                       type="button"
                       onClick={() => void handleDeleteCsMessage(item.id)}
                       disabled={deletingCsMessageId === item.id}
-                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                      className={buttonClass("danger", "sm", "h-auto py-1.5")}
                     >
                       {deletingCsMessageId === item.id ? "삭제 중..." : "삭제"}
                     </button>
@@ -10247,7 +10340,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadMissingInfos()}
               disabled={missingInfosLoading}
-              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className={buttonClass("secondary", "sm", "h-auto py-1.5")}
             >
               새로고침
             </button>
@@ -10424,7 +10517,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadHistory()}
               disabled={historyLoading}
-              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className={buttonClass("secondary", "sm", "h-auto py-1.5")}
             >
               새로고침
             </button>
@@ -10461,7 +10554,7 @@ export default function Home() {
                         type="button"
                         onClick={() => void handleDeleteReview(item.id)}
                         disabled={deletingReviewId === item.id}
-                        className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                        className={buttonClass("danger", "sm", "h-auto py-1.5")}
                       >
                         {deletingReviewId === item.id ? "삭제 중..." : "삭제"}
                       </button>
@@ -10548,7 +10641,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={isLoading || aiGenerationBlocked}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className={buttonClass("primary", "lg", "h-11")}
             >
               {isLoading ? "생성 중..." : "리뷰 답글 작성하기"}
             </button>
@@ -10637,7 +10730,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={batchReviewLoading || aiGenerationBlocked}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-700 px-5 text-sm font-medium text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+              className={buttonClass("primary", "lg", "h-11")}
             >
               {batchReviewLoading ? "일괄 생성 중..." : "일괄 답글 생성"}
             </button>
@@ -10752,7 +10845,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadHistory()}
               disabled={historyLoading}
-              className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className={buttonClass("secondary", "sm", "h-auto py-1.5")}
             >
               새로고침
             </button>
@@ -10821,7 +10914,7 @@ export default function Home() {
                         type="button"
                         onClick={() => void handleDeleteReview(item.id)}
                         disabled={deletingReviewId === item.id}
-                        className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                        className={buttonClass("danger", "sm", "h-auto py-1.5")}
                       >
                         {deletingReviewId === item.id ? "삭제 중..." : "삭제"}
                       </button>
