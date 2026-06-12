@@ -5150,33 +5150,25 @@ export default function Home() {
     {
       id: "cs",
       label: "문의 답변",
-      title: "고객 문의 하나에 답변하기",
       description:
         "처음 테스트할 때는 여기부터 시작하세요. 모르는 정보는 확인 필요로 분리합니다.",
-      targetId: "cs-reply",
     },
     {
       id: "review",
       label: "리뷰 답글",
-      title: "리뷰 하나에 답글 달기",
       description:
         "좋은 리뷰와 아쉬운 리뷰에 맞춰 사장님 말투로 답글을 만듭니다.",
-      targetId: "review-reply",
     },
     {
       id: "batch_review",
       label: "리뷰 일괄",
-      title: "여러 리뷰 한 번에 처리하기",
       description:
         "리뷰가 많이 쌓였을 때 줄바꿈으로 붙여넣고 한 번에 초안을 만듭니다.",
-      targetId: "batch-review-reply",
     },
   ] as const satisfies ReadonlyArray<{
     id: AnswerMode;
     label: string;
-    title: string;
     description: string;
-    targetId: string;
   }>;
 
   function scrollToSection(targetId: string) {
@@ -8532,19 +8524,19 @@ export default function Home() {
         {activeTab === "answer" ? (
           <section className="order-[29] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-5">
             <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                답변 작성
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                오늘 처리할 일을 하나만 골라 시작하세요
+              <h2 className="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                어떤 답변을 만들까요?
               </h2>
               <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                처음에는 고객 문의 하나로 테스트하고, 익숙해지면 리뷰 답글과
-                일괄 생성으로 넓혀가면 됩니다.
+                업무를 선택하고 고객이 남긴 내용을 그대로 붙여넣으세요.
               </p>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div
+              role="tablist"
+              aria-label="답변 작성 유형"
+              className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-950"
+            >
               {answerModeItems.map((item) => {
                 const isSelected = selectedAnswerMode === item.id;
 
@@ -8552,34 +8544,26 @@ export default function Home() {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedAnswerMode(item.id);
-                      window.requestAnimationFrame(() => {
-                        window.requestAnimationFrame(() =>
-                          scrollToSection(item.targetId),
-                        );
-                      });
-                    }}
-                    className={`rounded-xl border p-4 text-left transition ${
+                    role="tab"
+                    onClick={() => setSelectedAnswerMode(item.id)}
+                    className={`min-h-11 rounded-lg px-2 py-2 text-center text-xs font-semibold transition sm:text-sm ${
                       isSelected
-                        ? "border-sky-500 bg-sky-50 text-sky-950 shadow-sm ring-1 ring-sky-100 dark:border-sky-500 dark:bg-sky-950/30 dark:text-sky-100 dark:ring-sky-900"
-                        : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-sky-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-sky-900 dark:hover:bg-zinc-900"
+                        ? "bg-white text-sky-700 shadow-sm dark:bg-zinc-800 dark:text-sky-300"
+                        : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                     }`}
-                    aria-pressed={isSelected}
+                    aria-selected={isSelected}
                   >
-                    <span className="text-xs font-semibold">
-                      {item.label}
-                    </span>
-                    <span className="mt-2 block text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                      {item.title}
-                    </span>
-                    <span className="mt-1 block text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                      {item.description}
-                    </span>
+                    {item.label}
                   </button>
                 );
               })}
             </div>
+            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              {
+                answerModeItems.find((item) => item.id === selectedAnswerMode)
+                  ?.description
+              }
+            </p>
           </section>
         ) : null}
 
@@ -8591,26 +8575,25 @@ export default function Home() {
               : "hidden"
           }`}
         >
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mb-6">
             <div>
-              <p className="mb-2 inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-300 dark:ring-sky-900">
-                정책 기반 CS
-              </p>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                문의에 답변하기
+                고객 문의 답변
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                배송, 환불, 교환, 상품 관련 고객 문의에 답변합니다. 등록된 배송정책과 환불정책을 기준으로 답변하며, 모르는 내용은 추측하지 않습니다.
+                문의를 붙여넣으면 등록된 가게 정보를 기준으로 답변을 만듭니다.
+                모르는 내용은 추측하지 않고 확인 필요로 분리합니다.
               </p>
             </div>
-            <span className="inline-flex w-fit rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-300 dark:ring-sky-900">
-              /api/cs-reply
-            </span>
           </div>
 
           <form
             onSubmit={handleCsReplySubmit}
-            className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]"
+            className={
+              csReply || csLoading
+                ? "grid gap-5 lg:grid-cols-[1.05fr_0.95fr]"
+                : "space-y-5"
+            }
           >
             <div className="space-y-5">
               <div className="space-y-2">
@@ -8647,37 +8630,39 @@ export default function Home() {
               ) : null}
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-medium">생성된 CS 답변</h3>
-                <div className="flex items-center gap-2">
-                  {csReply && !csLoading ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleCopyText(csReply, "답변이 복사되었습니다")
-                      }
-                      className={copyButtonClass}
-                    >
-                      답변 복사
-                    </button>
-                  ) : null}
-                  {csLoading ? (
-                    <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                      작성 중
-                    </span>
-                  ) : null}
+            {csReply || csLoading ? (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-medium">생성된 CS 답변</h3>
+                  <div className="flex items-center gap-2">
+                    {csReply && !csLoading ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleCopyText(csReply, "답변이 복사되었습니다")
+                        }
+                        className={copyButtonClass}
+                      >
+                        답변 복사
+                      </button>
+                    ) : null}
+                    {csLoading ? (
+                      <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                        작성 중
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <div
+                  className="min-h-56 whitespace-pre-wrap rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  aria-live="polite"
+                >
+                  {csLoading
+                    ? "고객 문의에 맞는 답변을 생성하고 있습니다..."
+                    : csReply || "생성된 CS 답변이 여기에 표시됩니다."}
                 </div>
               </div>
-              <div
-                className="min-h-56 whitespace-pre-wrap rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                aria-live="polite"
-              >
-                {csLoading
-                  ? "고객 문의에 맞는 답변을 생성하고 있습니다..."
-                  : csReply || "생성된 CS 답변이 여기에 표시됩니다."}
-              </div>
-            </div>
+            ) : null}
           </form>
         </section>
 
@@ -10731,14 +10716,11 @@ export default function Home() {
           }`}
         >
           <div className="mb-6">
-            <p className="mb-2 inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700">
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
               리뷰 답글
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              리뷰에 답글 달기
-            </h1>
+            </h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              고객이 남긴 리뷰에 감사 답글을 작성합니다. 맛, 서비스, 배송에 대한 리뷰를 입력하면 우리 가게 말투에 맞춰 답글을 만들어드려요.
+              리뷰를 붙여넣으면 내용과 사장님 말투에 맞는 답글을 만듭니다.
             </p>
           </div>
 
@@ -10776,27 +10758,29 @@ export default function Home() {
             </div>
           ) : null}
 
-          <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <h2 className="text-sm font-medium">AI 답글 출력</h2>
-              {reply && !isLoading ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    void handleCopyText(reply, "답글이 복사되었습니다")
-                  }
-                  className={copyButtonClass}
-                >
-                  답글 복사
-                </button>
-              ) : null}
+          {reply || isLoading ? (
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-medium">AI 답글 출력</h2>
+                {reply && !isLoading ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void handleCopyText(reply, "답글이 복사되었습니다")
+                    }
+                    className={copyButtonClass}
+                  >
+                    답글 복사
+                  </button>
+                ) : null}
+              </div>
+              <div className="min-h-28 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                {isLoading
+                  ? "답글을 생성하고 있습니다..."
+                  : reply || "생성된 답글이 여기에 표시됩니다."}
+              </div>
             </div>
-            <div className="min-h-28 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-              {isLoading
-                ? "답글을 생성하고 있습니다..."
-                : reply || "생성된 답글이 여기에 표시됩니다."}
-            </div>
-          </div>
+          ) : null}
         </section>
 
         <section
@@ -10808,11 +10792,8 @@ export default function Home() {
           }`}
         >
           <div className="mb-6">
-            <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
-              일괄 생성
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              리뷰 답글 일괄 생성
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              여러 리뷰 답글 만들기
             </h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               여러 리뷰를 줄바꿈으로 붙여넣으면, 각 리뷰에 맞는 답글을 한
