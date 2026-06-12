@@ -6766,8 +6766,8 @@ export default function Home() {
                 가게 정보
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                처음에는 가게명, 업종, 대표 상품만 입력해도 시작할 수 있어요.
-                더 정확한 답변이 필요할 때 아래 고급 설정을 열어 보강하세요.
+                가게명, 업종, 대표 상품만 입력하면 바로 AI 답변을 테스트할 수
+                있어요. 나머지 정보는 필요할 때 천천히 보강하세요.
               </p>
             </div>
             <button
@@ -6819,36 +6819,14 @@ export default function Home() {
             </p>
           ) : null}
 
-          <div className="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              처음엔 3가지만 입력해도 됩니다
-            </p>
-            <div className="mt-3 grid gap-2 text-xs text-zinc-600 dark:text-zinc-300 sm:grid-cols-3">
-              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                1. 가게명
-              </span>
-              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                2. 업종
-              </span>
-              <span className="rounded-full bg-white px-3 py-2 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                3. 대표 상품
-              </span>
-            </div>
-          </div>
-
           <form onSubmit={handleStoreSubmit} className="space-y-5">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
               <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  먼저 입력
-                </p>
-                <h3 className="mt-1 text-base font-semibold text-zinc-950 dark:text-zinc-50">
-                  처음 답변 테스트에 필요한 핵심 정보
+                <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                  기본 정보
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                  가게명만 있어도 저장할 수 있지만, 업종과 대표 상품까지
-                  넣으면 첫 AI 답변 테스트가 훨씬 자연스러워집니다.
-                  정책과 말투 학습은 나중에 보강해도 괜찮아요.
+                  가게명, 업종, 대표 상품을 입력하고 먼저 저장해 보세요.
                 </p>
               </div>
 
@@ -6884,14 +6862,31 @@ export default function Home() {
                   </option>
                 ))}
               </select>
-              <input
-                type="text"
-                value={businessType}
-                onChange={(event) => setBusinessType(event.target.value)}
-                placeholder="직접 입력도 가능합니다. 예: 반려동물 용품"
-                className={inputClass}
-                aria-label="업종 직접 입력"
-              />
+              {businessType &&
+              !businessTypeOptions.some((option) => option === businessType) ? (
+                <input
+                  type="text"
+                  value={businessType}
+                  onChange={(event) => setBusinessType(event.target.value)}
+                  placeholder="예: 반려동물 용품"
+                  className={inputClass}
+                  aria-label="업종 직접 입력"
+                />
+              ) : (
+                <details className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <summary className="cursor-pointer list-none text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                    목록에 없는 업종 직접 입력
+                  </summary>
+                  <input
+                    type="text"
+                    value=""
+                    onChange={(event) => setBusinessType(event.target.value)}
+                    placeholder="예: 반려동물 용품"
+                    className={`${inputClass} mt-3`}
+                    aria-label="업종 직접 입력"
+                  />
+                </details>
+              )}
 
               <details className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/25">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-emerald-950 dark:text-emerald-100">
@@ -7147,6 +7142,18 @@ export default function Home() {
               </div>
             </details>
 
+            <details className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  AI 답변 정확도 높이기
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  상품 목록과 평소 말투를 추가하면 더 정확하고 사장님다운 답변을
+                  만들 수 있어요.
+                </span>
+              </summary>
+
+              <div className="mt-4 space-y-4">
             <details className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-sky-950 dark:text-sky-100">
@@ -7284,8 +7291,22 @@ export default function Home() {
                 </div>
               </div>
             </details>
+              </div>
+            </details>
 
-            <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+            <details className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <summary className="cursor-pointer list-none">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  운영 정책 입력
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  배송, 픽업, 취소, 환불처럼 정확한 안내가 필요한 기준을
+                  입력합니다.
+                </span>
+              </summary>
+
+              <div className="mt-4 space-y-4">
+            <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   배송정책
@@ -7437,7 +7458,7 @@ export default function Home() {
               />
             </details>
 
-            <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+            <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   환불정책
@@ -7762,6 +7783,8 @@ export default function Home() {
                 placeholder="환불·교환 조건 등"
                 className={textareaClass}
               />
+            </details>
+              </div>
             </details>
 
             <button
