@@ -4834,55 +4834,6 @@ export default function Home() {
                   onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
                 };
 
-  const operationSummaryItems = [
-    {
-      label: "전체 리뷰 수",
-      value: historyLoading ? "—" : stats.total.toLocaleString("ko-KR"),
-      description: "지금까지 생성/관리한 리뷰 답글",
-      className:
-        "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
-      valueClassName: "text-zinc-950 dark:text-zinc-50",
-    },
-    {
-      label: "부정 리뷰 수",
-      value: historyLoading ? "—" : stats.negative.toLocaleString("ko-KR"),
-      description: "우선 확인이 필요한 리뷰",
-      className:
-        stats.negative > 0
-          ? "border-red-200 bg-red-50/80 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
-          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
-      valueClassName:
-        stats.negative > 0
-          ? "text-red-700 dark:text-red-300"
-          : "text-zinc-950 dark:text-zinc-50",
-    },
-    {
-      label: "최근 CS 문의 수",
-      value: csMessagesLoading
-        ? "—"
-        : csMessages.length.toLocaleString("ko-KR"),
-      description: "저장된 고객 문의 답변",
-      className:
-        "border-sky-200 bg-sky-50/70 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/25 dark:text-sky-100",
-      valueClassName: "text-sky-700 dark:text-sky-300",
-    },
-    {
-      label: "확인 필요한 정보",
-      value: missingInfosLoading
-        ? "—"
-        : pendingMissingInfoCount.toLocaleString("ko-KR"),
-      description: "AI가 답변을 위해 추가로 요청한 정보",
-      className:
-        pendingMissingInfoCount > 0
-          ? "border-amber-300 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-200/80 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-100 dark:ring-amber-900/70"
-          : "border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
-      valueClassName:
-        pendingMissingInfoCount > 0
-          ? "text-amber-700 dark:text-amber-300"
-          : "text-zinc-950 dark:text-zinc-50",
-    },
-  ] as const;
-
   const kpiItems = [
     {
       label: "전체 리뷰",
@@ -5888,7 +5839,7 @@ export default function Home() {
             activeTab === "start" ? "order-[10]" : "hidden"
           }`}
         >
-          <div className="relative grid gap-6 overflow-hidden p-6 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+          <div className="relative grid gap-6 overflow-hidden p-6 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-200/60 blur-3xl dark:bg-indigo-600/20" />
             <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-cyan-200/60 blur-3xl dark:bg-cyan-500/15" />
             <div className="relative">
@@ -5902,47 +5853,38 @@ export default function Home() {
                 </span>
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
-                가게 정보와 운영 정책을 등록하면, AI가 리뷰 답글과 고객
-                문의 답변을 우리 가게 말투에 맞춰 작성해드립니다. 부족한
-                정보는 AI가 사장님에게 질문하고, 답변을 학습해 다음 응대에
-                반영합니다.
+                문의와 리뷰의 답변 초안을 만들고, 위험하거나 모르는 내용은
+                사장님에게 확인합니다. 알려준 정보는 다음 응대에 다시
+                활용합니다.
               </p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {["문의·리뷰 통합 처리", "위험도 판단", "사장님 말투 학습"].map(
-                  (label) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                    >
-                      {label}
-                    </span>
-                  ),
-                )}
-              </div>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/25">
+                <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                  {startRecommendedAction.eyebrow} · 지금 할 일
+                </p>
+                <h2 className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
+                  {startRecommendedAction.title}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {startRecommendedAction.description}
+                </p>
                 <button
                   type="button"
-                  onClick={() => goToTabSection("store", "store-info")}
-                  className={buttonClass("primary", "lg", "font-bold")}
+                  onClick={startRecommendedAction.onAction}
+                  disabled={authActionLoading}
+                  className={buttonClass("primary", "lg", "mt-4 font-bold")}
                 >
-                  가게 정보 등록하기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => goToTabSection("answer", "cs-reply")}
-                  className={buttonClass("secondary", "lg", "font-bold")}
-                >
-                  문의 답변 써보기
+                  {authActionLoading
+                    ? "처리 중..."
+                    : startRecommendedAction.actionLabel}
                 </button>
               </div>
             </div>
 
-            <div className="relative grid gap-3">
-              <div className="rounded-[1.35rem] border border-white/75 bg-white/80 p-4 shadow-[0_24px_70px_-45px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10">
+            <div className="relative rounded-[1.35rem] border border-white/75 bg-white/80 p-5 shadow-[0_24px_70px_-45px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                      처음 시작 체크리스트
+                    <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                      시작 준비
                     </p>
                     <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
                       {completedStartGuideCount}/{startGuideItems.length}단계
@@ -5959,155 +5901,44 @@ export default function Home() {
                     style={{ width: `${startGuideProgressPercent}%` }}
                   />
                 </div>
-              </div>
+                <ol className="mt-5 space-y-2">
+                  {startGuideItems.map((item) => {
+                    const isNextStep =
+                      !item.isComplete && nextStartGuideItem.id === item.id;
 
-              {startGuideItems.map((item) => {
-                const isNextStep =
-                  !item.isComplete && nextStartGuideItem.id === item.id;
-
-                return (
-                  <article
-                    key={item.id}
-                    className={`rounded-xl border p-4 transition ${
-                      isNextStep
-                        ? "border-indigo-200 bg-indigo-50/80 dark:border-indigo-900/60 dark:bg-indigo-950/25"
-                        : item.isComplete
-                          ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/50 dark:bg-emerald-950/20"
-                          : "border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-950/60"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={`inline-flex h-8 shrink-0 items-center justify-center rounded-lg px-2.5 text-xs font-semibold ${
-                          item.isComplete
-                            ? "bg-emerald-600 text-white dark:bg-emerald-500"
-                            : isNextStep
-                              ? "bg-indigo-700 text-white dark:bg-indigo-500"
-                              : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    return (
+                      <li
+                        key={item.id}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm ${
+                          isNextStep
+                            ? "bg-indigo-50 font-semibold text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-100"
+                            : "text-zinc-600 dark:text-zinc-300"
                         }`}
                       >
-                        {item.isComplete ? "완료" : item.step}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                            {item.title}
-                          </h3>
-                          {isNextStep ? (
-                            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                              다음 단계
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                          {item.description}
-                        </p>
+                        <span
+                          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            item.isComplete
+                              ? "bg-emerald-600 text-white"
+                              : isNextStep
+                                ? "bg-indigo-700 text-white"
+                                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                          }`}
+                        >
+                          {item.isComplete ? "✓" : item.step}
+                        </span>
+                        <span className="min-w-0 flex-1">{item.title}</span>
                         {isNextStep ? (
-                          <button
-                            type="button"
-                            onClick={item.onAction}
-                            disabled={item.id === "login" && authActionLoading}
-                            className={buttonClass(
-                              "secondary",
-                              "sm",
-                              "mt-3 h-8 rounded-lg text-indigo-700 dark:text-indigo-300",
-                            )}
-                          >
-                            {item.id === "login" && authActionLoading
-                              ? "처리 중..."
-                              : item.actionLabel}
-                          </button>
+                          <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+                            다음
+                          </span>
                         ) : null}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+                      </li>
+                    );
+                  })}
+                </ol>
             </div>
           </div>
         </section>
-
-        {activeTab === "start" ? (
-          <section className="order-[15] rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 shadow-sm dark:border-indigo-900/60 dark:bg-indigo-950/25">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                  {startRecommendedAction.eyebrow} · 다음 할 일
-                </p>
-                <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                  {startRecommendedAction.title}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  {startRecommendedAction.description}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={startRecommendedAction.onAction}
-                disabled={authActionLoading}
-                className={buttonClass("primary")}
-              >
-                {authActionLoading
-                  ? "처리 중..."
-                  : startRecommendedAction.actionLabel}
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {activeTab === "start" && authUser ? (
-          <section
-            className="order-[30] rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
-          >
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  Daily Summary
-                </p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                  오늘의 운영 요약
-                </h2>
-              </div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                AI가 부족한 정보를 발견하면 이곳에서 바로 확인할 수 있어요.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {operationSummaryItems.map((item) => (
-                <article
-                  key={item.label}
-                  className={`rounded-xl border p-4 transition ${item.className}`}
-                >
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    {item.label}
-                  </p>
-                  <p
-                    className={`mt-2 text-3xl font-semibold tracking-tight ${item.valueClassName}`}
-                  >
-                    {item.value}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    {item.description}
-                  </p>
-                </article>
-              ))}
-            </div>
-            {pendingMissingInfoCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedWorkflowStatus("needs_review");
-                  setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
-                  goToTabSection("manage", "ai-cs-inbox");
-                }}
-                className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
-              >
-                확인 필요한 정보 보기
-              </button>
-            ) : null}
-          </section>
-        ) : null}
 
         {activeTab === "manage" && authUser ? (
           <section
