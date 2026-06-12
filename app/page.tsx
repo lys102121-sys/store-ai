@@ -5709,7 +5709,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f7f8ff] px-4 py-8 text-slate-950 dark:bg-[#070817] dark:text-slate-100 sm:py-10">
+    <div className="relative min-h-screen overflow-hidden bg-[#f7f8ff] px-4 py-4 text-slate-950 dark:bg-[#070817] dark:text-slate-100 sm:py-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-24 top-[-10rem] h-80 w-80 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-600/25" />
         <div className="absolute right-[-8rem] top-20 h-96 w-96 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/15" />
@@ -5717,88 +5717,78 @@ export default function Home() {
         <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0))] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.7),rgba(15,23,42,0))]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="rounded-[1.75rem] border border-white/70 bg-white/80 p-4 shadow-[0_24px_90px_-55px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-400 text-sm font-black text-white shadow-lg shadow-indigo-500/20">
-              AI
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-5">
+        <header className="rounded-[1.5rem] border border-white/70 bg-white/80 p-3 shadow-[0_24px_90px_-55px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10 sm:p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-400 text-sm font-black text-white shadow-lg shadow-indigo-500/20">
+                AI
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black tracking-tight text-slate-950 dark:text-white">
+                  Store AI CS
+                </p>
+                <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                  {authUser
+                    ? `${storeName ? `${storeName} · ` : ""}AI 직원 대기 중`
+                    : "내 가게 전용 AI CS 직원"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-200 dark:ring-indigo-900/70">
-                Store AI CS
-              </p>
-            {authUser ? (
-              <div className="mt-2">
-                <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  AI CS 직원이 대기 중입니다
-                </h2>
-                <p className="mt-1 break-all text-sm text-zinc-600 dark:text-zinc-300">
-                  {authUser.email ?? authUser.id}
-                </p>
-              </div>
-            ) : (
-              <div className="mt-2">
-                <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  내 가게 전용 AI CS 직원을 시작하세요
-                </h2>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                  로그인하면 내 가게 데이터로 분리됩니다
-                </p>
-              </div>
-            )}
-            {authError ? (
-              <p className="mt-3 text-sm text-red-700 dark:text-red-300">
-                {authError}
-              </p>
-            ) : null}
+
+            <div className="shrink-0">
+              {authUser ? (
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  disabled={authLoading || authActionLoading}
+                  className={buttonClass("secondary", "sm", "rounded-lg")}
+                >
+                  {authActionLoading ? "처리 중..." : "로그아웃"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleKakaoLogin()}
+                  disabled={authLoading || authActionLoading}
+                  className={`${buttonBaseClass} ${buttonSizeClasses.sm} rounded-lg bg-gradient-to-r from-yellow-300 to-amber-300 font-bold text-slate-950 shadow-md shadow-amber-300/25 hover:-translate-y-0.5 focus-visible:ring-amber-200`}
+                >
+                  {authActionLoading ? "연결 중..." : "카카오 로그인"}
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-0">
-            {authUser ? (
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
-                disabled={authLoading || authActionLoading}
-                className={buttonClass("secondary", "lg", "h-11")}
-              >
-                {authActionLoading ? "처리 중..." : "로그아웃"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void handleKakaoLogin()}
-                disabled={authLoading || authActionLoading}
-                className={`${buttonBaseClass} ${buttonSizeClasses.lg} h-11 bg-gradient-to-r from-yellow-300 to-amber-300 font-bold text-slate-950 shadow-lg shadow-amber-300/30 hover:-translate-y-0.5 hover:shadow-amber-300/50 focus-visible:ring-amber-200`}
-              >
-                {authActionLoading ? "연결 중..." : "카카오로 로그인"}
-              </button>
-            )}
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3 dark:border-white/10">
+            <p className="min-w-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              <span className="mr-2 inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
+                Beta
+              </span>
+              현재는 답변을 확인한 뒤 복사해 플랫폼에 등록합니다.
+            </p>
+            <a
+              href={betaFeedbackHref}
+              className="shrink-0 text-xs font-bold text-cyan-700 underline-offset-4 hover:underline dark:text-cyan-300"
+            >
+              피드백
+            </a>
           </div>
-        </section>
 
-        <section className="rounded-[1.5rem] border border-cyan-200/70 bg-cyan-50/70 p-4 shadow-sm ring-1 ring-white/70 backdrop-blur-xl dark:border-cyan-900/40 dark:bg-cyan-950/20 dark:ring-white/10 sm:flex sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-sm leading-6 text-slate-700 dark:text-cyan-50">
-            <span className="mr-2 inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-800 ring-1 ring-cyan-200 dark:bg-cyan-950 dark:text-cyan-200 dark:ring-cyan-800">
-              Beta
-            </span>
-            현재는 생성된 답변을 복사해 배민, 스마트스토어, 네이버 등 실제
-            플랫폼에 붙여넣어 사용하는 베타 버전입니다. 답변 품질과 정보 학습
-            기능을 먼저 검증 중이며, 이후 플랫폼 연동 기능을 준비할 예정입니다.
-          </p>
-          <a
-            href={betaFeedbackHref}
-            className="mt-3 inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-cyan-200 bg-white/85 px-4 text-xs font-bold text-cyan-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white dark:border-cyan-800 dark:bg-slate-950/80 dark:text-cyan-200 dark:hover:bg-cyan-950/70 sm:mt-0"
-          >
-            피드백 남기기
-          </a>
-        </section>
+          {authError ? (
+            <p className="mt-3 text-sm text-red-700 dark:text-red-300">
+              {authError}
+            </p>
+          ) : null}
+        </header>
 
         <nav
           aria-label="대시보드 탭"
-          className="sticky top-4 z-20 rounded-[1.4rem] border border-white/75 bg-white/80 p-2 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10"
+          className="sticky top-3 z-20 rounded-[1.2rem] border border-white/75 bg-white/85 p-1.5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80 dark:ring-white/10"
         >
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div
+            role="tablist"
+            className="flex gap-1 overflow-x-auto sm:grid sm:grid-cols-5 sm:overflow-visible"
+          >
             {dashboardTabs.map((tab) => {
               const isSelected = activeTab === tab.id;
 
@@ -5806,13 +5796,14 @@ export default function Home() {
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-xl px-3 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${
+                  className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 sm:text-sm dark:focus-visible:ring-indigo-950 ${
                     isSelected
                       ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/25"
                       : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                   }`}
-                  aria-pressed={isSelected}
+                  aria-selected={isSelected}
                 >
                   {tab.label}
                 </button>
