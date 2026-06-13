@@ -1,11 +1,15 @@
 import OpenAI from "openai";
 
 import { buildReviewAiReason } from "@/app/lib/aiDecisionReason";
+import { buildProductSafetyReviewReply } from "@/app/lib/csIncidentResponse";
 import {
   buildReviewReplySystemPrompt,
   type ReviewReplyPromptStore,
 } from "@/app/lib/prompts/reviewReplyPrompt";
-import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
+import {
+  hasHealthSafetySignal,
+  hasProductSafetySignal,
+} from "@/app/lib/riskSignals";
 
 export type Sentiment = "positive" | "neutral" | "negative";
 export type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
@@ -244,6 +248,7 @@ export async function generateReviewReplyWithSentiment(
     generateReviewReply(openai, store, review),
   ]);
   const hasHealthSafetyIssue = hasHealthSafetySignal(review);
+  const hasProductSafetyIssue = hasProductSafetySignal(review);
 
   const handlingType = hasHealthSafetyIssue
     ? "needs_approval"
@@ -252,7 +257,9 @@ export async function generateReviewReplyWithSentiment(
 
   return {
     review,
-    reply: decision.reply,
+    reply: hasProductSafetyIssue
+      ? buildProductSafetyReviewReply()
+      : decision.reply,
     sentiment,
     handlingType,
     riskLevel,

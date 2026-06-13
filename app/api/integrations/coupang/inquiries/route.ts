@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import {
   isMissingAiReasonColumnError,
   withoutAiReason,
@@ -22,7 +23,10 @@ import {
 } from "@/app/lib/coupangOpenApi";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
+import {
+  hasHealthSafetySignal,
+  hasProductSafetySignal,
+} from "@/app/lib/riskSignals";
 import {
   createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
@@ -153,8 +157,11 @@ async function generateInquiryReply(
   }
 
   const hasHealthSafetyIssue = hasHealthSafetySignal(inquiry.content);
+  const hasProductSafetyIssue = hasProductSafetySignal(inquiry.content);
   const initialDecision = {
-    reply: sanitizeCustomerReply(parsedDecision.reply),
+    reply: hasProductSafetyIssue
+      ? buildProductSafetyReply(store)
+      : sanitizeCustomerReply(parsedDecision.reply),
     handlingType: hasHealthSafetyIssue
       ? ("needs_approval" as const)
       : parsedDecision.handlingType,

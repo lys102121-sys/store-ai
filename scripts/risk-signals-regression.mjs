@@ -27,6 +27,7 @@ function loadRiskSignals() {
 const {
   hasDisputeSignal,
   hasHealthSafetySignal,
+  hasProductSafetySignal,
   hasRefundExchangeSignal,
   hasStrongComplaintSignal,
 } = loadRiskSignals();
@@ -44,6 +45,37 @@ const {
     hasHealthSafetySignal(message),
     true,
     `${message} should be treated as a health/safety signal.`,
+  );
+});
+
+[
+  "배터리가 부풀어 올랐어요.",
+  "사용 중 연기와 타는 냄새가 났어요.",
+  "제품이 너무 뜨거워지고 과열됩니다.",
+  "충전하다가 감전될 뻔했어요.",
+].forEach((message) => {
+  assert.equal(
+    hasProductSafetySignal(message),
+    true,
+    `${message} should be treated as a product safety signal.`,
+  );
+  assert.equal(
+    hasHealthSafetySignal(message),
+    true,
+    `${message} should require high-risk safety handling.`,
+  );
+});
+
+[
+  "배터리 사용 시간이 궁금해요.",
+  "충전기는 기본 구성품인가요?",
+  "제품 전원이 켜지지 않아요.",
+  "향초는 연기가 많이 나나요?",
+].forEach((message) => {
+  assert.equal(
+    hasProductSafetySignal(message),
+    false,
+    `${message} should not be treated as an immediate product safety incident.`,
   );
 });
 

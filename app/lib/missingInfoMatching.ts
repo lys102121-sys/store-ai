@@ -20,6 +20,7 @@ export type MissingInfoTopic =
   | "stock"
   | "business_hours"
   | "reservation"
+  | "service_intake"
   | "general";
 
 export type MissingInfoRow = {
@@ -158,6 +159,25 @@ const inquiryIntentGroups: InquiryIntentGroup[] = [
     ],
     allowGeneralMatch: true,
   },
+  {
+    id: "service_intake",
+    keywords: [
+      "고장",
+      "불량",
+      "파손",
+      "작동 안",
+      "전원 안",
+      "충전 안",
+      "오류",
+      "구성품 누락",
+      "빠졌어요",
+      "소음",
+      "사진",
+      "영상",
+      "증상",
+    ],
+    allowGeneralMatch: false,
+  },
 ];
 
 const genericCoreTokens = new Set([
@@ -226,6 +246,10 @@ export function classifyMissingInfoTopic(text: string): MissingInfoTopic {
 
   if (/예약/.test(text)) {
     return "reservation";
+  }
+
+  if (/고장|불량|파손|작동|전원|충전|오류|구성품\s*누락|사진|영상/.test(text)) {
+    return "service_intake";
   }
 
   if (

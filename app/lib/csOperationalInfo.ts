@@ -9,7 +9,8 @@ export type OperationalInfoTopic =
   | "refund_exchange"
   | "product_composition"
   | "product_option"
-  | "shipping_fee";
+  | "shipping_fee"
+  | "service_intake";
 
 export type MissingOperationalInfo = {
   topic: OperationalInfoTopic;
@@ -147,6 +148,27 @@ function hasExplicitRefundInfo(store: CsReplyPromptStore) {
   return /(?:환불|반품|교환|취소).*?(?:가능|불가|어렵|제한|기준|조건|기한|이내)/.test(
     store.refund_policy?.trim() ?? "",
   );
+}
+
+function hasExplicitServiceIntakeInfo(store: CsReplyPromptStore) {
+  return /(?:A\/S|AS|수리|고장|불량|파손|누락|점검|교환)[\s\S]{0,160}?(?:접수|절차|방법|사진|영상|증상|상품명|모델명|구매일|주문\s*정보|확인)/i.test(
+    joinStoreText([
+      store.refund_policy,
+      store.product_caution,
+      store.product_catalog,
+      store.extra_faq,
+    ]),
+  );
+}
+
+function isServiceIntakeQuestion(customerMessage: string) {
+  return /고장|불량|파손|깨졌|망가|작동(?:이)?\s*(?:안|않)|전원[^\n]*(?:안|않)|충전[^\n]*(?:안|않)|오류|이상\s*작동|소음|구성품[^\n]*(?:누락|없)|(?:누락|빠져)[^\n]*구성품/.test(
+    customerMessage,
+  );
+}
+
+function createServiceIntakeFallbackReply(store: CsReplyPromptStore) {
+  return `${getGreeting(store)} 이용에 불편을 드려 죄송합니다. 정확한 확인을 위해 상품명과 문제가 발생한 내용을 알려주시고, 가능하면 현재 상태를 확인할 수 있는 사진이나 영상을 보내주세요. 확인 후 처리 방법을 안내드리겠습니다.`;
 }
 
 const productOptionQuestionPattern =
@@ -350,6 +372,19 @@ export function findMissingOperationalInfo(
 ): MissingOperationalInfo | null {
   const missingPriceInfo = getMissingPriceInfo(customerMessage, store);
   if (missingPriceInfo) return missingPriceInfo;
+
+  if (
+    isServiceIntakeQuestion(customerMessage) &&
+    !hasExplicitServiceIntakeInfo(store)
+  ) {
+    return {
+      topic: "service_intake",
+      question: "고장, 불량 또는 누락 문의의 확인 및 접수 절차를 등록해주세요.",
+      reason:
+        "원인이나 불량 여부를 단정하지 않고 상품과 증상, 필요한 사진 또는 영상을 확인할 절차가 필요합니다.",
+      fallbackReply: createServiceIntakeFallbackReply(store),
+    };
+  }
 
   if (
     /(?:배송비|택배비|추가\s*배송비).*(?:얼마|가격|몇\s*원)|(?:얼마|가격|몇\s*원).*?(?:배송비|택배비|추가\s*배송비)/.test(

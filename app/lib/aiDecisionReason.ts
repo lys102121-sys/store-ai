@@ -11,6 +11,7 @@ import type {
 import {
   hasDisputeSignal,
   hasHealthSafetySignal,
+  hasProductSafetySignal,
   hasRefundExchangeSignal,
   hasStrongComplaintSignal,
 } from "@/app/lib/riskSignals";
@@ -37,6 +38,8 @@ const missingOperationalReason: Record<
     "포함, 제공, 동봉, 추가, 변경, 조절 같은 운영 옵션 정보가 등록되어 있지 않아 정확한 안내를 위해 사장님 확인이 필요합니다.",
   shipping_fee:
     "배송비 정보가 등록되어 있지 않아 정확한 안내를 위해 사장님 확인이 필요합니다.",
+  service_intake:
+    "고장, 불량 또는 누락 여부를 단정하기 전에 상품과 증상, 필요한 사진 또는 영상을 확인해야 합니다.",
 };
 
 export function buildCsAiReason({
@@ -52,6 +55,10 @@ export function buildCsAiReason({
 }) {
   if (missingOperationalInfo) {
     return missingOperationalReason[missingOperationalInfo.topic];
+  }
+
+  if (hasProductSafetySignal(customerMessage)) {
+    return "배터리 팽창, 연기, 과열 또는 감전 가능성이 있는 제품 안전 문의로 사용 중단 안내와 사장님 확인이 필요합니다.";
   }
 
   if (hasHealthSafetySignal(customerMessage)) {

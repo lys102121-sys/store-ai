@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
+import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -15,7 +16,10 @@ import {
 } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
+import {
+  hasHealthSafetySignal,
+  hasProductSafetySignal,
+} from "@/app/lib/riskSignals";
 import {
   createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
@@ -87,6 +91,7 @@ type MissingInfoTopic =
   | "stock"
   | "business_hours"
   | "reservation"
+  | "service_intake"
   | "general";
 
 function parseCsReplyDecision(output: string | undefined): CsReplyDecision | null {
@@ -148,6 +153,10 @@ function classifyMissingInfoTopic(text: string): MissingInfoTopic {
 
   if (/예약/.test(text)) {
     return "reservation";
+  }
+
+  if (/고장|불량|파손|작동|전원|충전|오류|구성품\s*누락|사진|영상/.test(text)) {
+    return "service_intake";
   }
 
   if (
@@ -616,9 +625,13 @@ export async function POST(request: Request) {
 
     const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
     const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
+    const hasProductSafetyIssue = hasProductSafetySignal(customerMessage);
     const initialDecision = parsedDecision
       ? {
           ...parsedDecision,
+          reply: hasProductSafetyIssue
+            ? buildProductSafetyReply(storeRow)
+            : parsedDecision.reply,
           handlingType: hasHealthSafetyIssue
             ? ("needs_approval" as const)
             : parsedDecision.handlingType,

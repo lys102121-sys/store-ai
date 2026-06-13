@@ -134,6 +134,7 @@ export function mapMissingInfoTopicToKnowledgeCategory(
     case "product_composition":
     case "size_adjustment":
     case "care_instruction":
+    case "service_intake":
       return "product";
     default:
       return "general";

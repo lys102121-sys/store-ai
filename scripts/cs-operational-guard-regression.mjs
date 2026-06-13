@@ -59,6 +59,7 @@ function expectMissingOperationalInfo({
   customerMessage,
   expectedTopic,
   expectedQuestionPart,
+  expectedReplyPattern = /정확한 안내를 위해 확인 후 다시 말씀드리겠습니다/,
   store = createStore(),
 }) {
   const missingInfo = findMissingOperationalInfo(customerMessage, store);
@@ -79,7 +80,7 @@ function expectMissingOperationalInfo({
   assert.ok(guard, `${customerMessage} should be guarded.`);
   assert.equal(guard.handlingType, "needs_review");
   assert.equal(guard.riskLevel, "normal");
-  assert.match(guard.reply, /정확한 안내를 위해 확인 후 다시 말씀드리겠습니다/);
+  assert.match(guard.reply, expectedReplyPattern);
   assert.doesNotMatch(guard.reply, /제공되지|포함되어 있지|요청사항|가능합니다/);
 }
 
@@ -167,6 +168,33 @@ expectMissingOperationalInfo({
   customerMessage: "환불 가능한가요?",
   expectedTopic: "refund_exchange",
   expectedQuestionPart: "환불",
+});
+
+expectMissingOperationalInfo({
+  customerMessage: "제품 전원이 켜지지 않아요.",
+  expectedTopic: "service_intake",
+  expectedQuestionPart: "확인 및 접수 절차",
+  expectedReplyPattern: /상품명과 문제가 발생한 내용/,
+});
+
+const serviceIntakeGuard = applyOperationalInfoGuard({
+  customerMessage: "구성품이 누락됐어요.",
+  reply: "제품 불량이 맞으니 바로 새 상품을 보내드리겠습니다.",
+  store: createStore(),
+});
+
+assert.ok(serviceIntakeGuard, "Missing components should use the service intake guard.");
+assert.equal(serviceIntakeGuard.handlingType, "needs_review");
+assert.match(serviceIntakeGuard.reply, /상품명과 문제가 발생한 내용/);
+assert.match(serviceIntakeGuard.reply, /사진이나 영상/);
+assert.doesNotMatch(serviceIntakeGuard.reply, /제품 불량이 맞|새 상품을 보내/);
+
+expectNoMissingOperationalInfo({
+  customerMessage: "제품 전원이 켜지지 않아요.",
+  store: createStore({
+    extra_faq:
+      "고장 문의는 상품명과 증상 영상을 확인한 뒤 A/S 접수를 안내합니다.",
+  }),
 });
 
 console.log("CS operational guard regression tests passed.");

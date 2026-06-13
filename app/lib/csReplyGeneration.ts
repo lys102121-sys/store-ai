@@ -1,11 +1,15 @@
 import OpenAI from "openai";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
+import {
+  hasHealthSafetySignal,
+  hasProductSafetySignal,
+} from "@/app/lib/riskSignals";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -131,12 +135,15 @@ export async function generateCsReplyDecision({
   }
 
   const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
+  const hasProductSafetyIssue = hasProductSafetySignal(customerMessage);
   const missingOperationalInfo = findMissingOperationalInfo(
     customerMessage,
     store,
   );
   const initialDecision: CsReplyDecision = {
-    reply: sanitizeCustomerReply(parsedDecision.reply),
+    reply: hasProductSafetyIssue
+      ? buildProductSafetyReply(store)
+      : sanitizeCustomerReply(parsedDecision.reply),
     handlingType: hasHealthSafetyIssue
       ? ("needs_approval" as const)
       : parsedDecision.handlingType,

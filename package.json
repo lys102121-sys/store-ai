@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:cs-guard": "node scripts/cs-operational-guard-regression.mjs && node scripts/cs-cross-industry-guard-regression.mjs",
+    "test:cs-guard": "node scripts/cs-operational-guard-regression.mjs && node scripts/cs-cross-industry-guard-regression.mjs && node scripts/risk-signals-regression.mjs && node scripts/cs-incident-response-regression.mjs",
     "test:learning": "node scripts/missing-info-learning-regression.mjs",
     "test:risk-signals": "node scripts/risk-signals-regression.mjs",
     "test:store-knowledge-quality": "node scripts/store-knowledge-quality-regression.mjs",
