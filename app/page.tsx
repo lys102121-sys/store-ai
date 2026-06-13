@@ -3,6 +3,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
+import { AppHeader } from "@/app/components/dashboard/AppHeader";
+import {
+  DashboardTabs,
+  type DashboardTab,
+} from "@/app/components/dashboard/DashboardTabs";
 import {
   buildStoreKnowledgeQualityReport,
   createEmptyStoreKnowledgeQuality,
@@ -10,6 +15,7 @@ import {
 } from "@/app/lib/storeKnowledgeQuality";
 import { buildStoreKnowledgeUsageMap } from "@/app/lib/storeKnowledgeUsage";
 import { getSupabase } from "@/app/lib/supabase";
+import { buttonClass } from "@/app/lib/uiClasses";
 
 type Sentiment = "positive" | "neutral" | "negative";
 type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
@@ -274,7 +280,6 @@ type UpdateWorkflowItemResponse = {
   detail?: string;
 };
 
-type DashboardTab = "start" | "store" | "integrations" | "answer" | "manage";
 type AnswerMode = "cs" | "review" | "batch_review";
 type ManageSupportPanel = "store_knowledge" | "insights";
 
@@ -1469,48 +1474,6 @@ const inputClass =
 const textareaClass =
   "min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
 
-type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "success"
-  | "warning"
-  | "danger"
-  | "ghost";
-
-type ButtonSize = "sm" | "md" | "lg";
-
-const buttonBaseClass =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition duration-200 focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-50";
-
-const buttonVariantClasses: Record<ButtonVariant, string> = {
-  primary:
-    "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 focus-visible:ring-indigo-200 dark:focus-visible:ring-indigo-950",
-  secondary:
-    "border border-slate-200 bg-white/85 text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:text-slate-950 focus-visible:ring-indigo-100 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-slate-900 dark:hover:text-white dark:focus-visible:ring-indigo-950",
-  success:
-    "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-emerald-500/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/30 focus-visible:ring-emerald-200 dark:focus-visible:ring-emerald-950",
-  warning:
-    "border border-amber-200 bg-amber-50 text-amber-800 hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-100 focus-visible:ring-amber-100 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200 dark:hover:bg-amber-950/60 dark:focus-visible:ring-amber-950",
-  danger:
-    "border border-red-200 bg-white/85 text-red-700 hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50 focus-visible:ring-red-100 dark:border-red-900/60 dark:bg-slate-950/70 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-red-950",
-  ghost:
-    "bg-transparent text-slate-600 shadow-none hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-indigo-100 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-indigo-950",
-};
-
-const buttonSizeClasses: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-xs",
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-5 text-sm",
-};
-
-function buttonClass(
-  variant: ButtonVariant = "secondary",
-  size: ButtonSize = "md",
-  extraClass = "",
-) {
-  return `${buttonBaseClass} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]} ${extraClass}`.trim();
-}
-
 const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 
 const workflowCardSectionClass =
@@ -1518,8 +1481,6 @@ const workflowCardSectionClass =
 
 const workflowCardDetailClass =
   "rounded-xl border px-4 py-3 text-xs leading-5";
-
-const betaFeedbackHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 
 const integrationPlatforms: ReadonlyArray<{
   id: IntegrationPlatform;
@@ -5090,13 +5051,6 @@ export default function Home() {
                 onAction: () => goToTabSection("answer", "cs-reply"),
               };
 
-  const dashboardTabs = [
-    { id: "start", label: "시작하기" },
-    { id: "store", label: "가게 설정" },
-    { id: "integrations", label: "플랫폼 연동" },
-    { id: "answer", label: "답변 작성" },
-    { id: "manage", label: "운영 관리" },
-  ] as const satisfies ReadonlyArray<{ id: DashboardTab; label: string }>;
   const answerModeItems = [
     {
       id: "cs",
@@ -5718,99 +5672,17 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-5">
-        <header className="rounded-[1.5rem] border border-white/70 bg-white/80 p-3 shadow-[0_24px_90px_-55px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10 sm:p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-400 text-sm font-black text-white shadow-lg shadow-indigo-500/20">
-                AI
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-black tracking-tight text-slate-950 dark:text-white">
-                  Store AI CS
-                </p>
-                <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                  {authUser
-                    ? `${storeName ? `${storeName} · ` : ""}AI 직원 대기 중`
-                    : "내 가게 전용 AI CS 직원"}
-                </p>
-              </div>
-            </div>
+        <AppHeader
+          isAuthenticated={Boolean(authUser)}
+          storeName={storeName}
+          authLoading={authLoading}
+          authActionLoading={authActionLoading}
+          authError={authError}
+          onLogin={() => void handleKakaoLogin()}
+          onLogout={() => void handleLogout()}
+        />
 
-            <div className="shrink-0">
-              {authUser ? (
-                <button
-                  type="button"
-                  onClick={() => void handleLogout()}
-                  disabled={authLoading || authActionLoading}
-                  className={buttonClass("secondary", "sm", "rounded-lg")}
-                >
-                  {authActionLoading ? "처리 중..." : "로그아웃"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void handleKakaoLogin()}
-                  disabled={authLoading || authActionLoading}
-                  className={`${buttonBaseClass} ${buttonSizeClasses.sm} rounded-lg bg-gradient-to-r from-yellow-300 to-amber-300 font-bold text-slate-950 shadow-md shadow-amber-300/25 hover:-translate-y-0.5 focus-visible:ring-amber-200`}
-                >
-                  {authActionLoading ? "연결 중..." : "카카오 로그인"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3 dark:border-white/10">
-            <p className="min-w-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
-              <span className="mr-2 inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
-                Beta
-              </span>
-              현재는 답변을 확인한 뒤 복사해 플랫폼에 등록합니다.
-            </p>
-            <a
-              href={betaFeedbackHref}
-              className="shrink-0 text-xs font-bold text-cyan-700 underline-offset-4 hover:underline dark:text-cyan-300"
-            >
-              피드백
-            </a>
-          </div>
-
-          {authError ? (
-            <p className="mt-3 text-sm text-red-700 dark:text-red-300">
-              {authError}
-            </p>
-          ) : null}
-        </header>
-
-        <nav
-          aria-label="대시보드 탭"
-          className="sticky top-3 z-20 rounded-[1.2rem] border border-white/75 bg-white/85 p-1.5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80 dark:ring-white/10"
-        >
-          <div
-            role="tablist"
-            className="flex gap-1 overflow-x-auto sm:grid sm:grid-cols-5 sm:overflow-visible"
-          >
-            {dashboardTabs.map((tab) => {
-              const isSelected = activeTab === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 sm:text-sm dark:focus-visible:ring-indigo-950 ${
-                    isSelected
-                      ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/25"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-                  }`}
-                  aria-selected={isSelected}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        <DashboardTabs activeTab={activeTab} onChange={setActiveTab} />
 
         {copyMessage || copyError ? (
           <div
