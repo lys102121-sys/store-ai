@@ -8,6 +8,7 @@ import {
   AnswerModeSelector,
   type AnswerMode,
 } from "@/app/components/dashboard/AnswerModeSelector";
+import { CsReplyPanel } from "@/app/components/dashboard/CsReplyPanel";
 import {
   DashboardTabs,
   type DashboardTab,
@@ -8109,104 +8110,20 @@ export default function Home() {
           onChange={setSelectedAnswerMode}
         />
 
-        <section
-          id="cs-reply"
-          className={`${cardClass} scroll-mt-32 border-sky-200/70 dark:border-sky-900/50 ${
-            activeTab === "answer" && selectedAnswerMode === "cs"
-              ? "order-[30]"
-              : "hidden"
-          }`}
-        >
-          <div className="mb-6">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                고객 문의 답변
-              </h2>
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                문의를 붙여넣으면 등록된 가게 정보를 기준으로 답변을 만듭니다.
-                모르는 내용은 추측하지 않고 확인 필요로 분리합니다.
-              </p>
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleCsReplySubmit}
-            className={
-              csReply || csLoading
-                ? "grid gap-5 lg:grid-cols-[1.05fr_0.95fr]"
-                : "space-y-5"
-            }
-          >
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label htmlFor="customer_message" className="text-sm font-medium">
-                  고객 문의 입력
-                </label>
-                <textarea
-                  id="customer_message"
-                  value={customerMessage}
-                  onChange={(event) => setCustomerMessage(event.target.value)}
-                  placeholder="예: 제주도 배송비 얼마예요? / 환불 가능한가요? / 오늘 출고되나요?"
-                  className="min-h-36 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-sky-500 dark:border-zinc-700 dark:bg-zinc-950"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={csLoading || aiGenerationBlocked}
-                className={buttonClass("primary", "lg", "h-11")}
-              >
-                {csLoading ? "생성 중..." : "문의 답변 작성하기"}
-              </button>
-
-              {needsStoreInfo ? (
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  먼저 우리 가게 정보를 등록해주세요
-                </p>
-              ) : null}
-
-              {csError ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-                  {csError}
-                </div>
-              ) : null}
-            </div>
-
-            {csReply || csLoading ? (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-medium">생성된 CS 답변</h3>
-                  <div className="flex items-center gap-2">
-                    {csReply && !csLoading ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void handleCopyText(csReply, "답변이 복사되었습니다")
-                        }
-                        className={copyButtonClass}
-                      >
-                        답변 복사
-                      </button>
-                    ) : null}
-                    {csLoading ? (
-                      <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                        작성 중
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div
-                  className="min-h-56 whitespace-pre-wrap rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                  aria-live="polite"
-                >
-                  {csLoading
-                    ? "고객 문의에 맞는 답변을 생성하고 있습니다..."
-                    : csReply || "생성된 CS 답변이 여기에 표시됩니다."}
-                </div>
-              </div>
-            ) : null}
-          </form>
-        </section>
+        <CsReplyPanel
+          isVisible={activeTab === "answer" && selectedAnswerMode === "cs"}
+          customerMessage={customerMessage}
+          reply={csReply}
+          error={csError}
+          loading={csLoading}
+          generationBlocked={aiGenerationBlocked}
+          needsStoreInfo={needsStoreInfo}
+          onMessageChange={setCustomerMessage}
+          onSubmit={handleCsReplySubmit}
+          onCopy={() =>
+            void handleCopyText(csReply, "답변이 복사되었습니다")
+          }
+        />
 
         <section
           id="ai-cs-inbox"
