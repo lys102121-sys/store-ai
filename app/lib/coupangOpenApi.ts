@@ -1,13 +1,13 @@
 import { createHmac } from "node:crypto";
 
+import {
+  createNormalizedPlatformInquiry,
+  type NormalizedPlatformInquiry,
+} from "@/app/lib/platformInquiry";
+
 export const COUPANG_OPEN_API_HOST = "https://api-gateway.coupang.com";
 
-export type CoupangOnlineInquiry = {
-  externalId: string;
-  content: string;
-  productName: string | null;
-  createdAt: string | null;
-};
+export type CoupangOnlineInquiry = NormalizedPlatformInquiry;
 
 type CreateCoupangAuthorizationOptions = {
   method: string;
@@ -200,6 +200,7 @@ export function parseCoupangOnlineInquiries(
 
     return [
       {
+        sourcePlatform: "coupang" as const,
         externalId,
         content,
         productName: readString(row, [
@@ -207,14 +208,11 @@ export function parseCoupangOnlineInquiries(
           "vendorItemName",
           "itemName",
         ]),
-        createdAt: readString(row, [
-          "createdAt",
-          "inquiryAt",
-          "createdDate",
-        ]),
+        createdAt: readString(row, ["createdAt", "inquiryAt", "createdDate"]),
+        externalUrl: null,
       },
     ];
-  });
+  }).map(createNormalizedPlatformInquiry);
 
   if (rows.length > 0 && inquiries.length === 0) {
     throw new Error("Coupang inquiries could not be parsed from the API response.");

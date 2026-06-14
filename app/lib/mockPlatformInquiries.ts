@@ -1,6 +1,3 @@
-import OpenAI from "openai";
-
-import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import {
   isMissingAiReasonColumnError,
   withoutAiReason,
@@ -8,12 +5,15 @@ import {
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
-  applyOperationalInfoGuard,
-  findMissingOperationalInfo,
-} from "@/app/lib/csOperationalInfo";
-import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
+  buildPlatformInquiryKnowledgeText,
+  createNormalizedPlatformInquiry,
+  type PlatformSource,
+} from "@/app/lib/platformInquiry";
+import {
+  createPlatformCsMessageRow,
+  generatePlatformInquiryDecision,
+} from "@/app/lib/platformInquiryProcessing";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import { hasHealthSafetySignal } from "@/app/lib/riskSignals";
 import {
   createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
@@ -27,20 +27,7 @@ import {
 } from "@/app/lib/storeKnowledge";
 import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export type MockInquiryPlatform = "coupang" | "smartstore";
-
-type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
-type RiskLevel = "low" | "normal" | "high";
-
-type CsReplyDecision = {
-  reply: string;
-  handlingType: HandlingType;
-  riskLevel: RiskLevel;
-};
+export type MockInquiryPlatform = Exclude<PlatformSource, "manual">;
 
 type MockPlatformInquiriesConfig = {
   platform: MockInquiryPlatform;
@@ -52,164 +39,6 @@ const mockInquiryStoreSelect =
   "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, ai_work_mode, ai_work_start_time, ai_work_end_time, created_at, updated_at";
 const legacyMockInquiryStoreSelect =
   "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, created_at, updated_at";
-
-function parseCsReplyDecision(
-  output: string | undefined,
-): CsReplyDecision | null {
-  if (!output) return null;
-
-  try {
-    const parsed = JSON.parse(output) as {
-      reply?: unknown;
-      handling_type?: unknown;
-      risk_level?: unknown;
-    };
-    const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
-    const handlingType =
-      parsed.handling_type === "auto_ready" ||
-      parsed.handling_type === "needs_review" ||
-      parsed.handling_type === "needs_approval"
-        ? parsed.handling_type
-        : null;
-    const riskLevel =
-      parsed.risk_level === "low" ||
-      parsed.risk_level === "normal" ||
-      parsed.risk_level === "high"
-        ? parsed.risk_level
-        : null;
-
-    return reply && handlingType && riskLevel
-      ? { reply, handlingType, riskLevel }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function sanitizeCustomerReply(reply: string) {
-  return reply
-    .replaceAll("등록된 정보", "확인 가능한 내용")
-    .replaceAll("사장님 확인", "확인")
-    .replaceAll("데이터", "내용")
-    .replaceAll("AI", "")
-    .trim();
-}
-
-function getStoreText(store: CsReplyPromptStore) {
-  return [
-    store.shipping_policy,
-    store.product_name,
-    store.product_description,
-    store.product_details,
-    store.product_caution,
-    store.product_catalog,
-    store.extra_faq,
-  ]
-    .filter((value): value is string => Boolean(value?.trim()))
-    .join("\n");
-}
-
-function needsStoreConfirmation(
-  customerMessage: string,
-  store: CsReplyPromptStore,
-) {
-  if (/선물|포장|기프트|쇼핑백/.test(customerMessage)) {
-    return !/선물\s*포장|기프트\s*포장|쇼핑백|포장.*(가능|불가|제공|지원)/.test(
-      getStoreText(store),
-    );
-  }
-
-  if (/출고|배송|발송/.test(customerMessage)) {
-    return !store.shipping_policy?.trim();
-  }
-
-  if (/재고|품절|구매 가능|주문 가능/.test(customerMessage)) {
-    return !/재고|품절|구매 가능|주문 가능/.test(getStoreText(store));
-  }
-
-  return false;
-}
-
-async function generateMockReply(
-  customerMessage: string,
-  store: CsReplyPromptStore,
-) {
-  const completion = await openai.responses.create({
-    model: "gpt-4o-mini",
-    input: [
-      {
-        role: "system",
-        content: buildCsReplySystemPrompt(store),
-      },
-      {
-        role: "user",
-        content: `고객 문의:\n${customerMessage}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
-      },
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "cs_reply_decision",
-        schema: {
-          type: "object",
-          properties: {
-            reply: { type: "string" },
-            handling_type: {
-              type: "string",
-              enum: ["auto_ready", "needs_review", "needs_approval"],
-            },
-            risk_level: {
-              type: "string",
-              enum: ["low", "normal", "high"],
-            },
-          },
-          required: ["reply", "handling_type", "risk_level"],
-          additionalProperties: false,
-        },
-        strict: true,
-      },
-    },
-  });
-
-  const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
-  if (!parsedDecision) {
-    throw new Error("Failed to generate a mock CS reply.");
-  }
-
-  const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
-  const needsReview = needsStoreConfirmation(customerMessage, store);
-  const initialDecision: CsReplyDecision = {
-    reply: sanitizeCustomerReply(parsedDecision.reply),
-    handlingType: hasHealthSafetyIssue
-      ? "needs_approval"
-      : needsReview
-        ? "needs_review"
-        : parsedDecision.handlingType,
-    riskLevel: hasHealthSafetyIssue ? "high" : parsedDecision.riskLevel,
-  };
-  const decision =
-    (!hasHealthSafetyIssue &&
-      applyOperationalInfoGuard({
-        customerMessage,
-        reply: initialDecision.reply,
-        store,
-      })) ||
-    initialDecision;
-
-  if (!decision.reply) {
-    throw new Error("Failed to generate a mock CS reply.");
-  }
-
-  return {
-    ...decision,
-    aiReason: buildCsAiReason({
-      customerMessage,
-      handlingType: decision.handlingType,
-      riskLevel: decision.riskLevel,
-      missingOperationalInfo: findMissingOperationalInfo(customerMessage, store),
-    }),
-  };
-}
 
 export async function createMockPlatformInquiriesResponse(
   request: Request,
@@ -285,61 +114,58 @@ export async function createMockPlatformInquiriesResponse(
       supabase: auth.supabase,
       userId: auth.userId,
     });
-    const decisions = await Promise.all(
-      inquiries.map((inquiry) => {
-        const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
-          inquiry,
-          storeKnowledgeItems,
-        );
-
-        return generateMockReply(
-          inquiry,
-          mergeStoreKnowledgeIntoStore(baseStoreRow, relevantStoreKnowledgeItems),
-        );
+    const timestamp = Date.now();
+    const normalizedInquiries = inquiries.map((content, index) =>
+      createNormalizedPlatformInquiry({
+        sourcePlatform: platform,
+        externalId: `mock-${platform}-${timestamp}-${index + 1}`,
+        content,
+        productName: null,
+        createdAt: new Date(timestamp).toISOString(),
+        externalUrl: null,
       }),
     );
-    const timestamp = Date.now();
-    const rows = decisions.map((decision, index) => {
-      const customerMessage = inquiries[index];
-      const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
-        customerMessage,
-        storeKnowledgeItems,
-      );
-      const usedKnowledgeItems = createUsedKnowledgeSnapshot(
-        relevantStoreKnowledgeItems,
-      );
-      const storeRow = mergeStoreKnowledgeIntoStore(
-        baseStoreRow,
-        relevantStoreKnowledgeItems,
-      );
-      const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
-        usedKnowledgeItems,
-        createStoreInfoEvidenceSnapshot(customerMessage, storeRow),
-      );
-      const status = resolveCsWorkflowStatus({
-        autoCompleteLowRisk: baseStoreRow.auto_complete_low_risk_cs,
-        aiWorkMode: baseStoreRow.ai_work_mode,
-        aiWorkStartTime: baseStoreRow.ai_work_start_time,
-        aiWorkEndTime: baseStoreRow.ai_work_end_time,
-        handlingType: decision.handlingType,
-        riskLevel: decision.riskLevel,
-      });
+    const rows = await Promise.all(
+      normalizedInquiries.map(async (inquiry) => {
+        const inquiryKnowledgeText =
+          buildPlatformInquiryKnowledgeText(inquiry);
+        const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+          inquiryKnowledgeText,
+          storeKnowledgeItems,
+        );
+        const usedKnowledgeItems = createUsedKnowledgeSnapshot(
+          relevantStoreKnowledgeItems,
+        );
+        const storeRow = mergeStoreKnowledgeIntoStore(
+          baseStoreRow,
+          relevantStoreKnowledgeItems,
+        );
+        const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
+          usedKnowledgeItems,
+          createStoreInfoEvidenceSnapshot(inquiryKnowledgeText, storeRow),
+        );
+        const decision = await generatePlatformInquiryDecision({
+          inquiry,
+          store: storeRow,
+        });
+        const status = resolveCsWorkflowStatus({
+          autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
+          aiWorkMode: storeRow.ai_work_mode,
+          aiWorkStartTime: storeRow.ai_work_start_time,
+          aiWorkEndTime: storeRow.ai_work_end_time,
+          handlingType: decision.handlingType,
+          riskLevel: decision.riskLevel,
+        });
 
-      return {
-        user_id: auth.userId,
-        customer_message: customerMessage,
-        reply: decision.reply,
-        status,
-        handling_type: decision.handlingType,
-        risk_level: decision.riskLevel,
-        ai_reason: decision.aiReason,
-        used_knowledge_items: usedKnowledgeItemsWithStoreEvidence,
-        source_platform: platform,
-        external_id: `mock-${platform}-${timestamp}-${index + 1}`,
-        external_url: null,
-        platform_status: "synced",
-      };
-    });
+        return createPlatformCsMessageRow({
+          userId: auth.userId,
+          inquiry,
+          decision,
+          status,
+          usedKnowledgeItems: usedKnowledgeItemsWithStoreEvidence,
+        });
+      }),
+    );
 
     let { error: insertError } = await auth.supabase
       .from("cs_messages")

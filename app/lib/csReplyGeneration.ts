@@ -85,9 +85,11 @@ function sanitizeCustomerReply(reply: string) {
 export async function generateCsReplyDecision({
   customerMessage,
   store,
+  context,
 }: {
   customerMessage: string;
   store: CsReplyPromptStore;
+  context?: string | null;
 }): Promise<CsReplyDecision> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
@@ -102,7 +104,7 @@ export async function generateCsReplyDecision({
       },
       {
         role: "user",
-        content: `고객 문의:\n${customerMessage}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
+        content: `${context?.trim() ? `${context.trim()}\n` : ""}고객 문의:\n${customerMessage}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
       },
     ],
     text: {

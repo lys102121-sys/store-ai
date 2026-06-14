@@ -1,18 +1,12 @@
-import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
-import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import {
   isMissingAiReasonColumnError,
   withoutAiReason,
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
-import {
-  applyOperationalInfoGuard,
-  findMissingOperationalInfo,
-} from "@/app/lib/csOperationalInfo";
+import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
 import {
   COUPANG_OPEN_API_HOST,
   createCoupangAuthorization,
@@ -21,12 +15,13 @@ import {
   parseCoupangOnlineInquiries,
   type CoupangOnlineInquiry,
 } from "@/app/lib/coupangOpenApi";
-import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
-import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { buildPlatformInquiryKnowledgeText } from "@/app/lib/platformInquiry";
 import {
-  hasHealthSafetySignal,
-  hasProductSafetySignal,
-} from "@/app/lib/riskSignals";
+  createPlatformCsMessageRow,
+  generatePlatformInquiryDecision,
+  shouldCreateMissingInfoForPlatformInquiry,
+} from "@/app/lib/platformInquiryProcessing";
+import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
   createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
@@ -42,162 +37,14 @@ import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
-type RiskLevel = "low" | "normal" | "high";
-
-type CsReplyDecision = {
-  reply: string;
-  handlingType: HandlingType;
-  riskLevel: RiskLevel;
-};
-
 function truncateForLog(value: string) {
   return value.length > 500 ? `${value.slice(0, 500)}...` : value;
-}
-
-function parseCsReplyDecision(
-  output: string | undefined,
-): CsReplyDecision | null {
-  if (!output) return null;
-
-  try {
-    const parsed = JSON.parse(output) as {
-      reply?: unknown;
-      handling_type?: unknown;
-      risk_level?: unknown;
-    };
-    const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
-    const handlingType =
-      parsed.handling_type === "auto_ready" ||
-      parsed.handling_type === "needs_review" ||
-      parsed.handling_type === "needs_approval"
-        ? parsed.handling_type
-        : null;
-    const riskLevel =
-      parsed.risk_level === "low" ||
-      parsed.risk_level === "normal" ||
-      parsed.risk_level === "high"
-        ? parsed.risk_level
-        : null;
-
-    return reply && handlingType && riskLevel
-      ? { reply, handlingType, riskLevel }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function sanitizeCustomerReply(reply: string) {
-  return reply
-    .replaceAll("등록된 정보", "확인 가능한 내용")
-    .replaceAll("사장님 확인", "확인")
-    .replaceAll("데이터", "내용")
-    .replaceAll("AI", "")
-    .trim();
 }
 
 function hasMissingInfoSignal(reply: string) {
   return /정확한\s*안내를\s*위해\s*확인|확인\s*후\s*(다시\s*)?(말씀|안내)|정확한\s*확인\s*후\s*안내/.test(
     reply,
   );
-}
-
-async function generateInquiryReply(
-  inquiry: CoupangOnlineInquiry,
-  store: CsReplyPromptStore,
-) {
-  const productContext = inquiry.productName
-    ? `문의 상품명: ${inquiry.productName}\n`
-    : "";
-  const completion = await openai.responses.create({
-    model: "gpt-4o-mini",
-    input: [
-      {
-        role: "system",
-        content: buildCsReplySystemPrompt(store),
-      },
-      {
-        role: "user",
-        content: `${productContext}고객 문의:\n${inquiry.content}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
-      },
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "cs_reply_decision",
-        schema: {
-          type: "object",
-          properties: {
-            reply: { type: "string" },
-            handling_type: {
-              type: "string",
-              enum: ["auto_ready", "needs_review", "needs_approval"],
-            },
-            risk_level: {
-              type: "string",
-              enum: ["low", "normal", "high"],
-            },
-          },
-          required: ["reply", "handling_type", "risk_level"],
-          additionalProperties: false,
-        },
-        strict: true,
-      },
-    },
-  });
-
-  const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
-  if (!parsedDecision) {
-    throw new Error("Failed to generate a Coupang inquiry reply.");
-  }
-
-  const hasHealthSafetyIssue = hasHealthSafetySignal(inquiry.content);
-  const hasProductSafetyIssue = hasProductSafetySignal(inquiry.content);
-  const initialDecision = {
-    reply: hasProductSafetyIssue
-      ? buildProductSafetyReply(store)
-      : sanitizeCustomerReply(parsedDecision.reply),
-    handlingType: hasHealthSafetyIssue
-      ? ("needs_approval" as const)
-      : parsedDecision.handlingType,
-    riskLevel: hasHealthSafetyIssue
-      ? ("high" as const)
-      : parsedDecision.riskLevel,
-    aiReason: "",
-    guardType: undefined as "workflow_verification" | undefined,
-  };
-  const decision =
-    (!hasHealthSafetyIssue &&
-      applyOperationalInfoGuard({
-        customerMessage: inquiry.content,
-        reply: initialDecision.reply,
-        store,
-      })) ||
-    initialDecision;
-
-  if (!decision.reply) {
-    throw new Error("Failed to generate a Coupang inquiry reply.");
-  }
-
-  return {
-    ...decision,
-    aiReason:
-      decision.aiReason ||
-      buildCsAiReason({
-        customerMessage: inquiry.content,
-        handlingType: decision.handlingType,
-        riskLevel: decision.riskLevel,
-        missingOperationalInfo: findMissingOperationalInfo(
-          inquiry.content,
-          store,
-        ),
-      }),
-  };
 }
 
 function buildMissingInfo(
@@ -539,8 +386,9 @@ export async function POST(request: Request) {
     const rows = [];
 
     for (const inquiry of newInquiries) {
+      const inquiryKnowledgeText = buildPlatformInquiryKnowledgeText(inquiry);
       const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
-        `${inquiry.productName ?? ""}\n${inquiry.content}`,
+        inquiryKnowledgeText,
         storeKnowledgeItems,
       );
       const usedKnowledgeItems = createUsedKnowledgeSnapshot(
@@ -553,15 +401,19 @@ export async function POST(request: Request) {
       const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
         usedKnowledgeItems,
         createStoreInfoEvidenceSnapshot(
-          `${inquiry.productName ?? ""}\n${inquiry.content}`,
+          inquiryKnowledgeText,
           storeRow,
         ),
       );
-      const decision = await generateInquiryReply(inquiry, storeRow);
+      const decision = await generatePlatformInquiryDecision({
+        inquiry,
+        store: storeRow,
+      });
       const shouldCreateMissingInfo =
-        decision.guardType !== "workflow_verification" &&
-        (decision.handlingType === "needs_review" ||
-          hasMissingInfoSignal(decision.reply));
+        shouldCreateMissingInfoForPlatformInquiry({
+          decision,
+          hasMissingInfoSignal: hasMissingInfoSignal(decision.reply),
+        });
       const status = resolveCsWorkflowStatus({
         autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
         aiWorkMode: storeRow.ai_work_mode,
@@ -572,20 +424,13 @@ export async function POST(request: Request) {
         hasMissingInfo: shouldCreateMissingInfo,
       });
 
-      rows.push({
-        user_id: auth.userId,
-        customer_message: inquiry.content,
-        reply: decision.reply,
+      rows.push(createPlatformCsMessageRow({
+        userId: auth.userId,
+        inquiry,
+        decision,
         status,
-        handling_type: decision.handlingType,
-        risk_level: decision.riskLevel,
-        ai_reason: decision.aiReason,
-        used_knowledge_items: usedKnowledgeItemsWithStoreEvidence,
-        source_platform: "coupang",
-        external_id: inquiry.externalId,
-        external_url: null,
-        platform_status: "synced",
-      });
+        usedKnowledgeItems: usedKnowledgeItemsWithStoreEvidence,
+      }));
 
       if (shouldCreateMissingInfo) {
         await saveMissingInfo({
