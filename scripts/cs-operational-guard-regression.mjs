@@ -177,6 +177,13 @@ expectMissingOperationalInfo({
   expectedReplyPattern: /상품명과 문제가 발생한 내용/,
 });
 
+expectMissingOperationalInfo({
+  customerMessage: "제품이 작동하지 않아요.",
+  expectedTopic: "service_intake",
+  expectedQuestionPart: "확인 및 접수 절차",
+  expectedReplyPattern: /상품명과 문제가 발생한 내용/,
+});
+
 const serviceIntakeGuard = applyOperationalInfoGuard({
   customerMessage: "구성품이 누락됐어요.",
   reply: "제품 불량이 맞으니 바로 새 상품을 보내드리겠습니다.",
@@ -196,5 +203,57 @@ expectNoMissingOperationalInfo({
       "고장 문의는 상품명과 증상 영상을 확인한 뒤 A/S 접수를 안내합니다.",
   }),
 });
+
+const prematureResolutionGuard = applyOperationalInfoGuard({
+  customerMessage: "제품 전원이 켜지지 않아요.",
+  reply: "제품 불량이 맞아 새 상품을 보내드리겠습니다.",
+  store: createStore({
+    extra_faq:
+      "고장 문의는 상품명과 증상 영상을 확인한 뒤 A/S 접수를 안내합니다.",
+  }),
+});
+
+assert.ok(
+  prematureResolutionGuard,
+  "An intake policy alone must not allow an unverified replacement promise.",
+);
+assert.equal(prematureResolutionGuard.handlingType, "needs_review");
+assert.match(
+  prematureResolutionGuard.reply,
+  /상품명과 문제가 발생한 내용/,
+);
+assert.doesNotMatch(
+  prematureResolutionGuard.reply,
+  /제품 불량이 맞|새 상품을 보내/,
+);
+
+const supportedResolutionStore = createStore({
+  extra_faq:
+    "제품 불량 확인 후 새 상품 교환 출고가 가능합니다. 고장 문의는 증상 영상을 확인한 뒤 접수합니다.",
+});
+
+const unsupportedDiagnosisGuard = applyOperationalInfoGuard({
+  customerMessage: "제품이 작동하지 않아요.",
+  reply: "제품 불량이 맞아 교환이 가능합니다.",
+  store: supportedResolutionStore,
+});
+
+assert.ok(
+  unsupportedDiagnosisGuard,
+  "A registered exchange policy must not allow an unverified defect diagnosis.",
+);
+assert.equal(unsupportedDiagnosisGuard.handlingType, "needs_review");
+assert.doesNotMatch(unsupportedDiagnosisGuard.reply, /제품 불량이 맞/);
+
+assert.equal(
+  applyOperationalInfoGuard({
+    customerMessage: "제품이 작동하지 않아요.",
+    reply:
+      "증상 확인 후 제품 불량으로 확인되면 새 상품 교환 출고가 가능합니다.",
+    store: supportedResolutionStore,
+  }),
+  null,
+  "A conditional resolution explicitly supported by store policy should remain available.",
+);
 
 console.log("CS operational guard regression tests passed.");

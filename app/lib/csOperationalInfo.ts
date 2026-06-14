@@ -161,14 +161,37 @@ function hasExplicitServiceIntakeInfo(store: CsReplyPromptStore) {
   );
 }
 
+function hasExplicitServiceResolutionInfo(store: CsReplyPromptStore) {
+  return /(?:고장|불량|파손|누락|점검|A\/S|AS|수리)[\s\S]{0,180}?(?:교환|환불|재출고|새\s*상품|무상|유상|수리)[\s\S]{0,80}?(?:가능|진행|처리|출고|접수|기준|조건)/i.test(
+    joinStoreText([
+      store.refund_policy,
+      store.product_caution,
+      store.product_catalog,
+      store.extra_faq,
+    ]),
+  );
+}
+
 function isServiceIntakeQuestion(customerMessage: string) {
-  return /고장|불량|파손|깨졌|망가|작동(?:이)?\s*(?:안|않)|전원[^\n]*(?:안|않)|충전[^\n]*(?:안|않)|오류|이상\s*작동|소음|구성품[^\n]*(?:누락|없)|(?:누락|빠져)[^\n]*구성품/.test(
+  return /고장|불량|파손|깨졌|망가|작동[^\n]*(?:안|않|하지|되지)|전원[^\n]*(?:안|않|켜지지)|충전[^\n]*(?:안|않|되지)|오류|이상\s*작동|소음|구성품[^\n]*(?:누락|없)|(?:누락|빠져)[^\n]*구성품/.test(
     customerMessage,
   );
 }
 
 function createServiceIntakeFallbackReply(store: CsReplyPromptStore) {
   return `${getGreeting(store)} 이용에 불편을 드려 죄송합니다. 정확한 확인을 위해 상품명과 문제가 발생한 내용을 알려주시고, 가능하면 현재 상태를 확인할 수 있는 사진이나 영상을 보내주세요. 확인 후 처리 방법을 안내드리겠습니다.`;
+}
+
+function hasPrematureServiceDiagnosisClaim(reply: string) {
+  return /제품\s*불량(?:이|으로)?\s*(?:맞(?:습니다|아요|아)?|확인(?:됩니다|되었습니다|됐습니다))|고객\s*과실(?:이|로)?\s*(?:맞(?:습니다|아요|아)?|확인(?:됩니다|되었습니다|됐습니다))|정상\s*범위(?:입니다|로\s*확인(?:됩니다|되었습니다|됐습니다))|외부\s*환경\s*때문(?:입니다|입니다만|인\s*것으로\s*확인)/.test(
+    reply,
+  );
+}
+
+function hasServiceResolutionPromise(reply: string) {
+  return /(?:교환|환불|재출고|새\s*상품\s*(?:발송|출고)|무상\s*(?:처리|수리)|수리)[^.!?\n]{0,35}(?:해드리겠습니다|도와드리겠습니다|진행하겠습니다|처리됩니다|가능합니다)/.test(
+    reply,
+  );
 }
 
 const productOptionQuestionPattern =
@@ -529,6 +552,20 @@ export function applyOperationalInfoGuard({
       handlingType: "needs_review",
       riskLevel: "normal",
       missingInfo,
+    };
+  }
+
+  if (
+    isServiceIntakeQuestion(customerMessage) &&
+    (hasPrematureServiceDiagnosisClaim(reply) ||
+      (hasServiceResolutionPromise(reply) &&
+        !hasExplicitServiceResolutionInfo(store)))
+  ) {
+    return {
+      reply: createServiceIntakeFallbackReply(store),
+      handlingType: "needs_review",
+      riskLevel: "normal",
+      missingInfo: null,
     };
   }
 

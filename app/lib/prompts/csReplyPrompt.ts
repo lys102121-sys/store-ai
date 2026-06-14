@@ -1,3 +1,5 @@
+import { buildCsResponsePlaybookPrompt } from "@/app/lib/csResponsePlaybook";
+
 export type CsReplyPromptStore = {
   user_id: string | null;
   store_name: string | null;
@@ -79,6 +81,8 @@ export function buildCsReplySystemPrompt(store: CsReplyPromptStore): string {
     "답변에는 현재 필요한 확인 단계와 고객이 할 다음 행동을 짧고 분명하게 안내하세요.",
     "배터리 팽창, 연기, 불꽃, 타는 냄새, 과열, 감전, 누전, 폭발, 화재 표현이 있으면 handling_type은 needs_approval, risk_level은 high로 판단하세요.",
     "제품 안전 이상 문의에는 우선 사용과 충전을 중단하도록 안내하고, 원인을 추측하지 말고 상품명, 발생 시점, 현재 상태를 확인할 사진이나 영상을 요청하세요.",
+    "",
+    buildCsResponsePlaybookPrompt(),
     "",
     "[사장님 CS 응대 예시 활용 규칙]",
     "owner_cs_examples가 있으면 기존 기본 말투보다 해당 예시를 최우선으로 따르세요.",
