@@ -66,6 +66,7 @@ type CsReplyDecision = {
   handlingType: HandlingType;
   riskLevel: RiskLevel;
   aiReason?: string;
+  guardType?: "workflow_verification";
 };
 
 type ExistingMissingInfoRow = {
@@ -638,6 +639,7 @@ export async function POST(request: Request) {
           riskLevel: hasHealthSafetyIssue
             ? ("high" as const)
             : parsedDecision.riskLevel,
+          aiReason: "",
         }
       : null;
     const operationalGuard =
@@ -664,18 +666,22 @@ export async function POST(request: Request) {
       customerMessage,
       storeRow,
     );
-    const aiReason = buildCsAiReason({
-      customerMessage,
-      handlingType: decision.handlingType,
-      riskLevel: decision.riskLevel,
-      missingOperationalInfo,
-    });
-    const shouldCreateMissingInfo = shouldSaveMissingInfo(
-      reply,
-      customerMessage,
-      storeRow,
-      missingOperationalInfo,
-    );
+    const aiReason =
+      decision.aiReason ||
+      buildCsAiReason({
+        customerMessage,
+        handlingType: decision.handlingType,
+        riskLevel: decision.riskLevel,
+        missingOperationalInfo,
+      });
+    const shouldCreateMissingInfo =
+      decision.guardType !== "workflow_verification" &&
+      shouldSaveMissingInfo(
+        reply,
+        customerMessage,
+        storeRow,
+        missingOperationalInfo,
+      );
     const status = resolveCsWorkflowStatus({
       autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
       aiWorkMode: storeRow.ai_work_mode,

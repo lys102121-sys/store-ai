@@ -8,8 +8,30 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(projectRoot, "app/lib/csOperationalInfo.ts");
+const workflowClaimGuardPath = path.join(
+  projectRoot,
+  "app/lib/csWorkflowClaimGuard.ts",
+);
+
+function loadWorkflowClaimGuard() {
+  const source = fs.readFileSync(workflowClaimGuardPath, "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+    },
+  }).outputText;
+  const sandbox = { exports: {}, console };
+
+  vm.runInNewContext(transpiled, sandbox, {
+    filename: workflowClaimGuardPath,
+  });
+
+  return sandbox.exports;
+}
 
 function loadCsOperationalInfo() {
+  const workflowClaimGuard = loadWorkflowClaimGuard();
   const source = fs.readFileSync(sourcePath, "utf8");
   const transpiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -19,7 +41,10 @@ function loadCsOperationalInfo() {
   }).outputText;
   const sandbox = {
     exports: {},
-    require() {
+    require(specifier) {
+      if (specifier.includes("csWorkflowClaimGuard")) {
+        return workflowClaimGuard;
+      }
       return {};
     },
     console,
@@ -255,5 +280,21 @@ assert.equal(
   null,
   "A conditional resolution explicitly supported by store policy should remain available.",
 );
+
+const unverifiedWorkflowGuard = applyOperationalInfoGuard({
+  customerMessage: "반품 접수됐나요?",
+  reply: "반품 접수가 완료되었습니다.",
+  store: createStore({
+    refund_policy: "반품 접수 후 상품을 회수하여 상태를 확인합니다.",
+  }),
+});
+
+assert.ok(
+  unverifiedWorkflowGuard,
+  "A static policy must not be treated as proof of a completed return request.",
+);
+assert.equal(unverifiedWorkflowGuard.handlingType, "needs_review");
+assert.match(unverifiedWorkflowGuard.reply, /정확한 진행 상태는 확인 후/);
+assert.doesNotMatch(unverifiedWorkflowGuard.reply, /접수가 완료/);
 
 console.log("CS operational guard regression tests passed.");

@@ -1,4 +1,5 @@
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
+import { applyWorkflowClaimGuard } from "@/app/lib/csWorkflowClaimGuard";
 
 export type OperationalInfoTopic =
   | "pricing"
@@ -24,6 +25,8 @@ type OperationalInfoGuard = {
   handlingType: "needs_review";
   riskLevel: "normal";
   missingInfo: MissingOperationalInfo | null;
+  guardType?: "workflow_verification";
+  aiReason?: string;
 };
 
 const wonAmountPattern = /(\d[\d,]*(?:\.\d+)?)\s*(만원|천원|원)/g;
@@ -554,6 +557,13 @@ export function applyOperationalInfoGuard({
       missingInfo,
     };
   }
+
+  const workflowClaimGuard = applyWorkflowClaimGuard({
+    customerMessage,
+    reply,
+    store,
+  });
+  if (workflowClaimGuard) return workflowClaimGuard;
 
   if (
     isServiceIntakeQuestion(customerMessage) &&

@@ -8,8 +8,30 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(projectRoot, "app/lib/csOperationalInfo.ts");
+const workflowClaimGuardPath = path.join(
+  projectRoot,
+  "app/lib/csWorkflowClaimGuard.ts",
+);
+
+function loadWorkflowClaimGuard() {
+  const source = fs.readFileSync(workflowClaimGuardPath, "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+    },
+  }).outputText;
+  const sandbox = { exports: {}, console };
+
+  vm.runInNewContext(transpiled, sandbox, {
+    filename: workflowClaimGuardPath,
+  });
+
+  return sandbox.exports;
+}
 
 function loadCsOperationalInfo() {
+  const workflowClaimGuard = loadWorkflowClaimGuard();
   const source = fs.readFileSync(sourcePath, "utf8");
   const transpiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -19,7 +41,10 @@ function loadCsOperationalInfo() {
   }).outputText;
   const sandbox = {
     exports: {},
-    require() {
+    require(specifier) {
+      if (specifier.includes("csWorkflowClaimGuard")) {
+        return workflowClaimGuard;
+      }
       return {};
     },
     console,

@@ -26,6 +26,7 @@ export type CsReplyDecision = {
   handlingType: CsReplyHandlingType;
   riskLevel: CsReplyRiskLevel;
   aiReason: string;
+  guardType?: "workflow_verification";
 };
 
 function parseCsReplyDecision(
@@ -167,11 +168,13 @@ export async function generateCsReplyDecision({
 
   return {
     ...decision,
-    aiReason: buildCsAiReason({
-      customerMessage,
-      handlingType: decision.handlingType,
-      riskLevel: decision.riskLevel,
-      missingOperationalInfo,
-    }),
+    aiReason:
+      decision.aiReason ||
+      buildCsAiReason({
+        customerMessage,
+        handlingType: decision.handlingType,
+        riskLevel: decision.riskLevel,
+        missingOperationalInfo,
+      }),
   };
 }

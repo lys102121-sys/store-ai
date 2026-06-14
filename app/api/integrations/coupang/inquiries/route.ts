@@ -168,6 +168,8 @@ async function generateInquiryReply(
     riskLevel: hasHealthSafetyIssue
       ? ("high" as const)
       : parsedDecision.riskLevel,
+    aiReason: "",
+    guardType: undefined as "workflow_verification" | undefined,
   };
   const decision =
     (!hasHealthSafetyIssue &&
@@ -184,12 +186,17 @@ async function generateInquiryReply(
 
   return {
     ...decision,
-    aiReason: buildCsAiReason({
-      customerMessage: inquiry.content,
-      handlingType: decision.handlingType,
-      riskLevel: decision.riskLevel,
-      missingOperationalInfo: findMissingOperationalInfo(inquiry.content, store),
-    }),
+    aiReason:
+      decision.aiReason ||
+      buildCsAiReason({
+        customerMessage: inquiry.content,
+        handlingType: decision.handlingType,
+        riskLevel: decision.riskLevel,
+        missingOperationalInfo: findMissingOperationalInfo(
+          inquiry.content,
+          store,
+        ),
+      }),
   };
 }
 
@@ -552,8 +559,9 @@ export async function POST(request: Request) {
       );
       const decision = await generateInquiryReply(inquiry, storeRow);
       const shouldCreateMissingInfo =
-        decision.handlingType === "needs_review" ||
-        hasMissingInfoSignal(decision.reply);
+        decision.guardType !== "workflow_verification" &&
+        (decision.handlingType === "needs_review" ||
+          hasMissingInfoSignal(decision.reply));
       const status = resolveCsWorkflowStatus({
         autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
         aiWorkMode: storeRow.ai_work_mode,
