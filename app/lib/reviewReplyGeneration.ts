@@ -2,6 +2,7 @@ import OpenAI from "openai";
 
 import { buildReviewAiReason } from "@/app/lib/aiDecisionReason";
 import { buildProductSafetyReviewReply } from "@/app/lib/csIncidentResponse";
+import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
 import {
   buildReviewReplySystemPrompt,
   type ReviewReplyPromptStore,
@@ -250,10 +251,18 @@ export async function generateReviewReplyWithSentiment(
   const hasHealthSafetyIssue = hasHealthSafetySignal(review);
   const hasProductSafetyIssue = hasProductSafetySignal(review);
 
-  const handlingType = hasHealthSafetyIssue
-    ? "needs_approval"
-    : decision.handlingType;
-  const riskLevel = hasHealthSafetyIssue ? "high" : decision.riskLevel;
+  const escalatedDecision = applyCsServiceEscalation(review, {
+    ...decision,
+    handlingType: hasHealthSafetyIssue
+      ? ("needs_approval" as const)
+      : decision.handlingType,
+    riskLevel: hasHealthSafetyIssue
+      ? ("high" as const)
+      : decision.riskLevel,
+    aiReason: "",
+  });
+  const handlingType = escalatedDecision.handlingType;
+  const riskLevel = escalatedDecision.riskLevel;
 
   return {
     review,
@@ -263,11 +272,13 @@ export async function generateReviewReplyWithSentiment(
     sentiment,
     handlingType,
     riskLevel,
-    aiReason: buildReviewAiReason({
-      review,
-      sentiment,
-      handlingType,
-      riskLevel,
-    }),
+    aiReason:
+      escalatedDecision.aiReason ||
+      buildReviewAiReason({
+        review,
+        sentiment,
+        handlingType,
+        riskLevel,
+      }),
   };
 }

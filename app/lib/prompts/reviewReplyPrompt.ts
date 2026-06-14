@@ -1,3 +1,5 @@
+import { buildCsServiceEscalationPrompt } from "@/app/lib/csServiceEscalation";
+
 export type ReviewReplyPromptStore = {
   store_name: string | null;
   business_type: string | null;
@@ -49,6 +51,7 @@ export function buildReviewReplySystemPrompt(
       "고장, 파손, 작동 이상 리뷰에도 제품 불량, 고객 과실, 정상 범위 또는 발생 원인을 공개 답글에서 단정하지 마세요.",
       "상세 확인이 필요하면 개인정보나 증상 세부사항을 공개적으로 요구하지 말고, 주문 정보와 함께 문의해 주시면 확인하겠다고 안내하세요.",
       "배터리 팽창, 연기, 과열, 감전 같은 제품 안전 이상은 handling_type을 needs_approval, risk_level을 high로 분류하고 우선 사용 중단을 안내하세요.",
+      buildCsServiceEscalationPrompt(),
       "긍정 리뷰 답글은 감사 한 문장만으로 끝내지 말고, owner_reply_examples에 자연스러운 마무리 문장이 있으면 비슷한 길이의 마무리 문장 1개를 포함하세요.",
       '"정성껏", "최선을", "보답", "늘 만족" 같은 식상한 표현은 피하고 owner_reply_examples의 끝맺음 방식을 따르세요.',
       "",
@@ -182,6 +185,7 @@ export function buildReviewReplySystemPrompt(
     "고장, 파손, 작동 이상 리뷰에도 제품 불량, 고객 과실, 정상 범위 또는 발생 원인을 공개 답글에서 단정하지 마세요.",
     "상세 확인이 필요하면 개인정보나 증상 세부사항을 공개적으로 요구하지 말고, 주문 정보와 함께 문의해 주시면 확인하겠다고 안내하세요.",
     "배터리 팽창, 연기, 과열, 감전 같은 제품 안전 이상은 handling_type을 needs_approval, risk_level을 high로 분류하고 우선 사용 중단을 안내하세요.",
+    buildCsServiceEscalationPrompt(),
     "",
     '사장님 답글 예시가 없으므로 내부 기본 말투인 "친절하고 자연스럽게"로 리뷰 답글을 작성하세요.',
     "리뷰에 특정 상품명이나 메뉴명이 직접 언급된 경우에만 상품 목록에서 관련 맥락을 참고하세요.",

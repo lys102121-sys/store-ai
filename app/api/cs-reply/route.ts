@@ -14,6 +14,7 @@ import {
   findMissingOperationalInfo,
   type MissingOperationalInfo,
 } from "@/app/lib/csOperationalInfo";
+import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
@@ -650,7 +651,12 @@ export async function POST(request: Request) {
             store: storeRow,
           })
         : null;
-    const decision = operationalGuard ?? initialDecision;
+    const decision = initialDecision
+      ? applyCsServiceEscalation(
+          customerMessage,
+          operationalGuard ?? initialDecision,
+        )
+      : null;
     const reply = decision
       ? sanitizeCustomerReply(decision.reply).trim()
       : "";

@@ -40,6 +40,8 @@ const {
   "음식이 상한 것 같아요.",
   "위생 상태가 걱정됩니다.",
   "호흡이 불편해서 병원에 갔어요.",
+  "제품을 쓰다가 손을 베여 상처가 났어요.",
+  "아이가 제품에 부딪혀 다쳤어요.",
 ].forEach((message) => {
   assert.equal(
     hasHealthSafetySignal(message),
@@ -83,6 +85,7 @@ const {
   "맛있게 잘 먹었습니다.",
   "포장이 예뻐서 선물하기 좋았어요.",
   "배송은 빨랐고 상품도 마음에 들어요.",
+  "답변이 늦어 마음에 상처받았습니다.",
 ].forEach((message) => {
   assert.equal(
     hasHealthSafetySignal(message),

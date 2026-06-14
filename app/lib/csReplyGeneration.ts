@@ -4,6 +4,7 @@ import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
+import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
@@ -155,7 +156,7 @@ export async function generateCsReplyDecision({
       : parsedDecision.riskLevel,
     aiReason: "",
   };
-  const decision =
+  const guardedDecision =
     (!hasHealthSafetyIssue &&
       applyOperationalInfoGuard({
         customerMessage,
@@ -163,6 +164,10 @@ export async function generateCsReplyDecision({
         store,
       })) ||
     initialDecision;
+  const decision = applyCsServiceEscalation(
+    customerMessage,
+    guardedDecision,
+  );
 
   if (!decision.reply) {
     throw new Error("Failed to generate a CS reply.");
