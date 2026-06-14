@@ -15,36 +15,19 @@ import {
   parseCoupangOnlineInquiries,
   type CoupangOnlineInquiry,
 } from "@/app/lib/coupangOpenApi";
-import { buildPlatformInquiryKnowledgeText } from "@/app/lib/platformInquiry";
-import {
-  createPlatformCsMessageRow,
-  generatePlatformInquiryDecision,
-  shouldCreateMissingInfoForPlatformInquiry,
-} from "@/app/lib/platformInquiryProcessing";
+import { preparePlatformInquiryForStorage } from "@/app/lib/platformInquiryProcessing";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
-  createStoreInfoEvidenceSnapshot,
-  createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
-  mergeUsedKnowledgeSnapshots,
-  mergeStoreKnowledgeIntoStore,
-  selectRelevantStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
   withoutUsedKnowledgeItems,
 } from "@/app/lib/storeKnowledge";
-import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 export const runtime = "nodejs";
 
 function truncateForLog(value: string) {
   return value.length > 500 ? `${value.slice(0, 500)}...` : value;
-}
-
-function hasMissingInfoSignal(reply: string) {
-  return /정확한\s*안내를\s*위해\s*확인|확인\s*후\s*(다시\s*)?(말씀|안내)|정확한\s*확인\s*후\s*안내/.test(
-    reply,
-  );
 }
 
 function buildMissingInfo(
@@ -386,58 +369,21 @@ export async function POST(request: Request) {
     const rows = [];
 
     for (const inquiry of newInquiries) {
-      const inquiryKnowledgeText = buildPlatformInquiryKnowledgeText(inquiry);
-      const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
-        inquiryKnowledgeText,
-        storeKnowledgeItems,
-      );
-      const usedKnowledgeItems = createUsedKnowledgeSnapshot(
-        relevantStoreKnowledgeItems,
-      );
-      const storeRow = mergeStoreKnowledgeIntoStore(
-        baseStoreRow,
-        relevantStoreKnowledgeItems,
-      );
-      const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
-        usedKnowledgeItems,
-        createStoreInfoEvidenceSnapshot(
-          inquiryKnowledgeText,
-          storeRow,
-        ),
-      );
-      const decision = await generatePlatformInquiryDecision({
-        inquiry,
-        store: storeRow,
-      });
-      const shouldCreateMissingInfo =
-        shouldCreateMissingInfoForPlatformInquiry({
-          decision,
-          hasMissingInfoSignal: hasMissingInfoSignal(decision.reply),
-        });
-      const status = resolveCsWorkflowStatus({
-        autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
-        aiWorkMode: storeRow.ai_work_mode,
-        aiWorkStartTime: storeRow.ai_work_start_time,
-        aiWorkEndTime: storeRow.ai_work_end_time,
-        handlingType: decision.handlingType,
-        riskLevel: decision.riskLevel,
-        hasMissingInfo: shouldCreateMissingInfo,
-      });
-
-      rows.push(createPlatformCsMessageRow({
+      const preparedInquiry = await preparePlatformInquiryForStorage({
         userId: auth.userId,
         inquiry,
-        decision,
-        status,
-        usedKnowledgeItems: usedKnowledgeItemsWithStoreEvidence,
-      }));
+        baseStore: baseStoreRow,
+        storeKnowledgeItems,
+      });
 
-      if (shouldCreateMissingInfo) {
+      rows.push(preparedInquiry.row);
+
+      if (preparedInquiry.shouldCreateMissingInfo) {
         await saveMissingInfo({
           supabase: auth.supabase,
           userId: auth.userId,
           inquiry,
-          store: storeRow,
+          store: preparedInquiry.store,
         });
       }
     }

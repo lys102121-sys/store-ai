@@ -3,11 +3,21 @@ import {
   type CsReplyDecision,
 } from "@/app/lib/csReplyGeneration";
 import {
+  buildPlatformInquiryKnowledgeText,
   buildPlatformInquiryPromptContext,
   type NormalizedPlatformInquiry,
 } from "@/app/lib/platformInquiry";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import type { UsedStoreKnowledgeItem } from "@/app/lib/storeKnowledge";
+import {
+  createStoreInfoEvidenceSnapshot,
+  createUsedKnowledgeSnapshot,
+  mergeStoreKnowledgeIntoStore,
+  mergeUsedKnowledgeSnapshots,
+  selectRelevantStoreKnowledgeItems,
+  type StoreKnowledgeItem,
+  type UsedStoreKnowledgeItem,
+} from "@/app/lib/storeKnowledge";
+import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 export async function generatePlatformInquiryDecision({
   inquiry,
@@ -33,6 +43,12 @@ export function shouldCreateMissingInfoForPlatformInquiry({
   return (
     decision.guardType !== "workflow_verification" &&
     (decision.handlingType === "needs_review" || hasMissingInfoSignal)
+  );
+}
+
+export function hasMissingInfoReplySignal(reply: string) {
+  return /정확한\s*안내를\s*위해\s*확인|확인\s*후\s*(다시\s*)?(말씀|안내)|정확한\s*확인\s*후\s*안내/.test(
+    reply,
   );
 }
 
@@ -62,5 +78,59 @@ export function createPlatformCsMessageRow({
     external_id: inquiry.externalId,
     external_url: inquiry.externalUrl,
     platform_status: "synced",
+  };
+}
+
+export async function preparePlatformInquiryForStorage({
+  userId,
+  inquiry,
+  baseStore,
+  storeKnowledgeItems,
+}: {
+  userId: string;
+  inquiry: NormalizedPlatformInquiry;
+  baseStore: CsReplyPromptStore;
+  storeKnowledgeItems: StoreKnowledgeItem[];
+}) {
+  const inquiryKnowledgeText = buildPlatformInquiryKnowledgeText(inquiry);
+  const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
+    inquiryKnowledgeText,
+    storeKnowledgeItems,
+  );
+  const store = mergeStoreKnowledgeIntoStore(
+    baseStore,
+    relevantStoreKnowledgeItems,
+  );
+  const usedKnowledgeItems = mergeUsedKnowledgeSnapshots(
+    createUsedKnowledgeSnapshot(relevantStoreKnowledgeItems),
+    createStoreInfoEvidenceSnapshot(inquiryKnowledgeText, store),
+  );
+  const decision = await generatePlatformInquiryDecision({ inquiry, store });
+  const shouldCreateMissingInfo =
+    shouldCreateMissingInfoForPlatformInquiry({
+      decision,
+      hasMissingInfoSignal: hasMissingInfoReplySignal(decision.reply),
+    });
+  const status = resolveCsWorkflowStatus({
+    autoCompleteLowRisk: store.auto_complete_low_risk_cs,
+    aiWorkMode: store.ai_work_mode,
+    aiWorkStartTime: store.ai_work_start_time,
+    aiWorkEndTime: store.ai_work_end_time,
+    handlingType: decision.handlingType,
+    riskLevel: decision.riskLevel,
+    hasMissingInfo: shouldCreateMissingInfo,
+  });
+
+  return {
+    decision,
+    store,
+    shouldCreateMissingInfo,
+    row: createPlatformCsMessageRow({
+      userId,
+      inquiry,
+      decision,
+      status,
+      usedKnowledgeItems,
+    }),
   };
 }

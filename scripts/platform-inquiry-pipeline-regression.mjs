@@ -73,12 +73,22 @@ const mockInquiryUtility = fs.readFileSync(
   path.join(projectRoot, "app/lib/mockPlatformInquiries.ts"),
   "utf8",
 );
+const platformInquiryProcessing = fs.readFileSync(
+  path.join(projectRoot, "app/lib/platformInquiryProcessing.ts"),
+  "utf8",
+);
 
 for (const integrationSource of [coupangRoute, mockInquiryUtility]) {
-  assert.match(integrationSource, /generatePlatformInquiryDecision/);
-  assert.match(integrationSource, /createPlatformCsMessageRow/);
+  assert.match(integrationSource, /preparePlatformInquiryForStorage/);
   assert.doesNotMatch(integrationSource, /openai\.responses\.create/);
   assert.doesNotMatch(integrationSource, /buildCsReplySystemPrompt/);
+  assert.doesNotMatch(integrationSource, /resolveCsWorkflowStatus/);
+  assert.doesNotMatch(integrationSource, /selectRelevantStoreKnowledgeItems/);
 }
+
+assert.match(platformInquiryProcessing, /generatePlatformInquiryDecision/);
+assert.match(platformInquiryProcessing, /createPlatformCsMessageRow/);
+assert.match(platformInquiryProcessing, /resolveCsWorkflowStatus/);
+assert.match(platformInquiryProcessing, /selectRelevantStoreKnowledgeItems/);
 
 console.log("Platform inquiry pipeline regression tests passed.");

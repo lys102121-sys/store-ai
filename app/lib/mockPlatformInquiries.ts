@@ -5,27 +5,17 @@ import {
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
-  buildPlatformInquiryKnowledgeText,
   createNormalizedPlatformInquiry,
   type PlatformSource,
 } from "@/app/lib/platformInquiry";
-import {
-  createPlatformCsMessageRow,
-  generatePlatformInquiryDecision,
-} from "@/app/lib/platformInquiryProcessing";
+import { preparePlatformInquiryForStorage } from "@/app/lib/platformInquiryProcessing";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
-  createStoreInfoEvidenceSnapshot,
-  createUsedKnowledgeSnapshot,
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
-  mergeStoreKnowledgeIntoStore,
-  mergeUsedKnowledgeSnapshots,
-  selectRelevantStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
   withoutUsedKnowledgeItems,
 } from "@/app/lib/storeKnowledge";
-import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
 export type MockInquiryPlatform = Exclude<PlatformSource, "manual">;
 
@@ -127,43 +117,14 @@ export async function createMockPlatformInquiriesResponse(
     );
     const rows = await Promise.all(
       normalizedInquiries.map(async (inquiry) => {
-        const inquiryKnowledgeText =
-          buildPlatformInquiryKnowledgeText(inquiry);
-        const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
-          inquiryKnowledgeText,
-          storeKnowledgeItems,
-        );
-        const usedKnowledgeItems = createUsedKnowledgeSnapshot(
-          relevantStoreKnowledgeItems,
-        );
-        const storeRow = mergeStoreKnowledgeIntoStore(
-          baseStoreRow,
-          relevantStoreKnowledgeItems,
-        );
-        const usedKnowledgeItemsWithStoreEvidence = mergeUsedKnowledgeSnapshots(
-          usedKnowledgeItems,
-          createStoreInfoEvidenceSnapshot(inquiryKnowledgeText, storeRow),
-        );
-        const decision = await generatePlatformInquiryDecision({
-          inquiry,
-          store: storeRow,
-        });
-        const status = resolveCsWorkflowStatus({
-          autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
-          aiWorkMode: storeRow.ai_work_mode,
-          aiWorkStartTime: storeRow.ai_work_start_time,
-          aiWorkEndTime: storeRow.ai_work_end_time,
-          handlingType: decision.handlingType,
-          riskLevel: decision.riskLevel,
-        });
-
-        return createPlatformCsMessageRow({
+        const preparedInquiry = await preparePlatformInquiryForStorage({
           userId: auth.userId,
           inquiry,
-          decision,
-          status,
-          usedKnowledgeItems: usedKnowledgeItemsWithStoreEvidence,
+          baseStore: baseStoreRow,
+          storeKnowledgeItems,
         });
+
+        return preparedInquiry.row;
       }),
     );
 
