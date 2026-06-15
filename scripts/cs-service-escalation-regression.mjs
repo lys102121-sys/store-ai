@@ -66,7 +66,6 @@ assert.match(prompt, /반품 상품 재출고/);
 assert.match(prompt, /부상이 언급되면 risk_level을 high/);
 
 for (const relativePath of [
-  "app/api/cs-reply/route.ts",
   "app/lib/csReplyGeneration.ts",
   "app/lib/reviewReplyGeneration.ts",
 ]) {
@@ -80,6 +79,12 @@ for (const relativePath of [
     `${relativePath} should apply the shared escalation rules.`,
   );
 }
+
+const manualCsReplyRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/cs-reply/route.ts"),
+  "utf8",
+);
+assert.match(manualCsReplyRoute, /generateCsReplyDecision/);
 
 const reviewPromptSource = fs.readFileSync(
   path.join(projectRoot, "app/lib/prompts/reviewReplyPrompt.ts"),

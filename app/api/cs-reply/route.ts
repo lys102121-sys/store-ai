@@ -1,26 +1,17 @@
-import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
-import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
-  applyOperationalInfoGuard,
   findMissingOperationalInfo,
   type MissingOperationalInfo,
 } from "@/app/lib/csOperationalInfo";
-import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
-import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
+import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
-import {
-  hasHealthSafetySignal,
-  hasProductSafetySignal,
-} from "@/app/lib/riskSignals";
 import {
   createStoreInfoEvidenceSnapshot,
   createUsedKnowledgeSnapshot,
@@ -33,18 +24,11 @@ import {
 } from "@/app/lib/storeKnowledge";
 import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 type RequestBody = {
   customerMessage?: unknown;
 };
 
 type StoreRow = CsReplyPromptStore;
-
-type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
-type RiskLevel = "low" | "normal" | "high";
 
 const csReplyStoreSelect =
   "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, ai_work_mode, ai_work_start_time, ai_work_end_time, created_at, updated_at";
@@ -61,14 +45,6 @@ function isMissingAiWorkModeColumnError(error: { message?: string } | null) {
       ),
   );
 }
-
-type CsReplyDecision = {
-  reply: string;
-  handlingType: HandlingType;
-  riskLevel: RiskLevel;
-  aiReason?: string;
-  guardType?: "workflow_verification";
-};
 
 type ExistingMissingInfoRow = {
   id: string;
@@ -95,46 +71,6 @@ type MissingInfoTopic =
   | "reservation"
   | "service_intake"
   | "general";
-
-function parseCsReplyDecision(output: string | undefined): CsReplyDecision | null {
-  if (!output) return null;
-
-  try {
-    const parsed = JSON.parse(output) as {
-      reply?: unknown;
-      handling_type?: unknown;
-      risk_level?: unknown;
-    };
-    const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
-    const handlingType =
-      parsed.handling_type === "auto_ready" ||
-      parsed.handling_type === "needs_review" ||
-      parsed.handling_type === "needs_approval"
-        ? parsed.handling_type
-        : null;
-    const riskLevel =
-      parsed.risk_level === "low" ||
-      parsed.risk_level === "normal" ||
-      parsed.risk_level === "high"
-        ? parsed.risk_level
-        : null;
-
-    if (reply && handlingType && riskLevel) {
-      return { reply, handlingType, riskLevel };
-    }
-  } catch {
-    const reply = output.trim();
-    if (reply) {
-      return {
-        reply,
-        handlingType: "needs_approval",
-        riskLevel: "normal",
-      };
-    }
-  }
-
-  return null;
-}
 
 function classifyMissingInfoTopic(text: string): MissingInfoTopic {
   if (/제주|도서산간|배송비|추가 배송비/.test(text)) {
@@ -220,29 +156,6 @@ function hasMissingInfoSignal(reply: string) {
     "해당 상품 정보는 사장님 확인이 필요합니다",
     "해당 내용은 사장님 확인이 필요합니다",
   ].some((signal) => reply.includes(signal));
-}
-
-function sanitizeCustomerReply(reply: string) {
-  return reply
-    .replaceAll(
-      "현재 등록된 정보만으로는",
-      "정확한 안내를 위해서는",
-    )
-    .replaceAll("현재 등록된 정보", "현재 확인 가능한 내용")
-    .replaceAll("등록된 정보만으로는", "정확한 안내를 위해서는")
-    .replaceAll(
-      "상품 정보에 명시되어 있지 않습니다",
-      "정확한 안내를 위해 확인 후 다시 말씀드리겠습니다",
-    )
-    .replaceAll(
-      "사장님 확인이 필요합니다",
-      "확인 후 안내드리겠습니다",
-    )
-    .replaceAll("저장된 정보", "확인 가능한 내용")
-    .replaceAll("시스템", "")
-    .replaceAll("AI", "")
-    .replaceAll("데이터", "내용")
-    .replaceAll("DB", "");
 }
 
 function getRegisteredStoreText(store: StoreRow) {
@@ -580,106 +493,18 @@ export async function POST(request: Request) {
     usedKnowledgeItems,
     createStoreInfoEvidenceSnapshot(customerMessage, storeRow),
   );
-  const systemPrompt = buildCsReplySystemPrompt(storeRow);
-
   try {
-    const completion = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `고객 문의:\n${customerMessage}\n\n저장된 CS 응대 예시가 있으면 그 말투를 우선 따르고, 없으면 친절하고 자연스럽게 답변하세요.`,
-            },
-          ],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "cs_reply_decision",
-          schema: {
-            type: "object",
-            properties: {
-              reply: { type: "string" },
-              handling_type: {
-                type: "string",
-                enum: ["auto_ready", "needs_review", "needs_approval"],
-              },
-              risk_level: {
-                type: "string",
-                enum: ["low", "normal", "high"],
-              },
-            },
-            required: ["reply", "handling_type", "risk_level"],
-            additionalProperties: false,
-          },
-          strict: true,
-        },
-      },
+    const decision = await generateCsReplyDecision({
+      customerMessage,
+      store: storeRow,
     });
-
-    const parsedDecision = parseCsReplyDecision(completion.output_text?.trim());
-    const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
-    const hasProductSafetyIssue = hasProductSafetySignal(customerMessage);
-    const initialDecision = parsedDecision
-      ? {
-          ...parsedDecision,
-          reply: hasProductSafetyIssue
-            ? buildProductSafetyReply(storeRow)
-            : parsedDecision.reply,
-          handlingType: hasHealthSafetyIssue
-            ? ("needs_approval" as const)
-            : parsedDecision.handlingType,
-          riskLevel: hasHealthSafetyIssue
-            ? ("high" as const)
-            : parsedDecision.riskLevel,
-          aiReason: "",
-        }
-      : null;
-    const operationalGuard =
-      initialDecision && !hasHealthSafetyIssue
-        ? applyOperationalInfoGuard({
-            customerMessage,
-            reply: initialDecision.reply,
-            store: storeRow,
-          })
-        : null;
-    const decision = initialDecision
-      ? applyCsServiceEscalation(
-          customerMessage,
-          operationalGuard ?? initialDecision,
-        )
-      : null;
-    const reply = decision
-      ? sanitizeCustomerReply(decision.reply).trim()
-      : "";
-
-    if (!decision || !reply) {
-      return Response.json(
-        { error: "Failed to generate a CS reply." },
-        { status: 502 },
-      );
-    }
+    const reply = decision.reply;
 
     const missingOperationalInfo = findMissingOperationalInfo(
       customerMessage,
       storeRow,
     );
-    const aiReason =
-      decision.aiReason ||
-      buildCsAiReason({
-        customerMessage,
-        handlingType: decision.handlingType,
-        riskLevel: decision.riskLevel,
-        missingOperationalInfo,
-      });
+    const aiReason = decision.aiReason;
     const shouldCreateMissingInfo =
       decision.guardType !== "workflow_verification" &&
       shouldSaveMissingInfo(

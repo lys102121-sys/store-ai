@@ -77,6 +77,10 @@ const platformInquiryProcessing = fs.readFileSync(
   path.join(projectRoot, "app/lib/platformInquiryProcessing.ts"),
   "utf8",
 );
+const manualCsReplyRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/cs-reply/route.ts"),
+  "utf8",
+);
 
 for (const integrationSource of [coupangRoute, mockInquiryUtility]) {
   assert.match(integrationSource, /preparePlatformInquiryForStorage/);
@@ -90,5 +94,11 @@ assert.match(platformInquiryProcessing, /generatePlatformInquiryDecision/);
 assert.match(platformInquiryProcessing, /createPlatformCsMessageRow/);
 assert.match(platformInquiryProcessing, /resolveCsWorkflowStatus/);
 assert.match(platformInquiryProcessing, /selectRelevantStoreKnowledgeItems/);
+
+assert.match(manualCsReplyRoute, /generateCsReplyDecision/);
+assert.doesNotMatch(manualCsReplyRoute, /openai\.responses\.create/);
+assert.doesNotMatch(manualCsReplyRoute, /buildCsReplySystemPrompt/);
+assert.doesNotMatch(manualCsReplyRoute, /applyOperationalInfoGuard/);
+assert.doesNotMatch(manualCsReplyRoute, /applyCsServiceEscalation/);
 
 console.log("Platform inquiry pipeline regression tests passed.");
