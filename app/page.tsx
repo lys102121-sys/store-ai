@@ -9,12 +9,14 @@ import {
   type AnswerMode,
 } from "@/app/components/dashboard/AnswerModeSelector";
 import { CsReplyPanel } from "@/app/components/dashboard/CsReplyPanel";
+import { CsLearningQualityCard } from "@/app/components/dashboard/CsLearningQualityCard";
 import {
   DashboardTabs,
   type DashboardTab,
 } from "@/app/components/dashboard/DashboardTabs";
 import { ReviewReplyPanel } from "@/app/components/dashboard/ReviewReplyPanel";
 import { StartOnboarding } from "@/app/components/dashboard/StartOnboarding";
+import type { CsLearningMetrics } from "@/app/lib/csLearningMetrics";
 import {
   buildStoreKnowledgeQualityReport,
   createEmptyStoreKnowledgeQuality,
@@ -215,6 +217,13 @@ type AiActivityLogItem = {
 
 type AiActivityLogsResponse = {
   logs?: AiActivityLogItem[];
+  missingTableSql?: string;
+  error?: string;
+  detail?: string;
+};
+
+type CsLearningMetricsResponse = {
+  metrics?: CsLearningMetrics;
   missingTableSql?: string;
   error?: string;
   detail?: string;
@@ -1267,6 +1276,19 @@ async function fetchAiActivityLogs() {
   return data.logs ?? [];
 }
 
+async function fetchCsLearningMetrics() {
+  const response = await fetch("/api/cs-learning-metrics", {
+    headers: await getAuthenticatedRequestHeaders(),
+  });
+  const data = (await response.json()) as CsLearningMetricsResponse;
+
+  if (!response.ok || !data.metrics) {
+    throw new Error(data.error ?? "AI CS 학습 품질을 불러오지 못했습니다.");
+  }
+
+  return data.metrics;
+}
+
 async function fetchMissingInfoList() {
   const response = await fetch("/api/missing-infos", {
     headers: await getAuthenticatedRequestHeaders(),
@@ -1938,6 +1960,11 @@ export default function Home() {
   const [aiActivityLogs, setAiActivityLogs] = useState<AiActivityLogItem[]>([]);
   const [aiActivityLogsLoading, setAiActivityLogsLoading] = useState(true);
   const [aiActivityLogsError, setAiActivityLogsError] = useState("");
+  const [csLearningMetrics, setCsLearningMetrics] =
+    useState<CsLearningMetrics | null>(null);
+  const [csLearningMetricsLoading, setCsLearningMetricsLoading] =
+    useState(true);
+  const [csLearningMetricsError, setCsLearningMetricsError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [copyError, setCopyError] = useState("");
   const [workflowError, setWorkflowError] = useState("");
@@ -2312,6 +2339,24 @@ export default function Home() {
     }
   }, []);
 
+  const loadCsLearningMetrics = useCallback(async () => {
+    setCsLearningMetricsLoading(true);
+    setCsLearningMetricsError("");
+
+    try {
+      setCsLearningMetrics(await fetchCsLearningMetrics());
+    } catch (error) {
+      setCsLearningMetricsError(
+        error instanceof Error
+          ? error.message
+          : "AI CS 학습 품질을 불러오지 못했습니다.",
+      );
+      setCsLearningMetrics(null);
+    } finally {
+      setCsLearningMetricsLoading(false);
+    }
+  }, []);
+
   const loadMissingInfos = useCallback(async () => {
     setMissingInfosLoading(true);
     setMissingInfosError("");
@@ -2527,6 +2572,9 @@ export default function Home() {
         setAiActivityLogs([]);
         setAiActivityLogsError("");
         setAiActivityLogsLoading(false);
+        setCsLearningMetrics(null);
+        setCsLearningMetricsError("");
+        setCsLearningMetricsLoading(false);
         setDeletingCsMessageId(null);
         setWorkflowError("");
         setWorkflowUpdatingKey(null);
@@ -2569,6 +2617,7 @@ export default function Home() {
       setMissingInfosLoading(true);
       setStoreKnowledgeLoading(true);
       setAiActivityLogsLoading(true);
+      setCsLearningMetricsLoading(true);
       setStoreDraftReady(false);
 
       const draft = readStoreDraft(authUser.id);
@@ -2743,6 +2792,25 @@ export default function Home() {
       isActive = false;
     };
   }, [applyStoreToForm, authLoading, authUser]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!authUser || csMessagesLoading) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    void Promise.resolve().then(() => {
+      if (!isActive) return;
+      void loadCsLearningMetrics();
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [authUser, csMessages, csMessagesLoading, loadCsLearningMetrics]);
 
   useEffect(() => {
     if (!authUser || !storeDraftReady) return;
@@ -5768,6 +5836,13 @@ export default function Home() {
                   </article>
                 ))}
               </div>
+
+              <CsLearningQualityCard
+                metrics={csLearningMetrics}
+                loading={csLearningMetricsLoading}
+                error={csLearningMetricsError}
+                onRefresh={() => void loadCsLearningMetrics()}
+              />
 
             <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25 sm:p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
