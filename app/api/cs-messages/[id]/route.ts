@@ -1,5 +1,6 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
+import { recordCsReplyCorrection } from "@/app/lib/csReplyCorrectionLearning";
 import {
   isMissingAiReasonColumnError,
   warnMissingAiReasonColumns,
@@ -14,6 +15,14 @@ const validStatuses = new Set(["pending", "needs_review", "completed", "answered
 type PatchBody = {
   reply?: unknown;
   status?: unknown;
+};
+
+type ExistingCsMessage = {
+  customer_message?: string | null;
+  reply?: string | null;
+  source_platform?: string | null;
+  external_id?: string | null;
+  platform_status?: string | null;
 };
 
 function buildMissingStatusColumnResponse(detail: string) {
@@ -96,30 +105,56 @@ export async function PATCH(
     payload.status = body.status;
   }
 
-  if (payload.status === "completed") {
-    const { data: existingCsMessage, error: existingCsMessageError } =
-      await auth.supabase
+  let existingCsMessage: ExistingCsMessage | null = null;
+
+  if (payload.reply !== undefined || payload.status === "completed") {
+    const existing = await auth.supabase
+      .from("cs_messages")
+      .select(
+        "customer_message, reply, source_platform, external_id, platform_status",
+      )
+      .eq("id", id)
+      .eq("user_id", auth.userId)
+      .maybeSingle();
+
+    if (
+      existing.error &&
+      /(source_platform|external_id|platform_status)/i.test(
+        existing.error.message,
+      )
+    ) {
+      const fallback = await auth.supabase
         .from("cs_messages")
-        .select("source_platform, external_id, platform_status")
+        .select("customer_message, reply")
         .eq("id", id)
         .eq("user_id", auth.userId)
         .maybeSingle();
 
-    if (existingCsMessageError) {
-      if (
-        !/(source_platform|external_id|platform_status)/i.test(
-          existingCsMessageError.message,
-        )
-      ) {
+      if (fallback.error) {
         return Response.json(
           {
-            error: "Failed to load CS message platform source.",
-            detail: existingCsMessageError.message,
+            error: "Failed to load CS message before update.",
+            detail: fallback.error.message,
           },
           { status: 500 },
         );
       }
+
+      existingCsMessage = fallback.data;
+    } else if (existing.error) {
+      return Response.json(
+        {
+          error: "Failed to load CS message before update.",
+          detail: existing.error.message,
+        },
+        { status: 500 },
+      );
     } else {
+      existingCsMessage = existing.data;
+    }
+  }
+
+  if (payload.status === "completed") {
       const externalId =
         typeof existingCsMessage?.external_id === "string"
           ? existingCsMessage.external_id.trim()
@@ -144,7 +179,6 @@ export async function PATCH(
         existingCsMessage.source_platform !== "manual"
           ? "posted"
           : "local";
-    }
   }
 
   if (Object.keys(payload).length === 0) {
@@ -270,6 +304,25 @@ export async function PATCH(
     );
   }
 
+  let correctionLearningSaved = false;
+
+  if (
+    payload.reply !== undefined &&
+    typeof existingCsMessage?.customer_message === "string" &&
+    typeof existingCsMessage.reply === "string"
+  ) {
+    const correctionResult = await recordCsReplyCorrection({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      sourceId: id,
+      customerMessage: existingCsMessage.customer_message,
+      aiReply: existingCsMessage.reply,
+      ownerReply: payload.reply,
+      sourcePlatform: existingCsMessage.source_platform,
+    });
+    correctionLearningSaved = correctionResult.saved === true;
+  }
+
   await recordAiActivityLog(auth.supabase, {
     userId: auth.userId,
     eventType:
@@ -308,6 +361,7 @@ export async function PATCH(
           ? data.platform_status
           : undefined,
       changedReply: payload.reply !== undefined,
+      correctionLearningSaved,
     },
   });
 

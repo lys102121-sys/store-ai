@@ -3,6 +3,10 @@ import {
   type CsReplyDecision,
 } from "@/app/lib/csReplyGeneration";
 import {
+  buildCsReplyCorrectionPrompt,
+  type CsReplyCorrection,
+} from "@/app/lib/csReplyCorrectionLearning";
+import {
   buildPlatformInquiryKnowledgeText,
   buildPlatformInquiryPromptContext,
   type NormalizedPlatformInquiry,
@@ -22,14 +26,20 @@ import { resolveCsWorkflowStatus } from "@/app/lib/workflowStatus";
 export async function generatePlatformInquiryDecision({
   inquiry,
   store,
+  replyCorrections = [],
 }: {
   inquiry: NormalizedPlatformInquiry;
   store: CsReplyPromptStore;
+  replyCorrections?: CsReplyCorrection[];
 }) {
   return generateCsReplyDecision({
     customerMessage: inquiry.content,
     store,
     context: buildPlatformInquiryPromptContext(inquiry),
+    correctionContext: buildCsReplyCorrectionPrompt(
+      inquiry.content,
+      replyCorrections,
+    ),
   });
 }
 
@@ -87,11 +97,13 @@ export async function preparePlatformInquiryForStorage({
   inquiry,
   baseStore,
   storeKnowledgeItems,
+  replyCorrections = [],
 }: {
   userId: string;
   inquiry: NormalizedPlatformInquiry;
   baseStore: CsReplyPromptStore;
   storeKnowledgeItems: StoreKnowledgeItem[];
+  replyCorrections?: CsReplyCorrection[];
 }) {
   const inquiryKnowledgeText = buildPlatformInquiryKnowledgeText(inquiry);
   const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
@@ -106,7 +118,11 @@ export async function preparePlatformInquiryForStorage({
     createUsedKnowledgeSnapshot(relevantStoreKnowledgeItems),
     createStoreInfoEvidenceSnapshot(inquiryKnowledgeText, store),
   );
-  const decision = await generatePlatformInquiryDecision({ inquiry, store });
+  const decision = await generatePlatformInquiryDecision({
+    inquiry,
+    store,
+    replyCorrections,
+  });
   const shouldCreateMissingInfo =
     shouldCreateMissingInfoForPlatformInquiry({
       decision,

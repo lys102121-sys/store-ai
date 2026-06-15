@@ -11,6 +11,10 @@ import {
   type MissingOperationalInfo,
 } from "@/app/lib/csOperationalInfo";
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
+import {
+  buildCsReplyCorrectionPrompt,
+  loadCsReplyCorrections,
+} from "@/app/lib/csReplyCorrectionLearning";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
   createStoreInfoEvidenceSnapshot,
@@ -474,10 +478,16 @@ export async function POST(request: Request) {
   }
 
   const baseStoreRow = store as StoreRow;
-  const storeKnowledgeItems = await loadStoreKnowledgeItems({
-    supabase: auth.supabase,
-    userId: auth.userId,
-  });
+  const [storeKnowledgeItems, replyCorrections] = await Promise.all([
+    loadStoreKnowledgeItems({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    }),
+    loadCsReplyCorrections({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    }),
+  ]);
   const relevantStoreKnowledgeItems = selectRelevantStoreKnowledgeItems(
     customerMessage,
     storeKnowledgeItems,
@@ -497,6 +507,10 @@ export async function POST(request: Request) {
     const decision = await generateCsReplyDecision({
       customerMessage,
       store: storeRow,
+      correctionContext: buildCsReplyCorrectionPrompt(
+        customerMessage,
+        replyCorrections,
+      ),
     });
     const reply = decision.reply;
 

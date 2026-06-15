@@ -89,10 +89,12 @@ export async function generateCsReplyDecision({
   customerMessage,
   store,
   context,
+  correctionContext,
 }: {
   customerMessage: string;
   store: CsReplyPromptStore;
   context?: string | null;
+  correctionContext?: string | null;
 }): Promise<CsReplyDecision> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
@@ -106,7 +108,10 @@ export async function generateCsReplyDecision({
         content: [
           buildCsReplySystemPrompt(store),
           buildCsCaseIntakePrompt(customerMessage),
-        ].join("\n\n"),
+          correctionContext?.trim() || "",
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       },
       {
         role: "user",

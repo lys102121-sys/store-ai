@@ -16,6 +16,7 @@ import {
   type CoupangOnlineInquiry,
 } from "@/app/lib/coupangOpenApi";
 import { preparePlatformInquiryForStorage } from "@/app/lib/platformInquiryProcessing";
+import { loadCsReplyCorrections } from "@/app/lib/csReplyCorrectionLearning";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
   isMissingUsedKnowledgeColumnError,
@@ -362,10 +363,16 @@ export async function POST(request: Request) {
       (item) => !existingExternalIds.has(item.externalId),
     );
     const baseStoreRow = store as CsReplyPromptStore;
-    const storeKnowledgeItems = await loadStoreKnowledgeItems({
-      supabase: auth.supabase,
-      userId: auth.userId,
-    });
+    const [storeKnowledgeItems, replyCorrections] = await Promise.all([
+      loadStoreKnowledgeItems({
+        supabase: auth.supabase,
+        userId: auth.userId,
+      }),
+      loadCsReplyCorrections({
+        supabase: auth.supabase,
+        userId: auth.userId,
+      }),
+    ]);
     const rows = [];
 
     for (const inquiry of newInquiries) {
@@ -374,6 +381,7 @@ export async function POST(request: Request) {
         inquiry,
         baseStore: baseStoreRow,
         storeKnowledgeItems,
+        replyCorrections,
       });
 
       rows.push(preparedInquiry.row);

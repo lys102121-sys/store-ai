@@ -9,6 +9,7 @@ import {
   type PlatformSource,
 } from "@/app/lib/platformInquiry";
 import { preparePlatformInquiryForStorage } from "@/app/lib/platformInquiryProcessing";
+import { loadCsReplyCorrections } from "@/app/lib/csReplyCorrectionLearning";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
   isMissingUsedKnowledgeColumnError,
@@ -100,10 +101,16 @@ export async function createMockPlatformInquiriesResponse(
 
   try {
     const baseStoreRow = store as CsReplyPromptStore;
-    const storeKnowledgeItems = await loadStoreKnowledgeItems({
-      supabase: auth.supabase,
-      userId: auth.userId,
-    });
+    const [storeKnowledgeItems, replyCorrections] = await Promise.all([
+      loadStoreKnowledgeItems({
+        supabase: auth.supabase,
+        userId: auth.userId,
+      }),
+      loadCsReplyCorrections({
+        supabase: auth.supabase,
+        userId: auth.userId,
+      }),
+    ]);
     const timestamp = Date.now();
     const normalizedInquiries = inquiries.map((content, index) =>
       createNormalizedPlatformInquiry({
@@ -122,6 +129,7 @@ export async function createMockPlatformInquiriesResponse(
           inquiry,
           baseStore: baseStoreRow,
           storeKnowledgeItems,
+          replyCorrections,
         });
 
         return preparedInquiry.row;

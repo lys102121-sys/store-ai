@@ -5,6 +5,10 @@ import {
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
+import {
+  buildCsReplyCorrectionPrompt,
+  loadCsReplyCorrections,
+} from "@/app/lib/csReplyCorrectionLearning";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
   createStoreInfoEvidenceSnapshot,
@@ -261,6 +265,10 @@ export async function POST(request: Request) {
       ]),
     ).values(),
   ];
+  const replyCorrections = await loadCsReplyCorrections({
+    supabase: auth.supabase,
+    userId: auth.userId,
+  });
   let regeneratedReplies: {
     id: number | string;
     decision: Awaited<ReturnType<typeof generateCsReplyDecision>>;
@@ -289,6 +297,10 @@ export async function POST(request: Request) {
           decision: await generateCsReplyDecision({
             customerMessage,
             store: storeWithKnowledge,
+            correctionContext: buildCsReplyCorrectionPrompt(
+              customerMessage,
+              replyCorrections,
+            ),
           }),
           usedKnowledgeItems,
         };

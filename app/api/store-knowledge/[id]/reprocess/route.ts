@@ -5,6 +5,10 @@ import {
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { generateCsReplyDecision } from "@/app/lib/csReplyGeneration";
 import {
+  buildCsReplyCorrectionPrompt,
+  loadCsReplyCorrections,
+} from "@/app/lib/csReplyCorrectionLearning";
+import {
   findRelatedCsMessages,
   type PendingCsMessageRow,
 } from "@/app/lib/missingInfoMatching";
@@ -191,10 +195,16 @@ export async function POST(
   }
 
   const storeRow = store as StoreRow;
-  const storeKnowledgeItems = await loadStoreKnowledgeItems({
-    supabase: auth.supabase,
-    userId: auth.userId,
-  });
+  const [storeKnowledgeItems, replyCorrections] = await Promise.all([
+    loadStoreKnowledgeItems({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    }),
+    loadCsReplyCorrections({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    }),
+  ]);
 
   let regeneratedReplies: {
     id: number | string;
@@ -224,6 +234,10 @@ export async function POST(
           decision: await generateCsReplyDecision({
             customerMessage,
             store: storeWithKnowledge,
+            correctionContext: buildCsReplyCorrectionPrompt(
+              customerMessage,
+              replyCorrections,
+            ),
           }),
           usedKnowledgeItems,
         };
