@@ -42,6 +42,7 @@ export function shouldCreateMissingInfoForPlatformInquiry({
 }) {
   return (
     decision.guardType !== "workflow_verification" &&
+    decision.guardType !== "output_validation" &&
     (decision.handlingType === "needs_review" || hasMissingInfoSignal)
   );
 }

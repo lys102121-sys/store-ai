@@ -507,6 +507,7 @@ export async function POST(request: Request) {
     const aiReason = decision.aiReason;
     const shouldCreateMissingInfo =
       decision.guardType !== "workflow_verification" &&
+      decision.guardType !== "output_validation" &&
       shouldSaveMissingInfo(
         reply,
         customerMessage,

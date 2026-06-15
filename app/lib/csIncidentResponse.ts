@@ -13,3 +13,7 @@ export function buildProductSafetyReply(store: CsReplyPromptStore) {
 export function buildProductSafetyReviewReply() {
   return "불편을 겪으셨다니 걱정되는 마음입니다. 안전을 위해 우선 제품 사용과 충전을 중단해 주세요. 정확한 확인을 위해 주문 정보와 함께 문의 남겨주시면 제품 상태를 확인해 안내드리겠습니다.";
 }
+
+export function buildHealthSafetyReply(store: CsReplyPromptStore) {
+  return `${getGreeting(store)} 불편을 겪으셨다니 많이 걱정되셨을 것 같습니다. 정확한 확인을 위해 관련 상품·음식·서비스와 증상 또는 문제 발생 시점을 알려주시면 안내 사항을 확인해보겠습니다. 증상이 계속되거나 심한 경우에는 의료기관 상담을 권장드립니다.`;
+}

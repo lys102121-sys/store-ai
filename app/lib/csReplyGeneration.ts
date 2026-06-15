@@ -5,6 +5,7 @@ import { buildCsCaseIntakePrompt } from "@/app/lib/csCaseIntake";
 import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
+import { validateCsReplyOutput } from "@/app/lib/csReplyOutputValidator";
 import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
 import { buildCsReplySystemPrompt } from "@/app/lib/prompts/csReplyPrompt";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
@@ -28,7 +29,7 @@ export type CsReplyDecision = {
   handlingType: CsReplyHandlingType;
   riskLevel: CsReplyRiskLevel;
   aiReason: string;
-  guardType?: "workflow_verification";
+  guardType?: "workflow_verification" | "output_validation";
 };
 
 function parseCsReplyDecision(
@@ -168,10 +169,11 @@ export async function generateCsReplyDecision({
         store,
       })) ||
     initialDecision;
-  const decision = applyCsServiceEscalation(
+  const decision = validateCsReplyOutput({
     customerMessage,
-    guardedDecision,
-  );
+    decision: applyCsServiceEscalation(customerMessage, guardedDecision),
+    store,
+  });
 
   if (!decision.reply) {
     throw new Error("Failed to generate a CS reply.");

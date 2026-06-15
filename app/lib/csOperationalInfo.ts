@@ -25,7 +25,7 @@ type OperationalInfoGuard = {
   handlingType: "needs_review";
   riskLevel: "normal";
   missingInfo: MissingOperationalInfo | null;
-  guardType?: "workflow_verification";
+  guardType?: "workflow_verification" | "output_validation";
   aiReason?: string;
 };
 
