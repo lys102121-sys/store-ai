@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
+import { buildCsCaseIntakePrompt } from "@/app/lib/csCaseIntake";
 import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
@@ -101,7 +102,10 @@ export async function generateCsReplyDecision({
     input: [
       {
         role: "system",
-        content: buildCsReplySystemPrompt(store),
+        content: [
+          buildCsReplySystemPrompt(store),
+          buildCsCaseIntakePrompt(customerMessage),
+        ].join("\n\n"),
       },
       {
         role: "user",
