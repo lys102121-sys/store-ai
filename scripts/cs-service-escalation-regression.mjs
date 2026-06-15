@@ -60,8 +60,8 @@ for (const [message, kind, riskLevel] of cases) {
 
 const prompt = buildCsServiceEscalationPrompt();
 assert.match(prompt, /이전 처리 이력/);
-assert.match(prompt, /회수 기사 미방문/);
-assert.match(prompt, /오배송, 수량 차이, 구성품 누락/);
+assert.match(prompt, /주문, 예약, 접수, 배달, 방문, 픽업, 수거/);
+assert.match(prompt, /상품·메뉴·옵션·수량·객실·예약 시간·시술·수업·제작 결과/);
 assert.match(prompt, /반품 상품 재출고/);
 assert.match(prompt, /부상이 언급되면 risk_level을 high/);
 
