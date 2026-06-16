@@ -3164,7 +3164,7 @@ export default function Home() {
       removeStoreDraft(authUser.id);
       setStoreExampleMessage("");
       setStoreSuccessMessage(
-        "가게 정보가 저장되었습니다. 이제 샘플 문의나 실제 고객 문의로 AI 답변을 테스트해보세요.",
+        "가게 정보가 저장되었습니다.",
       );
     } catch {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -7612,27 +7612,41 @@ export default function Home() {
 
           {storeSuccessMessage ? (
             <div
-              className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200"
+              className="mt-6 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-5 text-sm text-emerald-900 shadow-sm dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-zinc-950 dark:to-cyan-950/20 dark:text-emerald-100"
               role="status"
             >
-              <p className="font-semibold">{storeSuccessMessage}</p>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => goToTabSection("answer", "cs-reply")}
-                  className={buttonClass("success", "sm", "rounded-lg")}
-                >
-                  문의 답변 테스트하기
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    goToTabSection("integrations", "platform-integrations")
-                  }
-                  className={buttonClass("secondary", "sm", "rounded-lg")}
-                >
-                  샘플 데이터로 체험하기
-                </button>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    다음 행동
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+                    첫 AI 답변을 바로 만들어보세요
+                  </h3>
+                  <p className="mt-2 max-w-2xl leading-6 text-emerald-800/90 dark:text-emerald-100/80">
+                    {storeSuccessMessage} 지금 문의 하나를 입력하면 AI가
+                    방금 저장한 가게 정보를 어떻게 참고하는지 바로 확인할 수
+                    있습니다.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => goToTabSection("answer", "cs-reply")}
+                    className={buttonClass("success", "md", "rounded-lg")}
+                  >
+                    첫 문의 답변 만들기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToTabSection("integrations", "platform-integrations")
+                    }
+                    className={buttonClass("secondary", "md", "rounded-lg")}
+                  >
+                    샘플 데이터로 체험
+                  </button>
+                </div>
               </div>
             </div>
           ) : null}

@@ -50,5 +50,9 @@ assert.match(pageSource, /actionLabel: authUser \? "도입 상담 요청"/);
 assert.match(pageSource, /actionLabel: authUser \? "가게 정보 보기"/);
 assert.match(pageSource, /무료 체험 후 도입 범위 확인/);
 assert.doesNotMatch(pageSource, /도입 가치는 절감액으로 판단할 수 있어요/);
+assert.match(pageSource, /첫 AI 답변을 바로 만들어보세요/);
+assert.match(pageSource, /첫 문의 답변 만들기/);
+assert.match(pageSource, /goToTabSection\("answer", "cs-reply"\)/);
+assert.match(pageSource, /샘플 데이터로 체험/);
 
 console.log("Paid adoption request regression tests passed.");
