@@ -46,6 +46,9 @@ type StoreKnowledgeStatusFilter =
   | "needs_review"
   | "archived";
 
+const FREE_TRIAL_AI_REPLY_LIMIT = 30;
+const FREE_TRIAL_BATCH_REVIEW_LIMIT = 10;
+
 type ReviewHistoryItem = {
   id: number;
   review: string;
@@ -4548,6 +4551,39 @@ export default function Home() {
         )
       ),
   );
+  const trialCountedWorkflowItems = workflowSummaryItems.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      Boolean(item.reply.trim()) &&
+      !isDemoExternalId(item.externalId),
+  );
+  const trialAiReplyUsedCount = trialCountedWorkflowItems.length;
+  const trialAiReplyRemainingCount = Math.max(
+    0,
+    FREE_TRIAL_AI_REPLY_LIMIT - trialAiReplyUsedCount,
+  );
+  const trialAiReplyUsagePercent = Math.min(
+    100,
+    Math.round((trialAiReplyUsedCount / FREE_TRIAL_AI_REPLY_LIMIT) * 100),
+  );
+  const trialLearningSignalCount =
+    [
+      storeName,
+      businessType,
+      productName,
+      productDescription,
+      productDetails,
+      productCaution,
+      productCatalog,
+      extraFaq,
+      shippingPolicy,
+      refundPolicy,
+      ownerReplyExamples,
+      ownerCsExamples,
+    ].filter((value) => value.trim().length > 0).length +
+    storeKnowledgeItems.filter(
+      (item) => normalizeStoreKnowledgeStatus(item.status) === "active",
+    ).length;
   const activeWorkflowSummaryItems = workflowSummaryItems.filter(
     (item) => item.status !== "completed" && item.status !== "answered",
   );
@@ -5903,6 +5939,139 @@ export default function Home() {
           actionLoading={authActionLoading}
           paidAdoptionAction={startPaidAdoptionAction}
         />
+
+        {activeTab === "start" ? (
+          <section
+            className={`${cardClass} order-[11] border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/50 to-cyan-50/60 dark:border-emerald-900/50 dark:from-zinc-900 dark:via-emerald-950/20 dark:to-cyan-950/20`}
+          >
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  Free Trial
+                </p>
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  무료 체험은 AI를 가르치는 시간까지 포함합니다
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  가게 정보, 상품/정책, 말투, 확인 필요 답변을 입력하는 학습
+                  과정은 막지 않습니다. 실제 고객 응대 업무를 AI가 대신
+                  수행하는 단계부터 사용량과 유료 전환 기준을 봅니다.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-zinc-950/70 lg:min-w-72">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      무료 AI 답변 생성
+                    </p>
+                    <p className="mt-1 text-3xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
+                      {trialAiReplyRemainingCount}
+                      <span className="ml-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+                        건 남음
+                      </span>
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                    {trialAiReplyUsedCount}/{FREE_TRIAL_AI_REPLY_LIMIT}
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-cyan-500 transition-all"
+                    style={{ width: `${trialAiReplyUsagePercent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-3">
+              {[
+                {
+                  title: "무료로 열어둘 것",
+                  tone: "emerald",
+                  items: [
+                    "가게 정보와 상품/정책 입력",
+                    "사장님 말투 학습",
+                    "확인 필요 답변을 지식으로 저장",
+                    `학습 신호 ${trialLearningSignalCount.toLocaleString("ko-KR")}개 반영 중`,
+                  ],
+                },
+                {
+                  title: "무료 체험 사용량",
+                  tone: "sky",
+                  items: [
+                    `AI 답변 생성 ${FREE_TRIAL_AI_REPLY_LIMIT}건`,
+                    `일괄 리뷰 답글 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 체험`,
+                    "샘플 문의/리뷰는 카운트 제외",
+                    "답변 수정 학습은 막지 않음",
+                  ],
+                },
+                {
+                  title: "유료 전환 후보",
+                  tone: "amber",
+                  items: [
+                    "실제 플랫폼 연동과 답변 등록",
+                    "자동 완료 처리",
+                    "안전 항목 일괄 승인",
+                    "월 사용량 초과 후 계속 운영",
+                  ],
+                },
+              ].map((column) => (
+                <article
+                  key={column.title}
+                  className={`rounded-2xl border p-4 ${
+                    column.tone === "emerald"
+                      ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/25"
+                      : column.tone === "sky"
+                        ? "border-sky-200 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/25"
+                        : "border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/25"
+                  }`}
+                >
+                  <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                    {column.title}
+                  </h3>
+                  <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                    {column.items.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => goToTabSection("answer", "cs-reply")}
+                className={buttonClass("success", "md", "rounded-lg")}
+              >
+                무료 답변 생성 체험하기
+              </button>
+              <button
+                type="button"
+                onClick={
+                  authUser
+                    ? () => void handleRequestPaidAdoption()
+                    : () => void handleKakaoLogin()
+                }
+                disabled={authUser ? paidAdoptionRequestLoading : authActionLoading}
+                className={buttonClass("secondary", "md", "rounded-lg")}
+              >
+                {authUser
+                  ? paidAdoptionRequestLoading
+                    ? "상담 요청 저장 중..."
+                    : "도입 상담 요청"
+                  : "로그인 후 상담 요청"}
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         {activeTab === "manage" && authUser ? (
           <section
@@ -8211,6 +8380,11 @@ export default function Home() {
                           ? "쿠팡 문의 가져오는 중..."
                           : "쿠팡 문의 가져오기"}
                       </button>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                        실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜 또는
+                        도입 상담 후 연결할 핵심 기능입니다. 샘플 데이터 체험은
+                        무료 사용량에 포함하지 않습니다.
+                      </p>
 
                       {!isCoupangConnected ? (
                         <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
@@ -8519,6 +8693,10 @@ export default function Home() {
                   <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
                     일괄 승인은 AI가 바로 답변 가능하고 위험도 낮음으로 판단한
                     항목만 처리합니다. 확인 필요 또는 위험 항목은 제외됩니다.
+                  </p>
+                  <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    실제 운영에서는 반복 업무를 대신 처리하는 자동화 기능으로,
+                    유료 플랜 기준에 포함될 예정입니다.
                   </p>
                 </div>
                 <button

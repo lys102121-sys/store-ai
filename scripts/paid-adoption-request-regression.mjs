@@ -54,5 +54,11 @@ assert.match(pageSource, /첫 AI 답변을 바로 만들어보세요/);
 assert.match(pageSource, /첫 문의 답변 만들기/);
 assert.match(pageSource, /goToTabSection\("answer", "cs-reply"\)/);
 assert.match(pageSource, /샘플 데이터로 체험/);
+assert.match(pageSource, /FREE_TRIAL_AI_REPLY_LIMIT = 30/);
+assert.match(pageSource, /FREE_TRIAL_BATCH_REVIEW_LIMIT = 10/);
+assert.match(pageSource, /무료 체험은 AI를 가르치는 시간까지 포함합니다/);
+assert.match(pageSource, /샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다/);
+assert.match(pageSource, /유료 전환 후보/);
+assert.match(pageSource, /실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜/);
 
 console.log("Paid adoption request regression tests passed.");
