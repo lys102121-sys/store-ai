@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import {
   isMissingAiReasonColumnError,
   withoutAiReason,
@@ -373,7 +374,7 @@ export async function POST(request: Request) {
         userId: auth.userId,
       }),
     ]);
-    const rows = [];
+    const preparedInquiries = [];
 
     for (const inquiry of newInquiries) {
       const preparedInquiry = await preparePlatformInquiryForStorage({
@@ -384,7 +385,7 @@ export async function POST(request: Request) {
         replyCorrections,
       });
 
-      rows.push(preparedInquiry.row);
+      preparedInquiries.push(preparedInquiry);
 
       if (preparedInquiry.shouldCreateMissingInfo) {
         await saveMissingInfo({
@@ -395,6 +396,7 @@ export async function POST(request: Request) {
         });
       }
     }
+    const rows = preparedInquiries.map((preparedInquiry) => preparedInquiry.row);
 
     if (rows.length > 0) {
       let { error: insertError } = await auth.supabase
@@ -427,6 +429,30 @@ export async function POST(request: Request) {
           { status: 500 },
         );
       }
+    }
+
+    const correctionPausedCount = preparedInquiries.filter(
+      (preparedInquiry) =>
+        preparedInquiry.decision.guardType === "correction_learning",
+    ).length;
+
+    if (correctionPausedCount > 0) {
+      await recordAiActivityLog(auth.supabase, {
+        userId: auth.userId,
+        eventType: "platform_inquiries_auto_completion_paused",
+        title: "쿠팡 문의 자동 완료를 멈췄습니다",
+        description: `비슷한 답변을 사장님이 반복 수정한 기록이 있어 ${correctionPausedCount}건을 확인 필요로 분류했습니다.`,
+        relatedType: "cs_message",
+        status: "needs_review",
+        handlingType: "needs_review",
+        riskLevel: "normal",
+        sourcePlatform: "coupang",
+        metadata: {
+          platform: "coupang",
+          correctionPausedCount,
+          importedCount: rows.length,
+        },
+      });
     }
 
     await updateCredentialStatus(auth.supabase, auth.userId, "connected");

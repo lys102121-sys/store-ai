@@ -213,13 +213,25 @@ const platformProcessing = fs.readFileSync(
   path.join(projectRoot, "app/lib/platformInquiryProcessing.ts"),
   "utf8",
 );
+const mockPlatformInquiries = fs.readFileSync(
+  path.join(projectRoot, "app/lib/mockPlatformInquiries.ts"),
+  "utf8",
+);
+const coupangInquiriesRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/coupang/inquiries/route.ts"),
+  "utf8",
+);
 
 assert.match(csRoute, /loadCsReplyCorrections/);
 assert.match(csRoute, /buildCsReplyCorrectionPrompt/);
 assert.match(csRoute, /replyCorrections,/);
 assert.match(csRoute, /decision\.guardType !== "correction_learning"/);
+assert.match(csRoute, /cs_reply_auto_completion_paused/);
+assert.match(csRoute, /correctionLearningPaused/);
 assert.match(csPatchRoute, /recordCsReplyCorrection/);
 assert.match(platformProcessing, /buildCsReplyCorrectionPrompt/);
 assert.match(platformProcessing, /decision\.guardType !== "correction_learning"/);
+assert.match(mockPlatformInquiries, /platform_inquiries_auto_completion_paused/);
+assert.match(coupangInquiriesRoute, /platform_inquiries_auto_completion_paused/);
 
 console.log("CS reply correction learning regression tests passed.");

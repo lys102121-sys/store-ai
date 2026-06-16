@@ -3,6 +3,7 @@ import {
   withoutAiReason,
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   createNormalizedPlatformInquiry,
@@ -122,19 +123,18 @@ export async function createMockPlatformInquiriesResponse(
         externalUrl: null,
       }),
     );
-    const rows = await Promise.all(
+    const preparedInquiries = await Promise.all(
       normalizedInquiries.map(async (inquiry) => {
-        const preparedInquiry = await preparePlatformInquiryForStorage({
+        return preparePlatformInquiryForStorage({
           userId: auth.userId,
           inquiry,
           baseStore: baseStoreRow,
           storeKnowledgeItems,
           replyCorrections,
         });
-
-        return preparedInquiry.row;
       }),
     );
+    const rows = preparedInquiries.map((preparedInquiry) => preparedInquiry.row);
 
     let { error: insertError } = await auth.supabase
       .from("cs_messages")
@@ -168,6 +168,31 @@ export async function createMockPlatformInquiriesResponse(
         },
         { status: 500 },
       );
+    }
+
+    const correctionPausedCount = preparedInquiries.filter(
+      (preparedInquiry) =>
+        preparedInquiry.decision.guardType === "correction_learning",
+    ).length;
+
+    if (correctionPausedCount > 0) {
+      await recordAiActivityLog(auth.supabase, {
+        userId: auth.userId,
+        eventType: "platform_inquiries_auto_completion_paused",
+        title: `${platformName} 샘플 문의 자동 완료를 멈췄습니다`,
+        description: `비슷한 답변을 사장님이 반복 수정한 기록이 있어 ${correctionPausedCount}건을 확인 필요로 분류했습니다.`,
+        relatedType: "cs_message",
+        status: "needs_review",
+        handlingType: "needs_review",
+        riskLevel: "normal",
+        sourcePlatform: platform,
+        metadata: {
+          platform,
+          correctionPausedCount,
+          importedCount: rows.length,
+          isMock: true,
+        },
+      });
     }
 
     return Response.json({

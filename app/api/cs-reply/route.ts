@@ -665,13 +665,20 @@ export async function POST(request: Request) {
       });
     }
 
+    const isCorrectionLearningPaused =
+      decision.guardType === "correction_learning";
+
     await recordAiActivityLog(auth.supabase, {
       userId: auth.userId,
       eventType: shouldCreateMissingInfo
         ? "cs_reply_needs_info"
-        : "cs_reply_generated",
+        : isCorrectionLearningPaused
+          ? "cs_reply_auto_completion_paused"
+          : "cs_reply_generated",
       title: shouldCreateMissingInfo
         ? "고객 문의를 확인 필요로 분류했습니다"
+        : isCorrectionLearningPaused
+          ? "반복 수정 이력이 있어 자동 완료를 멈췄습니다"
         : "고객 문의 답변 초안을 만들었습니다",
       description: aiReason,
       relatedType: "cs_message",
@@ -683,6 +690,7 @@ export async function POST(request: Request) {
         customerMessage,
         replyPreview: reply.slice(0, 160),
         hasMissingInfo: shouldCreateMissingInfo,
+        correctionLearningPaused: isCorrectionLearningPaused,
         usedKnowledgeCount: usedKnowledgeItemsWithStoreEvidence.length,
       },
     });

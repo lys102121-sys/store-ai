@@ -4912,6 +4912,8 @@ export default function Home() {
   const todayStoppedActivityLogs = todayAiActivityLogs.filter(
     (log) =>
       log.event_type === "cs_reply_needs_info" ||
+      log.event_type === "cs_reply_auto_completion_paused" ||
+      log.event_type === "platform_inquiries_auto_completion_paused" ||
       log.status === "needs_review" ||
       log.handling_type === "needs_review" ||
       log.handling_type === "needs_approval" ||
