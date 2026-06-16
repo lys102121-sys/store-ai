@@ -357,6 +357,14 @@ type PlatformCredentialsApiResponse = {
   detail?: string;
 };
 
+type PaidAdoptionRequestApiResponse = {
+  request?: unknown;
+  message?: string;
+  error?: string;
+  detail?: string;
+  missingTableSql?: string;
+};
+
 type CoupangConnectionTestApiResponse = {
   success?: boolean;
   status?: string;
@@ -570,7 +578,6 @@ function sentimentBadgeClass(sentiment: string) {
 const urgentBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm dark:bg-red-500";
 
-const paidConsultHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
 const ESTIMATED_CS_HOURLY_VALUE_KRW = 12_000;
 
 type SemanticTone = "neutral" | "info" | "success" | "warning" | "danger";
@@ -2097,6 +2104,11 @@ export default function Home() {
   const [integrationsLoading, setIntegrationsLoading] = useState(false);
   const [integrationsError, setIntegrationsError] = useState("");
   const [integrationsMessage, setIntegrationsMessage] = useState("");
+  const [paidAdoptionRequestLoading, setPaidAdoptionRequestLoading] =
+    useState(false);
+  const [paidAdoptionRequestMessage, setPaidAdoptionRequestMessage] =
+    useState("");
+  const [paidAdoptionRequestError, setPaidAdoptionRequestError] = useState("");
   const [savingIntegrationPlatform, setSavingIntegrationPlatform] =
     useState<IntegrationPlatform | null>(null);
   const [coupangCredential, setCoupangCredential] =
@@ -2533,6 +2545,9 @@ export default function Home() {
         setIntegrationsLoading(false);
         setIntegrationsError("");
         setIntegrationsMessage("");
+        setPaidAdoptionRequestLoading(false);
+        setPaidAdoptionRequestMessage("");
+        setPaidAdoptionRequestError("");
         setSavingIntegrationPlatform(null);
         setCoupangCredential(null);
         setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
@@ -5343,6 +5358,71 @@ export default function Home() {
     }
   }
 
+  async function handleRequestPaidAdoption() {
+    if (!authUser) {
+      setPaidAdoptionRequestMessage("");
+      setPaidAdoptionRequestError("로그인이 필요합니다.");
+      return;
+    }
+
+    setPaidAdoptionRequestLoading(true);
+    setPaidAdoptionRequestMessage("");
+    setPaidAdoptionRequestError("");
+
+    try {
+      const autoCompleted30d = recent30WorkflowSummaryItems.filter(
+        (item) =>
+          item.type !== "missing_info" &&
+          (item.status === "completed" || item.status === "answered") &&
+          item.handlingType === "auto_ready" &&
+          item.riskLevel === "low",
+      ).length;
+      const platformItems30d = recent30WorkflowSummaryItems.filter(
+        (item) =>
+          item.type !== "missing_info" && item.sourcePlatform !== "manual",
+      ).length;
+
+      const response = await fetch("/api/paid-adoption-requests", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          store_name: storeName,
+          estimated_saved_minutes_today: todayEstimatedSavedMinutes,
+          estimated_saved_value_krw_today: todayEstimatedSavedValueKrw,
+          estimated_saved_minutes_30d: recent30EstimatedSavedMinutes,
+          estimated_saved_value_krw_30d: recent30EstimatedSavedValueKrw,
+          workflow_items_30d: recent30WorkflowSummaryItems.filter(
+            (item) => item.type !== "missing_info",
+          ).length,
+          auto_completed_30d: autoCompleted30d,
+          needs_review_active: needsReviewSummaryCount,
+          platform_items_30d: platformItems30d,
+          memo: "AI CS value card에서 도입 상담을 요청했습니다.",
+        }),
+      });
+      const data = (await response.json()) as PaidAdoptionRequestApiResponse;
+
+      if (!response.ok || !data.request) {
+        setPaidAdoptionRequestError(
+          data.missingTableSql
+            ? "도입 상담 요청 저장 테이블이 아직 없습니다. Supabase SQL 적용이 필요합니다."
+            : "도입 상담 요청 저장에 실패했습니다.",
+        );
+        return;
+      }
+
+      setPaidAdoptionRequestMessage(
+        "도입 상담 요청이 저장되었습니다. 운영 데이터를 기준으로 우선 검토할 수 있어요.",
+      );
+    } catch {
+      setPaidAdoptionRequestError("도입 상담 요청 저장에 실패했습니다.");
+    } finally {
+      setPaidAdoptionRequestLoading(false);
+    }
+  }
+
   async function handleSaveCoupangCredentials() {
     if (!authUser) {
       setCoupangCredentialsMessage("");
@@ -5984,15 +6064,29 @@ export default function Home() {
                       연동 범위를 상담해보세요.
                     </p>
                   </div>
-                  <a
-                    href={paidConsultHref}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => void handleRequestPaidAdoption()}
+                    disabled={paidAdoptionRequestLoading}
                     className={buttonClass("success", "sm", "rounded-lg")}
                   >
-                    도입 상담 요청
-                  </a>
+                    {paidAdoptionRequestLoading
+                      ? "저장 중..."
+                      : "도입 상담 요청"}
+                  </button>
                 </div>
+                {paidAdoptionRequestMessage || paidAdoptionRequestError ? (
+                  <p
+                    className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
+                      paidAdoptionRequestError
+                        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    }`}
+                    role="status"
+                  >
+                    {paidAdoptionRequestError || paidAdoptionRequestMessage}
+                  </p>
+                ) : null}
               </div>
             </div>
 

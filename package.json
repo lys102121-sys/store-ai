@@ -12,7 +12,8 @@
     "test:risk-signals": "node scripts/risk-signals-regression.mjs",
     "test:store-knowledge-quality": "node scripts/store-knowledge-quality-regression.mjs",
     "test:store-knowledge-usage": "node scripts/store-knowledge-usage-regression.mjs",
-    "test:workflow-safety": "node scripts/workflow-status-safety-regression.mjs"
+    "test:workflow-safety": "node scripts/workflow-status-safety-regression.mjs",
+    "test:monetization": "node scripts/paid-adoption-request-regression.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
