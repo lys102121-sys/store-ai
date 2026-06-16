@@ -511,6 +511,7 @@ export async function POST(request: Request) {
         customerMessage,
         replyCorrections,
       ),
+      replyCorrections,
     });
     const reply = decision.reply;
 
@@ -522,6 +523,7 @@ export async function POST(request: Request) {
     const shouldCreateMissingInfo =
       decision.guardType !== "workflow_verification" &&
       decision.guardType !== "output_validation" &&
+      decision.guardType !== "correction_learning" &&
       shouldSaveMissingInfo(
         reply,
         customerMessage,

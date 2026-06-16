@@ -2,6 +2,10 @@ import OpenAI from "openai";
 
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { buildCsCaseIntakePrompt } from "@/app/lib/csCaseIntake";
+import {
+  applyCsReplyCorrectionSafetyGuard,
+  type CsReplyCorrection,
+} from "@/app/lib/csReplyCorrectionLearning";
 import { buildProductSafetyReply } from "@/app/lib/csIncidentResponse";
 import { applyOperationalInfoGuard } from "@/app/lib/csOperationalInfo";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
@@ -29,7 +33,10 @@ export type CsReplyDecision = {
   handlingType: CsReplyHandlingType;
   riskLevel: CsReplyRiskLevel;
   aiReason: string;
-  guardType?: "workflow_verification" | "output_validation";
+  guardType?:
+    | "workflow_verification"
+    | "output_validation"
+    | "correction_learning";
 };
 
 function parseCsReplyDecision(
@@ -90,11 +97,13 @@ export async function generateCsReplyDecision({
   store,
   context,
   correctionContext,
+  replyCorrections = [],
 }: {
   customerMessage: string;
   store: CsReplyPromptStore;
   context?: string | null;
   correctionContext?: string | null;
+  replyCorrections?: CsReplyCorrection[];
 }): Promise<CsReplyDecision> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
@@ -174,10 +183,15 @@ export async function generateCsReplyDecision({
         store,
       })) ||
     initialDecision;
-  const decision = validateCsReplyOutput({
+  const validatedDecision = validateCsReplyOutput({
     customerMessage,
     decision: applyCsServiceEscalation(customerMessage, guardedDecision),
     store,
+  });
+  const decision = applyCsReplyCorrectionSafetyGuard({
+    customerMessage,
+    decision: validatedDecision,
+    corrections: replyCorrections,
   });
 
   if (!decision.reply) {

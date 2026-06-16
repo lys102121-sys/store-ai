@@ -238,6 +238,7 @@ export async function POST(
               customerMessage,
               replyCorrections,
             ),
+            replyCorrections,
           }),
           usedKnowledgeItems,
         };

@@ -40,6 +40,7 @@ export async function generatePlatformInquiryDecision({
       inquiry.content,
       replyCorrections,
     ),
+    replyCorrections,
   });
 }
 
@@ -53,6 +54,7 @@ export function shouldCreateMissingInfoForPlatformInquiry({
   return (
     decision.guardType !== "workflow_verification" &&
     decision.guardType !== "output_validation" &&
+    decision.guardType !== "correction_learning" &&
     (decision.handlingType === "needs_review" || hasMissingInfoSignal)
   );
 }

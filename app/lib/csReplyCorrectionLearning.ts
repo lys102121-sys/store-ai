@@ -288,6 +288,83 @@ export function selectRelevantCsReplyCorrections(
     .map(({ correction }) => correction);
 }
 
+function isRecentCorrection(correction: CsReplyCorrection, now: Date) {
+  if (!correction.updated_at) return true;
+
+  const updatedAt = new Date(correction.updated_at);
+  if (Number.isNaN(updatedAt.getTime())) return true;
+
+  const boundary = new Date(now);
+  boundary.setDate(boundary.getDate() - 90);
+  return updatedAt >= boundary;
+}
+
+export function findRepeatedCsReplyCorrectionPattern(
+  customerMessage: string,
+  corrections: CsReplyCorrection[],
+  now = new Date(),
+) {
+  const relevantCorrections = selectRelevantCsReplyCorrections(
+    customerMessage,
+    corrections.filter((correction) => isRecentCorrection(correction, now)),
+    5,
+  );
+
+  if (relevantCorrections.length < 2) return null;
+
+  const caseType = classifyCsCase(customerMessage).type;
+
+  return {
+    caseType,
+    correctionCount: relevantCorrections.length,
+    sourceIds: relevantCorrections.map((correction) => correction.source_id),
+  };
+}
+
+export function applyCsReplyCorrectionSafetyGuard({
+  customerMessage,
+  decision,
+  corrections,
+  now,
+}: {
+  customerMessage: string;
+  decision: {
+    reply: string;
+    handlingType: "auto_ready" | "needs_review" | "needs_approval";
+    riskLevel: "low" | "normal" | "high";
+    aiReason?: string;
+    guardType?:
+      | "workflow_verification"
+      | "output_validation"
+      | "correction_learning";
+  };
+  corrections: CsReplyCorrection[];
+  now?: Date;
+}) {
+  if (
+    decision.handlingType !== "auto_ready" ||
+    decision.riskLevel !== "low"
+  ) {
+    return decision;
+  }
+
+  const pattern = findRepeatedCsReplyCorrectionPattern(
+    customerMessage,
+    corrections,
+    now,
+  );
+
+  if (!pattern) return decision;
+
+  return {
+    ...decision,
+    handlingType: "needs_review" as const,
+    riskLevel: "normal" as const,
+    aiReason: `비슷한 문의 답변을 사장님이 최근 ${pattern.correctionCount}회 수정해 자동 완료하지 않고 확인 필요로 분류했습니다.`,
+    guardType: "correction_learning" as const,
+  };
+}
+
 export function buildCsReplyCorrectionPrompt(
   customerMessage: string,
   corrections: CsReplyCorrection[],

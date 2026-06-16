@@ -13,7 +13,10 @@ type ReplyDecision = {
   handlingType: "auto_ready" | "needs_review" | "needs_approval";
   riskLevel: "low" | "normal" | "high";
   aiReason?: string;
-  guardType?: "workflow_verification" | "output_validation";
+  guardType?:
+    | "workflow_verification"
+    | "output_validation"
+    | "correction_learning";
 };
 
 const verificationDeferralPattern =

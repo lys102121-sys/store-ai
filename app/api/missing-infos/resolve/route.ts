@@ -301,6 +301,7 @@ export async function POST(request: Request) {
               customerMessage,
               replyCorrections,
             ),
+            replyCorrections,
           }),
           usedKnowledgeItems,
         };

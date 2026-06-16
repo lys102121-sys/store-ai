@@ -138,18 +138,24 @@ export function CsLearningQualityCard({
           </div>
 
           {metrics.topCorrectionTypes.length > 0 ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                자주 고친 문의
-              </span>
-              {metrics.topCorrectionTypes.map((item) => (
-                <span
-                  key={item.caseType}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
-                >
-                  {item.label} {item.count}건
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 dark:border-amber-900/60 dark:bg-amber-950/25">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-amber-900 dark:text-amber-100">
+                  자주 고친 문의
                 </span>
-              ))}
+                {metrics.topCorrectionTypes.map((item) => (
+                  <span
+                    key={item.caseType}
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-amber-200 dark:bg-zinc-950 dark:text-slate-200 dark:ring-amber-900"
+                  >
+                    {item.label} {item.count}건
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                비슷한 답변을 최근 2회 이상 수정한 유형은 AI가 다음부터 자동
+                완료하지 않고 사장님 확인을 기다립니다.
+              </p>
             </div>
           ) : (
             <p className="mt-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">

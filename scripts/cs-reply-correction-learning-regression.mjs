@@ -41,6 +41,8 @@ vm.runInNewContext(transpile(learningPath), learningSandbox, {
 
 const {
   buildCsReplyCorrectionPrompt,
+  applyCsReplyCorrectionSafetyGuard,
+  findRepeatedCsReplyCorrectionPattern,
   hasMeaningfulCsReplyCorrection,
   sanitizeCsCorrectionText,
   selectRelevantCsReplyCorrections,
@@ -126,6 +128,79 @@ const pricePrompt = buildCsReplyCorrectionPrompt(
 assert.match(pricePrompt, /\[금액\]/);
 assert.doesNotMatch(pricePrompt, /30,000/);
 
+const repeatedPattern = findRepeatedCsReplyCorrectionPattern(
+  "케이크 가격을 알려주세요.",
+  [
+    corrections[1],
+    {
+      ...corrections[1],
+      id: "correction-3",
+      source_id: "3",
+      customer_message: "딸기 케이크 얼마인가요?",
+      sanitized_customer_message: "딸기 케이크 얼마인가요?",
+    },
+  ],
+  new Date("2026-06-15T00:00:00.000Z"),
+);
+assert.equal(repeatedPattern.correctionCount, 2);
+
+const guardedDecision = applyCsReplyCorrectionSafetyGuard({
+  customerMessage: "케이크 가격을 알려주세요.",
+  decision: {
+    reply: "가격을 안내드립니다.",
+    handlingType: "auto_ready",
+    riskLevel: "low",
+    aiReason: "등록된 정보가 있습니다.",
+  },
+  corrections: [
+    corrections[1],
+    {
+      ...corrections[1],
+      id: "correction-3",
+      source_id: "3",
+      customer_message: "딸기 케이크 얼마인가요?",
+      sanitized_customer_message: "딸기 케이크 얼마인가요?",
+    },
+  ],
+  now: new Date("2026-06-15T00:00:00.000Z"),
+});
+assert.equal(guardedDecision.handlingType, "needs_review");
+assert.equal(guardedDecision.riskLevel, "normal");
+assert.equal(guardedDecision.guardType, "correction_learning");
+assert.match(guardedDecision.aiReason, /최근 2회 수정/);
+
+const singleCorrectionDecision = applyCsReplyCorrectionSafetyGuard({
+  customerMessage: "케이크 가격을 알려주세요.",
+  decision: {
+    reply: "가격을 안내드립니다.",
+    handlingType: "auto_ready",
+    riskLevel: "low",
+    aiReason: "등록된 정보가 있습니다.",
+  },
+  corrections: [corrections[1]],
+});
+assert.equal(singleCorrectionDecision.handlingType, "auto_ready");
+
+const expiredCorrectionDecision = applyCsReplyCorrectionSafetyGuard({
+  customerMessage: "케이크 가격을 알려주세요.",
+  decision: {
+    reply: "가격을 안내드립니다.",
+    handlingType: "auto_ready",
+    riskLevel: "low",
+    aiReason: "등록된 정보가 있습니다.",
+  },
+  corrections: [
+    { ...corrections[1], updated_at: "2025-01-01T00:00:00.000Z" },
+    {
+      ...corrections[1],
+      source_id: "old-2",
+      updated_at: "2025-01-02T00:00:00.000Z",
+    },
+  ],
+  now: new Date("2026-06-15T00:00:00.000Z"),
+});
+assert.equal(expiredCorrectionDecision.handlingType, "auto_ready");
+
 const csRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/cs-reply/route.ts"),
   "utf8",
@@ -141,7 +216,10 @@ const platformProcessing = fs.readFileSync(
 
 assert.match(csRoute, /loadCsReplyCorrections/);
 assert.match(csRoute, /buildCsReplyCorrectionPrompt/);
+assert.match(csRoute, /replyCorrections,/);
+assert.match(csRoute, /decision\.guardType !== "correction_learning"/);
 assert.match(csPatchRoute, /recordCsReplyCorrection/);
 assert.match(platformProcessing, /buildCsReplyCorrectionPrompt/);
+assert.match(platformProcessing, /decision\.guardType !== "correction_learning"/);
 
 console.log("CS reply correction learning regression tests passed.");
