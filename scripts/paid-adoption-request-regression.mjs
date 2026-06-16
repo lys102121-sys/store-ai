@@ -43,7 +43,11 @@ assert.match(startOnboardingSource, /paidAdoptionAction\.highlights/);
 assert.doesNotMatch(startOnboardingSource, /metricLabel/);
 assert.doesNotMatch(startOnboardingSource, /metricValue/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.actionLabel/);
+assert.match(startOnboardingSource, /item\.description/);
+assert.match(startOnboardingSource, /item\.actionLabel/);
+assert.match(startOnboardingSource, /onClick=\{item\.onAction\}/);
 assert.match(pageSource, /actionLabel: authUser \? "도입 상담 요청"/);
+assert.match(pageSource, /actionLabel: authUser \? "가게 정보 보기"/);
 assert.match(pageSource, /무료 체험 후 도입 범위 확인/);
 assert.doesNotMatch(pageSource, /도입 가치는 절감액으로 판단할 수 있어요/);
 

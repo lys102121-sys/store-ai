@@ -5081,8 +5081,10 @@ export default function Home() {
       title: "로그인",
       description: "가게 정보, 답변 기록, 학습 지식을 내 계정에 저장합니다.",
       isComplete: Boolean(authUser),
-      actionLabel: "카카오로 로그인",
-      onAction: () => void handleKakaoLogin(),
+      actionLabel: authUser ? "가게 정보 보기" : "카카오로 로그인",
+      onAction: authUser
+        ? () => goToTabSection("store", "store-info")
+        : () => void handleKakaoLogin(),
     },
     {
       id: "store",

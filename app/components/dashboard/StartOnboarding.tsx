@@ -4,7 +4,10 @@ export type StartGuideItem = {
   id: string;
   step: string;
   title: string;
+  description: string;
   isComplete: boolean;
+  actionLabel: string;
+  onAction: () => void;
 };
 
 export type StartRecommendedAction = {
@@ -126,29 +129,49 @@ export function StartOnboarding({
                 return (
                   <li
                     key={item.id}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm ${
+                    className={`rounded-xl px-3 py-3 text-sm transition ${
                       isNextStep
                         ? "bg-indigo-50 font-semibold text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-100"
                         : "text-zinc-600 dark:text-zinc-300"
                     }`}
                   >
-                    <span
-                      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                        item.isComplete
-                          ? "bg-emerald-600 text-white"
-                          : isNextStep
-                            ? "bg-indigo-700 text-white"
-                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
-                    >
-                      {item.isComplete ? "✓" : item.step}
-                    </span>
-                    <span className="min-w-0 flex-1">{item.title}</span>
-                    {isNextStep ? (
-                      <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-                        다음
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                          item.isComplete
+                            ? "bg-emerald-600 text-white"
+                            : isNextStep
+                              ? "bg-indigo-700 text-white"
+                              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                        }`}
+                      >
+                        {item.isComplete ? "✓" : item.step}
                       </span>
-                    ) : null}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>{item.title}</span>
+                          {isNextStep ? (
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/70 dark:text-indigo-200 dark:ring-indigo-900/70">
+                              다음
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={item.onAction}
+                      className={buttonClass(
+                        isNextStep ? "secondary" : "ghost",
+                        "sm",
+                        "mt-3 w-full rounded-lg",
+                      )}
+                    >
+                      {item.actionLabel}
+                    </button>
                   </li>
                 );
               })}
