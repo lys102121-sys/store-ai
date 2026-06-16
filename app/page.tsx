@@ -5281,6 +5281,20 @@ export default function Home() {
     message: paidAdoptionRequestMessage,
     error: paidAdoptionRequestError,
   };
+  const freeTrialPrimaryAction = !authUser
+    ? {
+        label: "카카오로 무료 체험 시작",
+        onAction: () => void handleKakaoLogin(),
+      }
+    : !hasStore
+      ? {
+          label: "가게 정보 먼저 입력",
+          onAction: () => goToTabSection("store", "store-info"),
+        }
+      : {
+          label: "무료 답변 생성 체험하기",
+          onAction: () => goToTabSection("answer", "cs-reply"),
+        };
 
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
@@ -6084,10 +6098,10 @@ export default function Home() {
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={() => goToTabSection("answer", "cs-reply")}
+                onClick={freeTrialPrimaryAction.onAction}
                 className={buttonClass("success", "md", "rounded-lg")}
               >
-                무료 답변 생성 체험하기
+                {freeTrialPrimaryAction.label}
               </button>
               <button
                 type="button"

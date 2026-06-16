@@ -6,11 +6,11 @@ export type DashboardTab =
   | "manage";
 
 const tabs = [
-  { id: "start", label: "시작하기" },
+  { id: "start", label: "처음 안내" },
   { id: "store", label: "가게 설정" },
-  { id: "integrations", label: "플랫폼 연동" },
-  { id: "answer", label: "답변 작성" },
-  { id: "manage", label: "운영 관리" },
+  { id: "answer", label: "답변 테스트" },
+  { id: "manage", label: "AI 처리함" },
+  { id: "integrations", label: "연동 준비" },
 ] as const satisfies ReadonlyArray<{ id: DashboardTab; label: string }>;
 
 type DashboardTabsProps = {

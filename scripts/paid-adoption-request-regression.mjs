@@ -14,6 +14,10 @@ const pageSource = fs.readFileSync(
   path.join(projectRoot, "app/page.tsx"),
   "utf8",
 );
+const dashboardTabsSource = fs.readFileSync(
+  path.join(projectRoot, "app/components/dashboard/DashboardTabs.tsx"),
+  "utf8",
+);
 
 assert.match(routeSource, /requireAuthenticatedUser/);
 assert.match(routeSource, /paid_adoption_requests/);
@@ -65,5 +69,11 @@ assert.match(pageSource, /freeTrialAiReplyLimitReached/);
 assert.match(pageSource, /answerGenerationBlocked/);
 assert.match(pageSource, /무료 AI 답변 생성 30건을 모두 사용했습니다/);
 assert.match(pageSource, /무료 체험 남은 AI 답변 생성/);
+assert.match(pageSource, /freeTrialPrimaryAction/);
+assert.match(pageSource, /카카오로 무료 체험 시작/);
+assert.match(pageSource, /가게 정보 먼저 입력/);
+assert.match(dashboardTabsSource, /답변 테스트/);
+assert.match(dashboardTabsSource, /AI 처리함/);
+assert.match(dashboardTabsSource, /연동 준비/);
 
 console.log("Paid adoption request regression tests passed.");
