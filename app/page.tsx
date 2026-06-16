@@ -6209,13 +6209,13 @@ export default function Home() {
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                     오늘 생성된 답변 초안, 자동 완료, 사장님이 알려준 지식
-                    활용을 기준으로 절약한 시간과 운영비 가치를 추정했습니다.
+                    활용을 기준으로 처리 흐름과 시간을 요약했습니다.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[26rem]">
                   <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950">
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      오늘 절약 시간
+                      오늘 처리 시간 추정
                     </p>
                     <p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
                       {workflowSummaryLoading
@@ -6231,17 +6231,19 @@ export default function Home() {
                   </div>
                   <div className="rounded-2xl border border-cyan-200 bg-white px-5 py-4 text-left shadow-sm dark:border-cyan-900/70 dark:bg-zinc-950">
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      최근 30일 절감 가치
+                      최근 30일 처리 시간
                     </p>
                     <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-700 dark:text-cyan-300">
                       {workflowSummaryLoading
                         ? "—"
-                        : formatEstimatedCurrency(recent30EstimatedSavedValueKrw)}
+                        : formatEstimatedMinutes(recent30EstimatedSavedMinutes)}
                     </p>
                     <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                       {workflowSummaryLoading
                         ? "불러오는 중"
-                        : formatEstimatedMinutes(recent30EstimatedSavedMinutes)}
+                        : `${recent30WorkflowSummaryItems.length.toLocaleString(
+                            "ko-KR",
+                          )}건 기준`}
                     </p>
                   </div>
                 </div>
