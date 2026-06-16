@@ -570,6 +570,9 @@ function sentimentBadgeClass(sentiment: string) {
 const urgentBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm dark:bg-red-500";
 
+const paidConsultHref = "https://forms.gle/MSZhwmfmZB1gdTGV7";
+const ESTIMATED_CS_HOURLY_VALUE_KRW = 12_000;
+
 type SemanticTone = "neutral" | "info" | "success" | "warning" | "danger";
 
 const semanticBadgeClasses: Record<SemanticTone, string> = {
@@ -1043,6 +1046,17 @@ function isSameLocalDate(value: string, date = new Date()) {
   );
 }
 
+function isWithinRecentDays(value: string, days: number, date = new Date()) {
+  const targetDate = new Date(value);
+
+  if (Number.isNaN(targetDate.getTime())) return false;
+
+  const boundary = new Date(date);
+  boundary.setDate(boundary.getDate() - days);
+
+  return targetDate >= boundary && targetDate <= date;
+}
+
 function formatEstimatedMinutes(minutes: number) {
   if (minutes < 60) return `${minutes.toLocaleString("ko-KR")}분`;
 
@@ -1052,6 +1066,41 @@ function formatEstimatedMinutes(minutes: number) {
   if (remainingMinutes === 0) return `${hours.toLocaleString("ko-KR")}시간`;
 
   return `${hours.toLocaleString("ko-KR")}시간 ${remainingMinutes}분`;
+}
+
+function formatEstimatedCurrency(value: number) {
+  return `${Math.round(value).toLocaleString("ko-KR")}원`;
+}
+
+function estimateSavedMinutesForWorkflowItems(items: WorkflowItem[]) {
+  const aiDraftItems = items.filter(
+    (item) => item.type !== "missing_info" && Boolean(item.reply.trim()),
+  );
+  const autoCompletedItems = items.filter(
+    (item) =>
+      item.type !== "missing_info" &&
+      (item.status === "completed" || item.status === "answered") &&
+      item.handlingType === "auto_ready" &&
+      item.riskLevel === "low",
+  );
+  const knowledgeAssistedItems = items.filter(
+    (item) =>
+      item.type === "cs" &&
+      item.usedKnowledgeItems.some((knowledgeItem) =>
+        !isStoreInfoEvidenceItem(knowledgeItem),
+      ),
+  );
+
+  return Math.round(
+    aiDraftItems.length * 1.5 +
+      autoCompletedItems.length * 2 +
+      knowledgeAssistedItems.length * 2,
+  );
+}
+
+function estimateSavedValueKrw(minutes: number) {
+  const value = (minutes / 60) * ESTIMATED_CS_HOURLY_VALUE_KRW;
+  return Math.round(value / 100) * 100;
 }
 
 function normalizeReplyForLearning(value: string) {
@@ -4563,6 +4612,9 @@ export default function Home() {
   const todayWorkflowSummaryItems = workflowSummaryItems.filter((item) =>
     isSameLocalDate(item.createdAt),
   );
+  const recent30WorkflowSummaryItems = workflowSummaryItems.filter((item) =>
+    isWithinRecentDays(item.createdAt, 30),
+  );
   const todayAiDraftItems = todayWorkflowSummaryItems.filter(
     (item) => item.type !== "missing_info" && Boolean(item.reply.trim()),
   );
@@ -4587,10 +4639,17 @@ export default function Home() {
         !isStoreInfoEvidenceItem(knowledgeItem),
       ),
   );
-  const todayEstimatedSavedMinutes = Math.round(
-    todayAiDraftItems.length * 1.5 +
-      todayAutoCompletedItems.length * 2 +
-      todayKnowledgeAssistedItems.length * 2,
+  const todayEstimatedSavedMinutes = estimateSavedMinutesForWorkflowItems(
+    todayWorkflowSummaryItems,
+  );
+  const recent30EstimatedSavedMinutes = estimateSavedMinutesForWorkflowItems(
+    recent30WorkflowSummaryItems,
+  );
+  const todayEstimatedSavedValueKrw = estimateSavedValueKrw(
+    todayEstimatedSavedMinutes,
+  );
+  const recent30EstimatedSavedValueKrw = estimateSavedValueKrw(
+    recent30EstimatedSavedMinutes,
   );
   const aiCsValueSummaryItems = [
     {
@@ -5857,21 +5916,41 @@ export default function Home() {
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                     오늘 생성된 답변 초안, 자동 완료, 사장님이 알려준 지식
-                    활용을 기준으로 대략 절약한 시간을 추정했습니다.
+                    활용을 기준으로 절약한 시간과 운영비 가치를 추정했습니다.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950 lg:min-w-48 lg:text-right">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    절약 시간 추정
-                  </p>
-                  <p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
-                    {workflowSummaryLoading
-                      ? "—"
-                      : formatEstimatedMinutes(todayEstimatedSavedMinutes)}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    실제 업무량에 따라 달라질 수 있어요.
-                  </p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[26rem]">
+                  <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      오늘 절약 시간
+                    </p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+                      {workflowSummaryLoading
+                        ? "—"
+                        : formatEstimatedMinutes(todayEstimatedSavedMinutes)}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      약{" "}
+                      {workflowSummaryLoading
+                        ? "—"
+                        : formatEstimatedCurrency(todayEstimatedSavedValueKrw)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-cyan-200 bg-white px-5 py-4 text-left shadow-sm dark:border-cyan-900/70 dark:bg-zinc-950">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      최근 30일 절감 가치
+                    </p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-700 dark:text-cyan-300">
+                      {workflowSummaryLoading
+                        ? "—"
+                        : formatEstimatedCurrency(recent30EstimatedSavedValueKrw)}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      {workflowSummaryLoading
+                        ? "불러오는 중"
+                        : formatEstimatedMinutes(recent30EstimatedSavedMinutes)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -5892,6 +5971,28 @@ export default function Home() {
                     </p>
                   </article>
                 ))}
+              </div>
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-white/85 p-4 dark:border-emerald-900/50 dark:bg-zinc-950/70">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                      도입 가치는 절감액으로 판단할 수 있어요
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                      최근 30일 절감 가치가 커질수록 유료 도입 명분이
+                      분명해집니다. 실제 운영 기준에 맞는 요금제와 플랫폼
+                      연동 범위를 상담해보세요.
+                    </p>
+                  </div>
+                  <a
+                    href={paidConsultHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonClass("success", "sm", "rounded-lg")}
+                  >
+                    도입 상담 요청
+                  </a>
+                </div>
               </div>
             </div>
 
