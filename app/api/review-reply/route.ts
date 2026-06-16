@@ -7,6 +7,10 @@ import {
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
+  checkFreeTrialAiReplyCapacity,
+  createFreeTrialLimitResponse,
+} from "@/app/lib/freeTrialUsage";
+import {
   generateReviewReplyWithSentiment,
   legacyReviewReplyStoreSelect,
   reviewReplyStoreSelect,
@@ -53,6 +57,28 @@ export async function POST(request: Request) {
     return Response.json(
       { error: "'review' must be a non-empty string." },
       { status: 400 },
+    );
+  }
+
+  try {
+    const capacity = await checkFreeTrialAiReplyCapacity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+    });
+
+    if (!capacity.allowed) {
+      return createFreeTrialLimitResponse({
+        requestedReplies: capacity.requestedReplies,
+        usage: capacity.usage,
+      });
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown usage check error.";
+
+    return Response.json(
+      { error: "Failed to check free trial usage.", detail: message },
+      { status: 500 },
     );
   }
 

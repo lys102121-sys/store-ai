@@ -18,6 +18,26 @@ const dashboardTabsSource = fs.readFileSync(
   path.join(projectRoot, "app/components/dashboard/DashboardTabs.tsx"),
   "utf8",
 );
+const freeTrialLimitsSource = fs.readFileSync(
+  path.join(projectRoot, "app/lib/freeTrialLimits.ts"),
+  "utf8",
+);
+const freeTrialUsageSource = fs.readFileSync(
+  path.join(projectRoot, "app/lib/freeTrialUsage.ts"),
+  "utf8",
+);
+const csReplyRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/cs-reply/route.ts"),
+  "utf8",
+);
+const reviewReplyRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/review-reply/route.ts"),
+  "utf8",
+);
+const batchReviewReplyRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/review-reply/batch/route.ts"),
+  "utf8",
+);
 
 assert.match(routeSource, /requireAuthenticatedUser/);
 assert.match(routeSource, /paid_adoption_requests/);
@@ -58,22 +78,35 @@ assert.match(pageSource, /첫 AI 답변을 바로 만들어보세요/);
 assert.match(pageSource, /첫 문의 답변 만들기/);
 assert.match(pageSource, /goToTabSection\("answer", "cs-reply"\)/);
 assert.match(pageSource, /샘플 데이터로 체험/);
-assert.match(pageSource, /FREE_TRIAL_AI_REPLY_LIMIT = 30/);
-assert.match(pageSource, /FREE_TRIAL_BATCH_REVIEW_LIMIT = 10/);
-assert.match(pageSource, /무료 체험은 AI를 가르치는 시간까지 포함합니다/);
-assert.match(pageSource, /샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다/);
-assert.match(pageSource, /유료 전환 후보/);
+assert.match(freeTrialLimitsSource, /FREE_TRIAL_AI_REPLY_LIMIT = 30/);
+assert.match(freeTrialLimitsSource, /FREE_TRIAL_BATCH_REVIEW_LIMIT = 10/);
+assert.match(freeTrialLimitsSource, /무료 AI 답변 생성 30건을 모두 사용했습니다/);
+assert.match(pageSource, /무료 체험은 이렇게 진행됩니다/);
+assert.match(pageSource, /AI 답변 30건까지 실제 응대/);
+assert.match(pageSource, /학습 입력과 샘플 데이터는 무료/);
+assert.match(pageSource, /가게 정보를 알려주세요/);
+assert.match(pageSource, /계속 운영은 도입 상담/);
+assert.match(pageSource, /플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결/);
 assert.match(pageSource, /실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜/);
 assert.match(pageSource, /FREE_TRIAL_LIMIT_REACHED_MESSAGE/);
 assert.match(pageSource, /freeTrialAiReplyLimitReached/);
 assert.match(pageSource, /answerGenerationBlocked/);
-assert.match(pageSource, /무료 AI 답변 생성 30건을 모두 사용했습니다/);
 assert.match(pageSource, /무료 체험 남은 AI 답변 생성/);
 assert.match(pageSource, /freeTrialPrimaryAction/);
 assert.match(pageSource, /카카오로 무료 체험 시작/);
 assert.match(pageSource, /가게 정보 먼저 입력/);
-assert.match(dashboardTabsSource, /답변 테스트/);
-assert.match(dashboardTabsSource, /AI 처리함/);
-assert.match(dashboardTabsSource, /연동 준비/);
+assert.match(dashboardTabsSource, /시작하기/);
+assert.match(dashboardTabsSource, /플랫폼 연동/);
+assert.match(dashboardTabsSource, /답변 작성/);
+assert.match(dashboardTabsSource, /운영 관리/);
+assert.match(freeTrialUsageSource, /checkFreeTrialAiReplyCapacity/);
+assert.match(freeTrialUsageSource, /createFreeTrialLimitResponse/);
+assert.match(freeTrialUsageSource, /startsWith\("mock-"\)/);
+assert.match(csReplyRouteSource, /checkFreeTrialAiReplyCapacity/);
+assert.match(csReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(reviewReplyRouteSource, /checkFreeTrialAiReplyCapacity/);
+assert.match(reviewReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(batchReviewReplyRouteSource, /requestedReplies: reviews\.length/);
+assert.match(batchReviewReplyRouteSource, /createFreeTrialLimitResponse/);
 
 console.log("Paid adoption request regression tests passed.");

@@ -18,6 +18,11 @@ import { ReviewReplyPanel } from "@/app/components/dashboard/ReviewReplyPanel";
 import { StartOnboarding } from "@/app/components/dashboard/StartOnboarding";
 import type { CsLearningMetrics } from "@/app/lib/csLearningMetrics";
 import {
+  FREE_TRIAL_AI_REPLY_LIMIT,
+  FREE_TRIAL_BATCH_REVIEW_LIMIT,
+  FREE_TRIAL_LIMIT_REACHED_MESSAGE,
+} from "@/app/lib/freeTrialLimits";
+import {
   buildStoreKnowledgeQualityReport,
   createEmptyStoreKnowledgeQuality,
   STORE_KNOWLEDGE_STALE_DAYS,
@@ -45,11 +50,6 @@ type StoreKnowledgeStatusFilter =
   | "active"
   | "needs_review"
   | "archived";
-
-const FREE_TRIAL_AI_REPLY_LIMIT = 30;
-const FREE_TRIAL_BATCH_REVIEW_LIMIT = 10;
-const FREE_TRIAL_LIMIT_REACHED_MESSAGE =
-  "무료 AI 답변 생성 30건을 모두 사용했습니다. 가게 지식 학습은 계속 가능하고, 계속 자동 응대를 쓰려면 도입 상담을 요청해 주세요.";
 
 type ReviewHistoryItem = {
   id: number;
@@ -4602,24 +4602,6 @@ export default function Home() {
     trialAiReplyUsedCount >= FREE_TRIAL_AI_REPLY_LIMIT;
   const answerGenerationBlocked =
     aiGenerationBlocked || freeTrialAiReplyLimitReached;
-  const trialLearningSignalCount =
-    [
-      storeName,
-      businessType,
-      productName,
-      productDescription,
-      productDetails,
-      productCaution,
-      productCatalog,
-      extraFaq,
-      shippingPolicy,
-      refundPolicy,
-      ownerReplyExamples,
-      ownerCsExamples,
-    ].filter((value) => value.trim().length > 0).length +
-    storeKnowledgeItems.filter(
-      (item) => normalizeStoreKnowledgeStatus(item.status) === "active",
-    ).length;
   const activeWorkflowSummaryItems = workflowSummaryItems.filter(
     (item) => item.status !== "completed" && item.status !== "answered",
   );
@@ -6000,12 +5982,12 @@ export default function Home() {
                   Free Trial
                 </p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                  무료 체험은 AI를 가르치는 시간까지 포함합니다
+                  무료 체험은 이렇게 진행됩니다
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  가게 정보, 상품/정책, 말투, 확인 필요 답변을 입력하는 학습
-                  과정은 막지 않습니다. 실제 고객 응대 업무를 AI가 대신
-                  수행하는 단계부터 사용량과 유료 전환 기준을 봅니다.
+                  먼저 가게 정보를 알려주고, AI 답변 30건까지 실제 응대
+                  흐름을 확인해보세요. 학습 입력과 샘플 데이터는 무료
+                  카운트에서 제외됩니다.
                 </p>
               </div>
               <div className="rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-zinc-950/70 lg:min-w-72">
@@ -6040,57 +6022,49 @@ export default function Home() {
             <div className="mt-5 grid gap-3 lg:grid-cols-3">
               {[
                 {
-                  title: "무료로 열어둘 것",
+                  step: "1",
+                  title: "가게 정보를 알려주세요",
                   tone: "emerald",
-                  items: [
-                    "가게 정보와 상품/정책 입력",
-                    "사장님 말투 학습",
-                    "확인 필요 답변을 지식으로 저장",
-                    `학습 신호 ${trialLearningSignalCount.toLocaleString("ko-KR")}개 반영 중`,
-                  ],
+                  description:
+                    "상품, 정책, 말투를 입력하면 AI가 사장님 가게에 맞춰 답변합니다.",
                 },
                 {
-                  title: "무료 체험 사용량",
+                  step: "2",
+                  title: `AI 답변 ${FREE_TRIAL_AI_REPLY_LIMIT}건까지 체험`,
                   tone: "sky",
-                  items: [
-                    `AI 답변 생성 ${FREE_TRIAL_AI_REPLY_LIMIT}건`,
-                    `일괄 리뷰 답글 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 체험`,
-                    "샘플 문의/리뷰는 카운트 제외",
-                    "답변 수정 학습은 막지 않음",
-                  ],
+                  description: `문의 답변과 리뷰 답글을 직접 테스트하세요. 일괄 리뷰 답글은 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 한 번에 체험할 수 있습니다.`,
                 },
                 {
-                  title: "유료 전환 후보",
+                  step: "3",
+                  title: "계속 운영은 도입 상담",
                   tone: "amber",
-                  items: [
-                    "실제 플랫폼 연동과 답변 등록",
-                    "자동 완료 처리",
-                    "안전 항목 일괄 승인",
-                    "월 사용량 초과 후 계속 운영",
-                  ],
+                  description:
+                    "플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다.",
                 },
-              ].map((column) => (
+              ].map((step) => (
                 <article
-                  key={column.title}
+                  key={step.title}
                   className={`rounded-2xl border p-4 ${
-                    column.tone === "emerald"
+                    step.tone === "emerald"
                       ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/25"
-                      : column.tone === "sky"
+                      : step.tone === "sky"
                         ? "border-sky-200 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/25"
                         : "border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/25"
                   }`}
                 >
-                  <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
-                    {column.title}
-                  </h3>
-                  <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                    {column.items.map((item) => (
-                      <li key={item} className="flex gap-2">
-                        <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-emerald-700 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-emerald-300 dark:ring-white/10">
+                      {step.step}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>

@@ -6,6 +6,10 @@ import {
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import {
+  checkFreeTrialAiReplyCapacity,
+  createFreeTrialLimitResponse,
+} from "@/app/lib/freeTrialUsage";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 import {
   generateReviewReplyWithSentiment,
@@ -86,6 +90,29 @@ export async function POST(request: Request) {
         error: `Each review must be ${MAX_REVIEW_LENGTH} characters or fewer.`,
       },
       { status: 400 },
+    );
+  }
+
+  try {
+    const capacity = await checkFreeTrialAiReplyCapacity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      requestedReplies: reviews.length,
+    });
+
+    if (!capacity.allowed) {
+      return createFreeTrialLimitResponse({
+        requestedReplies: capacity.requestedReplies,
+        usage: capacity.usage,
+      });
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown usage check error.";
+
+    return Response.json(
+      { error: "Failed to check free trial usage.", detail: message },
+      { status: 500 },
     );
   }
 
