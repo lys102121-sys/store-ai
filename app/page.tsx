@@ -5190,6 +5190,28 @@ export default function Home() {
                 actionLabel: "문의 답변 테스트",
                 onAction: () => goToTabSection("answer", "cs-reply"),
               };
+  const startPaidAdoptionAction = {
+    title: "AI CS 직원을 우리 가게에 도입하고 싶다면",
+    description:
+      "처음부터 플랫폼 연동까지 필요한 범위를 알려주세요. 현재 체험 데이터와 절감 가치를 함께 저장해 도입 우선순위를 검토할 수 있습니다.",
+    metricLabel: "최근 30일 절감 가치",
+    metricValue: workflowSummaryLoading
+      ? "—"
+      : recent30EstimatedSavedValueKrw > 0
+        ? formatEstimatedCurrency(recent30EstimatedSavedValueKrw)
+        : "체험 후 계산",
+    metricDescription:
+      recent30EstimatedSavedMinutes > 0
+        ? formatEstimatedMinutes(recent30EstimatedSavedMinutes)
+        : "샘플이나 첫 문의를 처리하면 가치가 쌓입니다.",
+    actionLabel: authUser ? "도입 상담 요청" : "로그인 후 상담 요청",
+    onAction: authUser
+      ? () => void handleRequestPaidAdoption()
+      : () => void handleKakaoLogin(),
+    isLoading: authUser ? paidAdoptionRequestLoading : authActionLoading,
+    message: paidAdoptionRequestMessage,
+    error: paidAdoptionRequestError,
+  };
 
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
@@ -5399,7 +5421,7 @@ export default function Home() {
           auto_completed_30d: autoCompleted30d,
           needs_review_active: needsReviewSummaryCount,
           platform_items_30d: platformItems30d,
-          memo: "AI CS value card에서 도입 상담을 요청했습니다.",
+          memo: "시작하기 화면에서 도입 상담을 요청했습니다.",
         }),
       });
       const data = (await response.json()) as PaidAdoptionRequestApiResponse;
@@ -5882,6 +5904,7 @@ export default function Home() {
           guideItems={startGuideItems}
           recommendedAction={startRecommendedAction}
           actionLoading={authActionLoading}
+          paidAdoptionAction={startPaidAdoptionAction}
         />
 
         {activeTab === "manage" && authUser ? (
@@ -6064,29 +6087,7 @@ export default function Home() {
                       연동 범위를 상담해보세요.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleRequestPaidAdoption()}
-                    disabled={paidAdoptionRequestLoading}
-                    className={buttonClass("success", "sm", "rounded-lg")}
-                  >
-                    {paidAdoptionRequestLoading
-                      ? "저장 중..."
-                      : "도입 상담 요청"}
-                  </button>
                 </div>
-                {paidAdoptionRequestMessage || paidAdoptionRequestError ? (
-                  <p
-                    className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
-                      paidAdoptionRequestError
-                        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                        : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-                    }`}
-                    role="status"
-                  >
-                    {paidAdoptionRequestError || paidAdoptionRequestMessage}
-                  </p>
-                ) : null}
               </div>
             </div>
 

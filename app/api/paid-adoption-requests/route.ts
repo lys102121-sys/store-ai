@@ -5,7 +5,7 @@ create table if not exists paid_adoption_requests (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null,
   status text not null default 'requested',
-  source text not null default 'ai_cs_value_card',
+  source text not null default 'start_onboarding',
   store_name text,
   estimated_saved_minutes_today integer not null default 0,
   estimated_saved_value_krw_today integer not null default 0,
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
   const payload = {
     user_id: auth.userId,
     status: "requested",
-    source: "ai_cs_value_card",
+    source: "start_onboarding",
     store_name: textFromBody(body.store_name),
     estimated_saved_minutes_today: numberFromBody(
       body.estimated_saved_minutes_today,

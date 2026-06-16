@@ -15,11 +15,25 @@ export type StartRecommendedAction = {
   onAction: () => void;
 };
 
+export type StartPaidAdoptionAction = {
+  title: string;
+  description: string;
+  metricLabel: string;
+  metricValue: string;
+  metricDescription: string;
+  actionLabel: string;
+  onAction: () => void;
+  isLoading: boolean;
+  message: string;
+  error: string;
+};
+
 type StartOnboardingProps = {
   isVisible: boolean;
   guideItems: StartGuideItem[];
   recommendedAction: StartRecommendedAction;
   actionLoading: boolean;
+  paidAdoptionAction: StartPaidAdoptionAction;
 };
 
 export function StartOnboarding({
@@ -27,6 +41,7 @@ export function StartOnboarding({
   guideItems,
   recommendedAction,
   actionLoading,
+  paidAdoptionAction,
 }: StartOnboardingProps) {
   const completedCount = guideItems.filter((item) => item.isComplete).length;
   const progressPercent = Math.round(
@@ -77,6 +92,55 @@ export function StartOnboarding({
             >
               {actionLoading ? "처리 중..." : recommendedAction.actionLabel}
             </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                  유료 도입 상담
+                </p>
+                <h2 className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
+                  {paidAdoptionAction.title}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {paidAdoptionAction.description}
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/80 bg-white/85 px-4 py-3 text-left shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70 sm:min-w-44">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {paidAdoptionAction.metricLabel}
+                </p>
+                <p className="mt-1 text-2xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
+                  {paidAdoptionAction.metricValue}
+                </p>
+                <p className="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+                  {paidAdoptionAction.metricDescription}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={paidAdoptionAction.onAction}
+              disabled={paidAdoptionAction.isLoading}
+              className={buttonClass("success", "lg", "mt-4 font-bold")}
+            >
+              {paidAdoptionAction.isLoading
+                ? "저장 중..."
+                : paidAdoptionAction.actionLabel}
+            </button>
+            {paidAdoptionAction.message || paidAdoptionAction.error ? (
+              <p
+                className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
+                  paidAdoptionAction.error
+                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                    : "border-emerald-200 bg-white/80 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                }`}
+                role="status"
+              >
+                {paidAdoptionAction.error || paidAdoptionAction.message}
+              </p>
+            ) : null}
           </div>
         </div>
 
