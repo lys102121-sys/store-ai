@@ -7,6 +7,7 @@ import {
   warnMissingAiReasonColumns,
 } from "@/app/lib/aiReasonColumns";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { getBillingPlanStatus } from "@/app/lib/billingPlan";
 import { findMissingOperationalInfo } from "@/app/lib/csOperationalInfo";
 import {
   COUPANG_OPEN_API_HOST,
@@ -156,6 +157,22 @@ export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
   if ("response" in auth) {
     return auth.response;
+  }
+
+  const plan = await getBillingPlanStatus({
+    supabase: auth.supabase,
+    userId: auth.userId,
+  });
+
+  if (!plan.isPaid) {
+    return Response.json(
+      {
+        error:
+          "쿠팡 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트해 주세요.",
+        paid_plan_required: true,
+      },
+      { status: 402 },
+    );
   }
 
   if (!process.env.OPENAI_API_KEY) {

@@ -26,6 +26,14 @@ const freeTrialUsageSource = fs.readFileSync(
   path.join(projectRoot, "app/lib/freeTrialUsage.ts"),
   "utf8",
 );
+const billingPlanSource = fs.readFileSync(
+  path.join(projectRoot, "app/lib/billingPlan.ts"),
+  "utf8",
+);
+const billingStatusRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/billing/status/route.ts"),
+  "utf8",
+);
 const csReplyRouteSource = fs.readFileSync(
   path.join(projectRoot, "app/api/cs-reply/route.ts"),
   "utf8",
@@ -36,6 +44,14 @@ const reviewReplyRouteSource = fs.readFileSync(
 );
 const batchReviewReplyRouteSource = fs.readFileSync(
   path.join(projectRoot, "app/api/review-reply/batch/route.ts"),
+  "utf8",
+);
+const coupangInquiriesRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/coupang/inquiries/route.ts"),
+  "utf8",
+);
+const coupangReplyRouteSource = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/coupang/reply/route.ts"),
   "utf8",
 );
 
@@ -102,11 +118,26 @@ assert.match(dashboardTabsSource, /운영 관리/);
 assert.match(freeTrialUsageSource, /checkFreeTrialAiReplyCapacity/);
 assert.match(freeTrialUsageSource, /createFreeTrialLimitResponse/);
 assert.match(freeTrialUsageSource, /startsWith\("mock-"\)/);
+assert.match(freeTrialUsageSource, /getBillingPlanStatus/);
+assert.match(freeTrialUsageSource, /plan\.isPaid/);
+assert.match(billingPlanSource, /paid_adoption_requests/);
+assert.match(billingPlanSource, /active/);
+assert.match(billingPlanSource, /subscribed/);
+assert.match(billingStatusRouteSource, /\/api\/billing\/status|GET/);
+assert.match(billingStatusRouteSource, /unlocks/);
 assert.match(csReplyRouteSource, /checkFreeTrialAiReplyCapacity/);
 assert.match(csReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(csReplyRouteSource, /capacity\.isPaidPlan && storeRow\.auto_complete_low_risk_cs/);
 assert.match(reviewReplyRouteSource, /checkFreeTrialAiReplyCapacity/);
 assert.match(reviewReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(reviewReplyRouteSource, /capacity\.isPaidPlan && storeSettings\.auto_complete_positive_reviews/);
 assert.match(batchReviewReplyRouteSource, /requestedReplies: reviews\.length/);
 assert.match(batchReviewReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(batchReviewReplyRouteSource, /capacity\.isPaidPlan && storeSettings\.auto_complete_positive_reviews/);
+assert.match(coupangInquiriesRouteSource, /getBillingPlanStatus/);
+assert.match(coupangInquiriesRouteSource, /paid_plan_required/);
+assert.match(coupangReplyRouteSource, /externalId\.startsWith\("mock-coupang"\)/);
+assert.match(coupangReplyRouteSource, /getBillingPlanStatus/);
+assert.match(coupangReplyRouteSource, /paid_plan_required/);
 
 console.log("Paid adoption request regression tests passed.");

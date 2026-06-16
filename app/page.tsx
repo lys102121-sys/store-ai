@@ -370,6 +370,32 @@ type PaidAdoptionRequestApiResponse = {
   missingTableSql?: string;
 };
 
+type BillingPlanStatus = {
+  tier: "free" | "paid";
+  isPaid: boolean;
+  status: string;
+  source: string;
+  updatedAt: string | null;
+  missingTableSql?: string;
+};
+
+type BillingStatusApiResponse = {
+  plan?: BillingPlanStatus;
+  freeTrialUsage?: {
+    used: number;
+    limit: number;
+    remaining: number;
+  };
+  unlocks?: {
+    aiReplyLimit: boolean;
+    platformIntegrations: boolean;
+    autoProcessing: boolean;
+    bulkApproval: boolean;
+  };
+  error?: string;
+  detail?: string;
+};
+
 type CoupangConnectionTestApiResponse = {
   success?: boolean;
   status?: string;
@@ -2114,6 +2140,9 @@ export default function Home() {
   const [paidAdoptionRequestMessage, setPaidAdoptionRequestMessage] =
     useState("");
   const [paidAdoptionRequestError, setPaidAdoptionRequestError] = useState("");
+  const [billingPlan, setBillingPlan] = useState<BillingPlanStatus | null>(null);
+  const [billingStatusLoading, setBillingStatusLoading] = useState(false);
+  const [billingStatusError, setBillingStatusError] = useState("");
   const [savingIntegrationPlatform, setSavingIntegrationPlatform] =
     useState<IntegrationPlatform | null>(null);
   const [coupangCredential, setCoupangCredential] =
@@ -2503,6 +2532,33 @@ export default function Home() {
     }
   }, []);
 
+  const loadBillingStatus = useCallback(async () => {
+    setBillingStatusLoading(true);
+    setBillingStatusError("");
+
+    try {
+      const response = await fetch("/api/billing/status", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as BillingStatusApiResponse;
+
+      if (!response.ok || !data.plan) {
+        setBillingPlan(null);
+        setBillingStatusError(
+          data.error ?? "플랜 상태를 불러오지 못했습니다.",
+        );
+        return;
+      }
+
+      setBillingPlan(data.plan);
+    } catch {
+      setBillingPlan(null);
+      setBillingStatusError("플랜 상태를 불러오지 못했습니다.");
+    } finally {
+      setBillingStatusLoading(false);
+    }
+  }, []);
+
   const loadPlatformCredentials = useCallback(async () => {
     setCoupangCredentialsLoading(true);
     setCoupangCredentialsError("");
@@ -2553,6 +2609,9 @@ export default function Home() {
         setPaidAdoptionRequestLoading(false);
         setPaidAdoptionRequestMessage("");
         setPaidAdoptionRequestError("");
+        setBillingPlan(null);
+        setBillingStatusLoading(false);
+        setBillingStatusError("");
         setSavingIntegrationPlatform(null);
         setCoupangCredential(null);
         setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
@@ -2590,12 +2649,18 @@ export default function Home() {
       if (!isActive) return;
       void loadIntegrationRequests();
       void loadPlatformCredentials();
+      void loadBillingStatus();
     });
 
     return () => {
       isActive = false;
     };
-  }, [authUser, loadIntegrationRequests, loadPlatformCredentials]);
+  }, [
+    authUser,
+    loadBillingStatus,
+    loadIntegrationRequests,
+    loadPlatformCredentials,
+  ]);
 
   useEffect(() => {
     let isActive = true;
@@ -2921,7 +2986,7 @@ export default function Home() {
       return;
     }
 
-    if (freeTrialAiReplyLimitReached) {
+    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
       setError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
       setReply("");
       return;
@@ -2953,6 +3018,7 @@ export default function Home() {
       void loadHistory();
       void loadInsights();
       void loadAiActivityLogs();
+      void loadBillingStatus();
     } catch {
       setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -2980,7 +3046,7 @@ export default function Home() {
       return;
     }
 
-    if (reviews.length > trialAiReplyRemainingCount) {
+    if (!isPaidPlan && reviews.length > trialAiReplyRemainingCount) {
       setBatchReviewError(
         `무료 체험 남은 AI 답변 생성 ${trialAiReplyRemainingCount.toLocaleString(
           "ko-KR",
@@ -3014,7 +3080,7 @@ export default function Home() {
       return;
     }
 
-    if (freeTrialAiReplyLimitReached) {
+    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
       setBatchReviewError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
       setBatchReviewResults([]);
       return;
@@ -3045,7 +3111,12 @@ export default function Home() {
       }
 
       setBatchReviewResults(data.results);
-      await Promise.all([loadHistory(), loadInsights(), loadAiActivityLogs()]);
+      await Promise.all([
+        loadHistory(),
+        loadInsights(),
+        loadAiActivityLogs(),
+        loadBillingStatus(),
+      ]);
     } catch {
       setBatchReviewError(
         "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
@@ -3078,7 +3149,7 @@ export default function Home() {
       return;
     }
 
-    if (freeTrialAiReplyLimitReached) {
+    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
       setCsError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
       setCsReply("");
       return;
@@ -3110,6 +3181,7 @@ export default function Home() {
       void loadCsMessages();
       void loadMissingInfos();
       void loadAiActivityLogs();
+      void loadBillingStatus();
     } catch {
       setCsError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -4082,6 +4154,16 @@ export default function Home() {
   }
 
   async function handleBulkApproveSafeWorkflowItems() {
+    if (!isPaidPlan) {
+      setWorkflowError("");
+      setWorkflowBulkApprovalResult({
+        message:
+          "안전 항목 일괄 승인은 유료 플랜에서 사용할 수 있습니다. 개별 승인은 계속 사용할 수 있어요.",
+        hasFailures: true,
+      });
+      return;
+    }
+
     if (safeWorkflowApprovalItems.length === 0) {
       setWorkflowError("");
       setWorkflowBulkApprovalResult({
@@ -4598,7 +4680,11 @@ export default function Home() {
     100,
     Math.round((trialAiReplyUsedCount / FREE_TRIAL_AI_REPLY_LIMIT) * 100),
   );
+  const isPaidPlan = Boolean(billingPlan?.isPaid);
+  const billingPlanLabel = isPaidPlan ? "유료 플랜" : "무료 체험";
   const freeTrialAiReplyLimitReached =
+    !isPaidPlan &&
+    !billingStatusLoading &&
     trialAiReplyUsedCount >= FREE_TRIAL_AI_REPLY_LIMIT;
   const answerGenerationBlocked =
     aiGenerationBlocked || freeTrialAiReplyLimitReached;
@@ -5274,7 +5360,9 @@ export default function Home() {
           onAction: () => goToTabSection("store", "store-info"),
         }
       : {
-          label: "무료 답변 생성 체험하기",
+          label: isPaidPlan
+            ? "AI 답변 작성하기"
+            : "무료 답변 생성 체험하기",
           onAction: () => goToTabSection("answer", "cs-reply"),
         };
 
@@ -5503,6 +5591,7 @@ export default function Home() {
       setPaidAdoptionRequestMessage(
         "도입 상담 요청이 저장되었습니다. 운영 데이터를 기준으로 우선 검토할 수 있어요.",
       );
+      void loadBillingStatus();
     } catch {
       setPaidAdoptionRequestError("도입 상담 요청 저장에 실패했습니다.");
     } finally {
@@ -5607,6 +5696,14 @@ export default function Home() {
     if (!authUser) {
       setCoupangInquiryImportMessage("");
       setCoupangInquiryImportError("로그인이 필요합니다");
+      return;
+    }
+
+    if (!isPaidPlan) {
+      setCoupangInquiryImportMessage("");
+      setCoupangInquiryImportError(
+        "쿠팡 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트하거나 도입 상담을 요청해 주세요.",
+      );
       return;
     }
 
@@ -5979,42 +6076,50 @@ export default function Home() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-2xl">
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  Free Trial
+                  {isPaidPlan ? "Paid Plan" : "Free Trial"}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                  무료 체험은 이렇게 진행됩니다
+                  {isPaidPlan
+                    ? "유료 플랜으로 AI CS 직원을 운영 중입니다"
+                    : "무료 체험은 이렇게 진행됩니다"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  먼저 가게 정보를 알려주고, AI 답변 30건까지 실제 응대
-                  흐름을 확인해보세요. 학습 입력과 샘플 데이터는 무료
-                  카운트에서 제외됩니다.
+                  {isPaidPlan
+                    ? "답변 생성 제한 없이 실제 고객 응대 흐름을 운영할 수 있습니다. 플랫폼 연동, 자동 완료, 일괄 승인 기능을 순차적으로 연결해보세요."
+                    : "먼저 가게 정보를 알려주고, AI 답변 30건까지 실제 응대 흐름을 확인해보세요. 학습 입력과 샘플 데이터는 무료 카운트에서 제외됩니다."}
                 </p>
               </div>
               <div className="rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-zinc-950/70 lg:min-w-72">
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      무료 AI 답변 생성
+                      {isPaidPlan ? "AI 답변 생성" : "무료 AI 답변 생성"}
                     </p>
                     <p className="mt-1 text-3xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
-                      {trialAiReplyRemainingCount}
+                      {isPaidPlan ? "무제한" : trialAiReplyRemainingCount}
                       <span className="ml-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-                        건 남음
+                        {isPaidPlan ? "운영 중" : "건 남음"}
                       </span>
                     </p>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
-                    {trialAiReplyUsedCount}/{FREE_TRIAL_AI_REPLY_LIMIT}
+                    {isPaidPlan
+                      ? "제한 해제"
+                      : `${trialAiReplyUsedCount}/${FREE_TRIAL_AI_REPLY_LIMIT}`}
                   </span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-cyan-500 transition-all"
-                    style={{ width: `${trialAiReplyUsagePercent}%` }}
+                    style={{
+                      width: `${isPaidPlan ? 100 : trialAiReplyUsagePercent}%`,
+                    }}
                   />
                 </div>
                 <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다.
+                  {isPaidPlan
+                    ? "유료 플랜에서는 실제 답변 생성 제한이 해제됩니다."
+                    : "샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다."}
                 </p>
               </div>
             </div>
@@ -6030,16 +6135,21 @@ export default function Home() {
                 },
                 {
                   step: "2",
-                  title: `AI 답변 ${FREE_TRIAL_AI_REPLY_LIMIT}건까지 체험`,
+                  title: isPaidPlan
+                    ? "AI 답변 제한 없이 운영"
+                    : `AI 답변 ${FREE_TRIAL_AI_REPLY_LIMIT}건까지 체험`,
                   tone: "sky",
-                  description: `문의 답변과 리뷰 답글을 직접 테스트하세요. 일괄 리뷰 답글은 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 한 번에 체험할 수 있습니다.`,
+                  description: isPaidPlan
+                    ? "문의 답변과 리뷰 답글을 계속 생성하고, 처리함에서 승인/수정까지 이어갈 수 있습니다."
+                    : `문의 답변과 리뷰 답글을 직접 테스트하세요. 일괄 리뷰 답글은 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 한 번에 체험할 수 있습니다.`,
                 },
                 {
                   step: "3",
-                  title: "계속 운영은 도입 상담",
+                  title: isPaidPlan ? "연동 기능 연결하기" : "계속 운영은 도입 상담",
                   tone: "amber",
-                  description:
-                    "플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다.",
+                  description: isPaidPlan
+                    ? "플랫폼 문의 가져오기, 자동 완료, 안전 항목 일괄 승인을 실제 운영에 맞춰 사용할 수 있습니다."
+                    : "플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다.",
                 },
               ].map((step) => (
                 <article
@@ -6093,6 +6203,23 @@ export default function Home() {
                     : "도입 상담 요청"
                   : "로그인 후 상담 요청"}
               </button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/70 bg-white/70 px-4 py-3 text-xs leading-5 text-zinc-600 shadow-sm dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-300">
+              <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                현재 상태:{" "}
+                {billingStatusLoading ? "확인 중" : billingPlanLabel}
+              </span>
+              <span className="ml-2">
+                {isPaidPlan
+                  ? "답변 생성 제한이 해제되어 실제 운영 흐름을 계속 사용할 수 있습니다."
+                  : "무료 체험 중에는 실제 AI 답변 생성 30건까지 사용할 수 있습니다."}
+              </span>
+              {billingStatusError ? (
+                <span className="mt-1 block text-amber-700 dark:text-amber-300">
+                  플랜 상태를 불러오지 못해 무료 체험 기준으로 표시 중입니다.
+                </span>
+              ) : null}
             </div>
           </section>
         ) : null}
@@ -7062,6 +7189,12 @@ export default function Home() {
                     긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
                     모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
                   </p>
+                  {!isPaidPlan ? (
+                    <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                      무료 체험 중에는 설정을 미리 저장할 수 있지만, 실제 자동
+                      완료 처리는 유료 플랜 전환 후 적용됩니다.
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="rounded-xl border border-violet-100 bg-white p-3 dark:border-violet-900/60 dark:bg-zinc-950">
@@ -8397,7 +8530,9 @@ export default function Home() {
                       <button
                         type="button"
                         disabled={
-                          !isCoupangConnected || coupangInquiryImportLoading
+                          !isPaidPlan ||
+                          !isCoupangConnected ||
+                          coupangInquiryImportLoading
                         }
                         onClick={() => void handleImportCoupangInquiries()}
                         className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
@@ -8412,7 +8547,14 @@ export default function Home() {
                         무료 사용량에 포함하지 않습니다.
                       </p>
 
-                      {!isCoupangConnected ? (
+                      {!isPaidPlan ? (
+                        <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                          현재 {billingPlanLabel} 상태입니다. 유료 플랜으로 전환되면
+                          실제 쿠팡 문의 가져오기와 답변 등록이 해금됩니다.
+                        </p>
+                      ) : null}
+
+                      {isPaidPlan && !isCoupangConnected ? (
                         <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                           쿠팡 연결 테스트가 완료되면 실제 문의 가져오기를 사용할
                           수 있습니다.
@@ -8749,14 +8891,16 @@ export default function Home() {
                     항목만 처리합니다. 확인 필요 또는 위험 항목은 제외됩니다.
                   </p>
                   <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    실제 운영에서는 반복 업무를 대신 처리하는 자동화 기능으로,
-                    유료 플랜 기준에 포함될 예정입니다.
+                    {isPaidPlan
+                      ? "유료 플랜에서 반복 업무를 빠르게 처리할 수 있습니다."
+                      : "유료 플랜으로 전환되면 반복 업무를 빠르게 처리할 수 있습니다. 개별 승인은 무료 체험에서도 가능합니다."}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => void handleBulkApproveSafeWorkflowItems()}
                   disabled={
+                    !isPaidPlan ||
                     workflowBulkApproving ||
                     workflowUpdatingKey !== null ||
                     editingWorkflowKey !== null
@@ -8769,7 +8913,9 @@ export default function Home() {
                 >
                   {workflowBulkApproving
                     ? "안전 항목 일괄 승인 중..."
-                    : `안전 항목 ${safeWorkflowApprovalItems.length}건 일괄 승인`}
+                    : isPaidPlan
+                      ? `안전 항목 ${safeWorkflowApprovalItems.length}건 일괄 승인`
+                      : "유료 플랜에서 일괄 승인"}
                 </button>
               </div>
             </div>

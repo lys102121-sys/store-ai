@@ -9,6 +9,7 @@ import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   checkFreeTrialAiReplyCapacity,
   createFreeTrialLimitResponse,
+  type FreeTrialAiReplyCapacity,
 } from "@/app/lib/freeTrialUsage";
 import type { ReviewReplyPromptStore } from "@/app/lib/prompts/reviewReplyPrompt";
 import {
@@ -93,8 +94,10 @@ export async function POST(request: Request) {
     );
   }
 
+  let capacity: FreeTrialAiReplyCapacity;
+
   try {
-    const capacity = await checkFreeTrialAiReplyCapacity({
+    capacity = await checkFreeTrialAiReplyCapacity({
       supabase: auth.supabase,
       userId: auth.userId,
       requestedReplies: reviews.length,
@@ -190,7 +193,7 @@ export async function POST(request: Request) {
     const resultsWithStatus = results.map((result) => {
       const status = resolveReviewWorkflowStatus({
         autoCompletePositiveReviews:
-          storeSettings.auto_complete_positive_reviews,
+          capacity.isPaidPlan && storeSettings.auto_complete_positive_reviews,
         aiWorkMode: storeSettings.ai_work_mode,
         aiWorkStartTime: storeSettings.ai_work_start_time,
         aiWorkEndTime: storeSettings.ai_work_end_time,

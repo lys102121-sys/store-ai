@@ -9,6 +9,7 @@ import { requireAuthenticatedUser } from "@/app/lib/auth";
 import {
   checkFreeTrialAiReplyCapacity,
   createFreeTrialLimitResponse,
+  type FreeTrialAiReplyCapacity,
 } from "@/app/lib/freeTrialUsage";
 import {
   findMissingOperationalInfo,
@@ -433,8 +434,10 @@ export async function POST(request: Request) {
     );
   }
 
+  let capacity: FreeTrialAiReplyCapacity;
+
   try {
-    const capacity = await checkFreeTrialAiReplyCapacity({
+    capacity = await checkFreeTrialAiReplyCapacity({
       supabase: auth.supabase,
       userId: auth.userId,
     });
@@ -557,7 +560,8 @@ export async function POST(request: Request) {
         missingOperationalInfo,
       );
     const status = resolveCsWorkflowStatus({
-      autoCompleteLowRisk: storeRow.auto_complete_low_risk_cs,
+      autoCompleteLowRisk:
+        capacity.isPaidPlan && storeRow.auto_complete_low_risk_cs,
       aiWorkMode: storeRow.ai_work_mode,
       aiWorkStartTime: storeRow.ai_work_start_time,
       aiWorkEndTime: storeRow.ai_work_end_time,

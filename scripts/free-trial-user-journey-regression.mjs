@@ -28,10 +28,20 @@ const startOnboardingSource = readProjectFile(
 );
 const freeTrialLimitsSource = readProjectFile("app/lib/freeTrialLimits.ts");
 const freeTrialUsageSource = readProjectFile("app/lib/freeTrialUsage.ts");
+const billingPlanSource = readProjectFile("app/lib/billingPlan.ts");
+const billingStatusRouteSource = readProjectFile(
+  "app/api/billing/status/route.ts",
+);
 const csReplyRouteSource = readProjectFile("app/api/cs-reply/route.ts");
 const reviewReplyRouteSource = readProjectFile("app/api/review-reply/route.ts");
 const batchReviewReplyRouteSource = readProjectFile(
   "app/api/review-reply/batch/route.ts",
+);
+const coupangInquiriesRouteSource = readProjectFile(
+  "app/api/integrations/coupang/inquiries/route.ts",
+);
+const coupangReplyRouteSource = readProjectFile(
+  "app/api/integrations/coupang/reply/route.ts",
 );
 const paidAdoptionRouteSource = readProjectFile(
   "app/api/paid-adoption-requests/route.ts",
@@ -63,6 +73,9 @@ assert.match(
   pageSource,
   /플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다/,
 );
+assert.match(pageSource, /유료 플랜으로 AI CS 직원을 운영 중입니다/);
+assert.match(pageSource, /현재 상태/);
+assert.match(pageSource, /답변 생성 제한이 해제/);
 assert.doesNotMatch(pageSource, /학습 신호/);
 assert.doesNotMatch(pageSource, /무료로 열어둘 것/);
 assert.doesNotMatch(pageSource, /유료 전환 후보/);
@@ -88,7 +101,16 @@ assert.match(freeTrialUsageSource, /checkFreeTrialAiReplyCapacity/);
 assert.match(freeTrialUsageSource, /createFreeTrialLimitResponse/);
 assert.match(freeTrialUsageSource, /startsWith\("mock-"\)/);
 assert.match(freeTrialUsageSource, /FREE_TRIAL_LIMIT_REACHED_MESSAGE/);
+assert.match(freeTrialUsageSource, /plan\.isPaid/);
+assert.match(billingPlanSource, /isPaidPlanStatus/);
+assert.match(billingPlanSource, /paid_adoption_requests/);
+assert.match(billingStatusRouteSource, /freeTrialUsage/);
+assert.match(billingStatusRouteSource, /platformIntegrations/);
 assert.match(pageSource, /!isDemoExternalId\(item\.externalId\)/);
+assert.match(pageSource, /!isPaidPlan && freeTrialAiReplyLimitReached/);
+assert.match(pageSource, /!isPaidPlan && reviews\.length > trialAiReplyRemainingCount/);
+assert.match(pageSource, /무료 체험 중에는 설정을 미리 저장할 수 있지만/);
+assert.match(pageSource, /유료 플랜에서 일괄 승인/);
 
 assertBefore(
   csReplyRouteSource,
@@ -112,6 +134,12 @@ assert.match(batchReviewReplyRouteSource, /requestedReplies: reviews\.length/);
 assert.match(csReplyRouteSource, /createFreeTrialLimitResponse/);
 assert.match(reviewReplyRouteSource, /createFreeTrialLimitResponse/);
 assert.match(batchReviewReplyRouteSource, /createFreeTrialLimitResponse/);
+assert.match(csReplyRouteSource, /capacity\.isPaidPlan && storeRow\.auto_complete_low_risk_cs/);
+assert.match(reviewReplyRouteSource, /capacity\.isPaidPlan && storeSettings\.auto_complete_positive_reviews/);
+assert.match(batchReviewReplyRouteSource, /capacity\.isPaidPlan && storeSettings\.auto_complete_positive_reviews/);
+assert.match(coupangInquiriesRouteSource, /paid_plan_required/);
+assert.match(coupangReplyRouteSource, /externalId\.startsWith\("mock-coupang"\)/);
+assert.match(coupangReplyRouteSource, /paid_plan_required/);
 
 assert.match(pageSource, /handleRequestPaidAdoption/);
 assert.match(pageSource, /\/api\/paid-adoption-requests/);

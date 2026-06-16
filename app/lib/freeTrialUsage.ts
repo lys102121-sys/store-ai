@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getBillingPlanStatus } from "@/app/lib/billingPlan";
 import {
   FREE_TRIAL_AI_REPLY_LIMIT,
   FREE_TRIAL_LIMIT_REACHED_MESSAGE,
@@ -16,6 +17,13 @@ export type FreeTrialAiReplyUsage = {
   used: number;
   limit: number;
   remaining: number;
+};
+
+export type FreeTrialAiReplyCapacity = {
+  allowed: boolean;
+  requestedReplies: number;
+  usage: FreeTrialAiReplyUsage;
+  isPaidPlan: boolean;
 };
 
 function isDemoExternalId(externalId: string | null | undefined) {
@@ -89,7 +97,22 @@ export async function checkFreeTrialAiReplyCapacity({
   supabase: SupabaseClient;
   userId: string;
   requestedReplies?: number;
-}) {
+}): Promise<FreeTrialAiReplyCapacity> {
+  const plan = await getBillingPlanStatus({ supabase, userId });
+
+  if (plan.isPaid) {
+    return {
+      allowed: true,
+      requestedReplies,
+      usage: {
+        used: 0,
+        limit: FREE_TRIAL_AI_REPLY_LIMIT,
+        remaining: FREE_TRIAL_AI_REPLY_LIMIT,
+      },
+      isPaidPlan: true,
+    };
+  }
+
   const usage = await getFreeTrialAiReplyUsage({ supabase, userId });
   const allowed = usage.remaining >= requestedReplies;
 
@@ -97,6 +120,7 @@ export async function checkFreeTrialAiReplyCapacity({
     allowed,
     requestedReplies,
     usage,
+    isPaidPlan: false,
   };
 }
 

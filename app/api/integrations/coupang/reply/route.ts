@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireAuthenticatedUser } from "@/app/lib/auth";
+import { getBillingPlanStatus } from "@/app/lib/billingPlan";
 import {
   COUPANG_OPEN_API_HOST,
   createCoupangAuthorization,
@@ -157,6 +158,30 @@ export async function POST(request: Request) {
       mock: true,
       message: "샘플 문의가 플랫폼 등록 완료 상태로 처리되었습니다.",
     });
+  }
+
+  const plan = await getBillingPlanStatus({
+    supabase: auth.supabase,
+    userId: auth.userId,
+  });
+
+  if (!plan.isPaid) {
+    await updateCsMessagePlatformState({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      platformStatus: "failed",
+    });
+
+    return Response.json(
+      {
+        success: false,
+        message:
+          "실제 쿠팡 답변 등록은 유료 플랜에서 사용할 수 있습니다. 도입 상담 후 연결해 주세요.",
+        paid_plan_required: true,
+      },
+      { status: 402 },
+    );
   }
 
   const { data: credential, error: credentialError } = await auth.supabase
