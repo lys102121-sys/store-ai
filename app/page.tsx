@@ -48,6 +48,8 @@ type StoreKnowledgeStatusFilter =
 
 const FREE_TRIAL_AI_REPLY_LIMIT = 30;
 const FREE_TRIAL_BATCH_REVIEW_LIMIT = 10;
+const FREE_TRIAL_LIMIT_REACHED_MESSAGE =
+  "무료 AI 답변 생성 30건을 모두 사용했습니다. 가게 지식 학습은 계속 가능하고, 계속 자동 응대를 쓰려면 도입 상담을 요청해 주세요.";
 
 type ReviewHistoryItem = {
   id: number;
@@ -2919,6 +2921,12 @@ export default function Home() {
       return;
     }
 
+    if (freeTrialAiReplyLimitReached) {
+      setError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
+      setReply("");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
     setReply("");
@@ -2972,6 +2980,18 @@ export default function Home() {
       return;
     }
 
+    if (reviews.length > trialAiReplyRemainingCount) {
+      setBatchReviewError(
+        `무료 체험 남은 AI 답변 생성 ${trialAiReplyRemainingCount.toLocaleString(
+          "ko-KR",
+        )}건으로는 ${reviews.length.toLocaleString(
+          "ko-KR",
+        )}개 리뷰를 일괄 생성할 수 없습니다. 도입 상담을 요청해 주세요.`,
+      );
+      setBatchReviewResults([]);
+      return;
+    }
+
     const tooLongReview = reviews.find((item) => item.length > 1000);
 
     if (tooLongReview) {
@@ -2990,6 +3010,12 @@ export default function Home() {
       setBatchReviewError(
         "가게 정보를 먼저 등록해야 AI가 정확히 답변할 수 있습니다.",
       );
+      setBatchReviewResults([]);
+      return;
+    }
+
+    if (freeTrialAiReplyLimitReached) {
+      setBatchReviewError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
       setBatchReviewResults([]);
       return;
     }
@@ -3048,6 +3074,12 @@ export default function Home() {
 
     if (!hasStore) {
       setCsError("가게 정보를 먼저 등록해야 AI가 정확히 답변할 수 있습니다.");
+      setCsReply("");
+      return;
+    }
+
+    if (freeTrialAiReplyLimitReached) {
+      setCsError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
       setCsReply("");
       return;
     }
@@ -4566,6 +4598,10 @@ export default function Home() {
     100,
     Math.round((trialAiReplyUsedCount / FREE_TRIAL_AI_REPLY_LIMIT) * 100),
   );
+  const freeTrialAiReplyLimitReached =
+    trialAiReplyUsedCount >= FREE_TRIAL_AI_REPLY_LIMIT;
+  const answerGenerationBlocked =
+    aiGenerationBlocked || freeTrialAiReplyLimitReached;
   const trialLearningSignalCount =
     [
       storeName,
@@ -8549,6 +8585,34 @@ export default function Home() {
           </section>
         ) : null}
 
+        {activeTab === "answer" && freeTrialAiReplyLimitReached ? (
+          <section className="order-[29] rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  무료 AI 답변 생성 30건을 모두 사용했습니다
+                </p>
+                <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                  가게 정보와 지식 학습은 계속 사용할 수 있습니다. 실제 고객
+                  응대를 계속 맡기려면 도입 상담을 요청해 주세요.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={
+                  authUser
+                    ? () => void handleRequestPaidAdoption()
+                    : () => void handleKakaoLogin()
+                }
+                disabled={authUser ? paidAdoptionRequestLoading : authActionLoading}
+                className={buttonClass("warning", "sm", "w-fit rounded-lg")}
+              >
+                {authUser ? "도입 상담 요청" : "로그인 후 상담 요청"}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <AnswerModeSelector
           isVisible={activeTab === "answer"}
           selectedMode={selectedAnswerMode}
@@ -8561,7 +8625,7 @@ export default function Home() {
           reply={csReply}
           error={csError}
           loading={csLoading}
-          generationBlocked={aiGenerationBlocked}
+          generationBlocked={answerGenerationBlocked}
           needsStoreInfo={needsStoreInfo}
           onMessageChange={setCustomerMessage}
           onSubmit={handleCsReplySubmit}
@@ -10623,7 +10687,7 @@ export default function Home() {
           reply={reply}
           error={error}
           loading={isLoading}
-          generationBlocked={aiGenerationBlocked}
+          generationBlocked={answerGenerationBlocked}
           needsStoreInfo={needsStoreInfo}
           onReviewChange={setReview}
           onSubmit={handleReviewSubmit}
@@ -10677,7 +10741,7 @@ export default function Home() {
 
             <button
               type="submit"
-              disabled={batchReviewLoading || aiGenerationBlocked}
+              disabled={batchReviewLoading || answerGenerationBlocked}
               className={buttonClass("primary", "lg", "h-11")}
             >
               {batchReviewLoading ? "일괄 생성 중..." : "일괄 답글 생성"}
