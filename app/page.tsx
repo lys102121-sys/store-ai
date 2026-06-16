@@ -5193,17 +5193,12 @@ export default function Home() {
   const startPaidAdoptionAction = {
     title: "AI CS 직원을 우리 가게에 도입하고 싶다면",
     description:
-      "처음부터 플랫폼 연동까지 필요한 범위를 알려주세요. 현재 체험 데이터와 절감 가치를 함께 저장해 도입 우선순위를 검토할 수 있습니다.",
-    metricLabel: "최근 30일 절감 가치",
-    metricValue: workflowSummaryLoading
-      ? "—"
-      : recent30EstimatedSavedValueKrw > 0
-        ? formatEstimatedCurrency(recent30EstimatedSavedValueKrw)
-        : "체험 후 계산",
-    metricDescription:
-      recent30EstimatedSavedMinutes > 0
-        ? formatEstimatedMinutes(recent30EstimatedSavedMinutes)
-        : "샘플이나 첫 문의를 처리하면 가치가 쌓입니다.",
+      "아직 데이터가 없어도 괜찮아요. 우리 가게 문의와 리뷰를 AI가 어떻게 처리할지, 어떤 플랫폼 연동이 필요한지 먼저 상담 요청할 수 있습니다.",
+    highlights: [
+      "무료 체험 후 도입 범위 확인",
+      "스마트스토어·배달앱 연동 상담",
+      "계정 비밀번호 없이 요청만 저장",
+    ],
     actionLabel: authUser ? "도입 상담 요청" : "로그인 후 상담 요청",
     onAction: authUser
       ? () => void handleRequestPaidAdoption()
@@ -6074,20 +6069,6 @@ export default function Home() {
                     </p>
                   </article>
                 ))}
-              </div>
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-white/85 p-4 dark:border-emerald-900/50 dark:bg-zinc-950/70">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                      도입 가치는 절감액으로 판단할 수 있어요
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                      최근 30일 절감 가치가 커질수록 유료 도입 명분이
-                      분명해집니다. 실제 운영 기준에 맞는 요금제와 플랫폼
-                      연동 범위를 상담해보세요.
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 

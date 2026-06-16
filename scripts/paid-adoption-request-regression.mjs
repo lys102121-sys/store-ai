@@ -39,7 +39,12 @@ const startOnboardingSource = fs.readFileSync(
 );
 assert.match(startOnboardingSource, /paidAdoptionAction/);
 assert.match(startOnboardingSource, /유료 도입 상담/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.highlights/);
+assert.doesNotMatch(startOnboardingSource, /metricLabel/);
+assert.doesNotMatch(startOnboardingSource, /metricValue/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.actionLabel/);
 assert.match(pageSource, /actionLabel: authUser \? "도입 상담 요청"/);
+assert.match(pageSource, /무료 체험 후 도입 범위 확인/);
+assert.doesNotMatch(pageSource, /도입 가치는 절감액으로 판단할 수 있어요/);
 
 console.log("Paid adoption request regression tests passed.");

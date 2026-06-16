@@ -18,9 +18,7 @@ export type StartRecommendedAction = {
 export type StartPaidAdoptionAction = {
   title: string;
   description: string;
-  metricLabel: string;
-  metricValue: string;
-  metricDescription: string;
+  highlights: string[];
   actionLabel: string;
   onAction: () => void;
   isLoading: boolean;
@@ -95,7 +93,7 @@ export function StartOnboarding({
           </div>
 
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/25">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
                   유료 도입 상담
@@ -107,17 +105,14 @@ export function StartOnboarding({
                   {paidAdoptionAction.description}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/80 bg-white/85 px-4 py-3 text-left shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70 sm:min-w-44">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {paidAdoptionAction.metricLabel}
-                </p>
-                <p className="mt-1 text-2xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
-                  {paidAdoptionAction.metricValue}
-                </p>
-                <p className="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
-                  {paidAdoptionAction.metricDescription}
-                </p>
-              </div>
+              <ul className="rounded-xl border border-white/80 bg-white/85 px-4 py-3 text-left text-xs leading-5 text-slate-600 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70 dark:text-slate-300 sm:min-w-52">
+                {paidAdoptionAction.highlights.map((highlight) => (
+                  <li key={highlight} className="flex gap-2">
+                    <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                    <span>{highlight}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
             <button
               type="button"
