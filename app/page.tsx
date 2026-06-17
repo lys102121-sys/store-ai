@@ -16,6 +16,10 @@ import {
 } from "@/app/components/dashboard/DashboardTabs";
 import { ReviewReplyPanel } from "@/app/components/dashboard/ReviewReplyPanel";
 import { StartOnboarding } from "@/app/components/dashboard/StartOnboarding";
+import {
+  PaidAdoptionAdminPanel,
+  type AdminPaidAdoptionRequest,
+} from "@/app/components/dashboard/PaidAdoptionAdminPanel";
 import type { CsLearningMetrics } from "@/app/lib/csLearningMetrics";
 import {
   FREE_TRIAL_AI_REPLY_LIMIT,
@@ -368,6 +372,16 @@ type PaidAdoptionRequestApiResponse = {
   error?: string;
   detail?: string;
   missingTableSql?: string;
+};
+
+type AdminPaidAdoptionRequestsApiResponse = {
+  requests?: AdminPaidAdoptionRequest[];
+  request?: AdminPaidAdoptionRequest;
+  message?: string;
+  error?: string;
+  detail?: string;
+  setupSql?: string;
+  missingBillingTableSql?: string;
 };
 
 type BillingPlanStatus = {
@@ -2140,6 +2154,19 @@ export default function Home() {
   const [paidAdoptionRequestMessage, setPaidAdoptionRequestMessage] =
     useState("");
   const [paidAdoptionRequestError, setPaidAdoptionRequestError] = useState("");
+  const [adminPaidAdoptionRequests, setAdminPaidAdoptionRequests] = useState<
+    AdminPaidAdoptionRequest[]
+  >([]);
+  const [isAdminPaidAdoptionPanelVisible, setIsAdminPaidAdoptionPanelVisible] =
+    useState(false);
+  const [adminPaidAdoptionRequestsLoading, setAdminPaidAdoptionRequestsLoading] =
+    useState(false);
+  const [adminPaidAdoptionRequestsError, setAdminPaidAdoptionRequestsError] =
+    useState("");
+  const [adminPaidAdoptionRequestsMessage, setAdminPaidAdoptionRequestsMessage] =
+    useState("");
+  const [updatingAdminPaidAdoptionRequestId, setUpdatingAdminPaidAdoptionRequestId] =
+    useState<string | null>(null);
   const [billingPlan, setBillingPlan] = useState<BillingPlanStatus | null>(null);
   const [billingStatusLoading, setBillingStatusLoading] = useState(false);
   const [billingStatusError, setBillingStatusError] = useState("");
@@ -2559,6 +2586,42 @@ export default function Home() {
     }
   }, []);
 
+  const loadAdminPaidAdoptionRequests = useCallback(async () => {
+    setAdminPaidAdoptionRequestsLoading(true);
+    setAdminPaidAdoptionRequestsError("");
+
+    try {
+      const response = await fetch("/api/admin/paid-adoption-requests", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data =
+        (await response.json()) as AdminPaidAdoptionRequestsApiResponse;
+
+      if (response.status === 403) {
+        setIsAdminPaidAdoptionPanelVisible(false);
+        setAdminPaidAdoptionRequests([]);
+        return;
+      }
+
+      setIsAdminPaidAdoptionPanelVisible(true);
+
+      if (!response.ok) {
+        setAdminPaidAdoptionRequestsError(
+          data.error ?? "도입 상담 요청 목록을 불러오지 못했습니다.",
+        );
+        setAdminPaidAdoptionRequests([]);
+        return;
+      }
+
+      setAdminPaidAdoptionRequests(data.requests ?? []);
+    } catch {
+      setIsAdminPaidAdoptionPanelVisible(false);
+      setAdminPaidAdoptionRequests([]);
+    } finally {
+      setAdminPaidAdoptionRequestsLoading(false);
+    }
+  }, []);
+
   const loadPlatformCredentials = useCallback(async () => {
     setCoupangCredentialsLoading(true);
     setCoupangCredentialsError("");
@@ -2609,6 +2672,12 @@ export default function Home() {
         setPaidAdoptionRequestLoading(false);
         setPaidAdoptionRequestMessage("");
         setPaidAdoptionRequestError("");
+        setAdminPaidAdoptionRequests([]);
+        setIsAdminPaidAdoptionPanelVisible(false);
+        setAdminPaidAdoptionRequestsLoading(false);
+        setAdminPaidAdoptionRequestsError("");
+        setAdminPaidAdoptionRequestsMessage("");
+        setUpdatingAdminPaidAdoptionRequestId(null);
         setBillingPlan(null);
         setBillingStatusLoading(false);
         setBillingStatusError("");
@@ -2650,6 +2719,7 @@ export default function Home() {
       void loadIntegrationRequests();
       void loadPlatformCredentials();
       void loadBillingStatus();
+      void loadAdminPaidAdoptionRequests();
     });
 
     return () => {
@@ -2657,6 +2727,7 @@ export default function Home() {
     };
   }, [
     authUser,
+    loadAdminPaidAdoptionRequests,
     loadBillingStatus,
     loadIntegrationRequests,
     loadPlatformCredentials,
@@ -5335,11 +5406,11 @@ export default function Home() {
   const startPaidAdoptionAction = {
     title: "AI CS 직원을 우리 가게에 도입하고 싶다면",
     description:
-      "아직 데이터가 없어도 괜찮아요. 우리 가게 문의와 리뷰를 AI가 어떻게 처리할지, 어떤 플랫폼 연동이 필요한지 먼저 상담 요청할 수 있습니다.",
+      "요청을 남기면 우리 운영자가 확인합니다. 우리 가게 문의와 리뷰를 AI가 어떻게 처리할지, 어떤 플랫폼 연동이 필요한지 함께 정리해드릴게요.",
     highlights: [
-      "무료 체험 후 도입 범위 확인",
+      "운영자가 도입 범위 확인",
       "스마트스토어·배달앱 연동 상담",
-      "계정 비밀번호 없이 요청만 저장",
+      "상담 완료 후 유료 기능 해금",
     ],
     actionLabel: authUser ? "도입 상담 요청" : "로그인 후 상담 요청",
     onAction: authUser
@@ -5589,13 +5660,56 @@ export default function Home() {
       }
 
       setPaidAdoptionRequestMessage(
-        "도입 상담 요청이 저장되었습니다. 운영 데이터를 기준으로 우선 검토할 수 있어요.",
+        "도입 상담 요청이 저장되었습니다. 운영자가 확인 후 도입 범위와 연동 방법을 안내드릴게요.",
       );
       void loadBillingStatus();
+      void loadAdminPaidAdoptionRequests();
     } catch {
       setPaidAdoptionRequestError("도입 상담 요청 저장에 실패했습니다.");
     } finally {
       setPaidAdoptionRequestLoading(false);
+    }
+  }
+
+  async function handleAdminPaidAdoptionStatusChange(
+    requestId: string,
+    status: string,
+  ) {
+    setUpdatingAdminPaidAdoptionRequestId(requestId);
+    setAdminPaidAdoptionRequestsMessage("");
+    setAdminPaidAdoptionRequestsError("");
+
+    try {
+      const response = await fetch("/api/admin/paid-adoption-requests", {
+        method: "PATCH",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ id: requestId, status }),
+      });
+      const data =
+        (await response.json()) as AdminPaidAdoptionRequestsApiResponse;
+
+      if (!response.ok || !data.request) {
+        setAdminPaidAdoptionRequestsError(
+          data.error ?? "도입 상담 요청 상태 변경에 실패했습니다.",
+        );
+        return;
+      }
+
+      setAdminPaidAdoptionRequestsMessage(
+        data.message ?? "도입 상담 요청 상태를 업데이트했습니다.",
+      );
+      await Promise.all([
+        loadAdminPaidAdoptionRequests(),
+        loadBillingStatus(),
+      ]);
+    } catch {
+      setAdminPaidAdoptionRequestsError(
+        "도입 상담 요청 상태 변경에 실패했습니다.",
+      );
+    } finally {
+      setUpdatingAdminPaidAdoptionRequestId(null);
     }
   }
 
@@ -6223,6 +6337,23 @@ export default function Home() {
             </div>
           </section>
         ) : null}
+
+        <PaidAdoptionAdminPanel
+          isVisible={
+            activeTab === "manage" &&
+            authUser !== null &&
+            isAdminPaidAdoptionPanelVisible
+          }
+          requests={adminPaidAdoptionRequests}
+          loading={adminPaidAdoptionRequestsLoading}
+          error={adminPaidAdoptionRequestsError}
+          message={adminPaidAdoptionRequestsMessage}
+          updatingRequestId={updatingAdminPaidAdoptionRequestId}
+          onRefresh={() => void loadAdminPaidAdoptionRequests()}
+          onStatusChange={(requestId, status) =>
+            void handleAdminPaidAdoptionStatusChange(requestId, status)
+          }
+        />
 
         {activeTab === "manage" && authUser ? (
           <section
