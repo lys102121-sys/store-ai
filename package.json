@@ -13,7 +13,7 @@
     "test:store-knowledge-quality": "node scripts/store-knowledge-quality-regression.mjs",
     "test:store-knowledge-usage": "node scripts/store-knowledge-usage-regression.mjs",
     "test:workflow-safety": "node scripts/workflow-status-safety-regression.mjs",
-    "test:monetization": "node scripts/paid-adoption-request-regression.mjs && node scripts/free-trial-user-journey-regression.mjs && node scripts/paid-adoption-admin-regression.mjs"
+    "test:monetization": "node scripts/paid-adoption-request-regression.mjs && node scripts/free-trial-user-journey-regression.mjs && node scripts/paid-adoption-admin-regression.mjs && node scripts/management-workflow-ux-regression.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",

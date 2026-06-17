@@ -6561,7 +6561,7 @@ export default function Home() {
 
         {activeTab === "manage" && authUser ? (
           <section
-            className={`${cardClass} order-[40] border-indigo-200/70 bg-gradient-to-br from-white via-white to-indigo-50/70 dark:border-indigo-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/25`}
+            className={`${cardClass} order-[40] flex flex-col border-indigo-200/70 bg-gradient-to-br from-white via-white to-indigo-50/70 dark:border-indigo-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/25`}
           >
             <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -6620,13 +6620,13 @@ export default function Home() {
               ))}
             </div>
 
-            <details className="mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
+            <details className="order-[40] mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  성과와 자동화 기록
+                  성과와 학습 기록
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  자동 완료, 절약 시간, 안전장치가 궁금할 때 펼쳐보세요.
+                  오늘 할 일을 처리한 뒤 자동 완료, 절약 시간, 학습 품질이 궁금할 때 펼쳐보세요.
                 </span>
               </summary>
 
@@ -6814,7 +6814,7 @@ export default function Home() {
             </div>
             </details>
 
-            <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+            <div className="order-[20] mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
               <div className="mb-3">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   먼저 확인할 항목
@@ -6906,7 +6906,7 @@ export default function Home() {
               )}
             </div>
 
-            <details className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+            <details className="order-[30] mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
               <summary className="cursor-pointer list-none">
                 <span className="flex items-center justify-between gap-3">
                   <span>
