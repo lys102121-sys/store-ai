@@ -865,12 +865,6 @@ function workflowCardAttentionClass(tone: "warning" | "danger" | null) {
   return "border-white/80 dark:border-white/10";
 }
 
-function workflowAttentionNoticeClass(tone: "warning" | "danger") {
-  return tone === "danger"
-    ? "border-red-200 bg-red-50/90 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
-    : "border-amber-200 bg-amber-50/80 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/35 dark:text-amber-200";
-}
-
 function sourcePlatformLabel(value?: string | null) {
   switch (value) {
     case "manual":
@@ -9332,18 +9326,6 @@ export default function Home() {
                           {formatDate(item.createdAt)}
                         </time>
                       </div>
-
-                      {attentionTone && item.type !== "missing_info" ? (
-                        <p
-                          className={`mb-4 rounded-xl border px-4 py-3 text-xs font-semibold leading-5 ${workflowAttentionNoticeClass(
-                            attentionTone,
-                          )}`}
-                        >
-                          {attentionTone === "danger"
-                            ? "위험도가 높은 항목입니다. 답변과 관련 정책을 반드시 확인해 주세요."
-                            : "사장님 확인 후 처리해야 하는 항목입니다."}
-                        </p>
-                      ) : null}
 
                       <div className="flex flex-1 flex-col">
                         <div className="space-y-4 text-sm">
