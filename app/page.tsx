@@ -1326,6 +1326,50 @@ function workflowAttentionPriority(item: WorkflowItem) {
   return 0;
 }
 
+function workflowAttentionActionLabel(item: WorkflowItem) {
+  if (item.type === "missing_info") {
+    return "필요한 답변을 입력하고 가게 지식에 저장하세요.";
+  }
+
+  if (item.riskLevel === "high") {
+    return "위험도가 높은 항목입니다. 답변을 직접 확인한 뒤 처리하세요.";
+  }
+
+  if (item.handlingType === "needs_approval") {
+    return "고객 상황에 맞는지 확인하고 승인하세요.";
+  }
+
+  if (item.status === "needs_review" || item.handlingType === "needs_review") {
+    return "부족한 정보를 확인하고 답변을 보완하세요.";
+  }
+
+  if (aiReasonAttentionPattern.test(item.aiReason)) {
+    return "AI 판단 이유를 확인하고 필요한 정보를 보강하세요.";
+  }
+
+  return "답변 초안을 확인하고 승인하세요.";
+}
+
+function workflowAttentionFallbackReason(item: WorkflowItem) {
+  if (item.type === "missing_info") {
+    return "AI가 답변하기 위해 가게 정보가 더 필요하다고 판단했습니다.";
+  }
+
+  if (item.riskLevel === "high") {
+    return "건강, 환불, 강한 불만처럼 실수 비용이 큰 내용일 수 있습니다.";
+  }
+
+  if (item.handlingType === "needs_approval") {
+    return "자동으로 완료하기보다 사장님 확인 후 답변하는 편이 안전합니다.";
+  }
+
+  if (item.status === "needs_review" || item.handlingType === "needs_review") {
+    return "등록된 정보만으로는 정확한 답변을 확정하기 어렵습니다.";
+  }
+
+  return "오래 기다리는 승인 대기 항목부터 처리하면 좋습니다.";
+}
+
 function computeReviewStats(reviews: ReviewHistoryItem[]) {
   const total = reviews.length;
   const positive = reviews.filter((r) => r.sentiment === "positive").length;
@@ -5370,7 +5414,15 @@ export default function Home() {
   const aiStaffDiarySentence =
     todayAiActivityLogs.length === 0
       ? "오늘 기록된 AI 업무가 아직 없습니다. 문의 답변을 만들거나 처리함에서 승인하면 일지가 쌓입니다."
-      : `오늘 AI는 답변 초안 ${todayGeneratedActivityCount}건을 만들고, ${todayCompletedActivityCount}건을 완료 처리했으며, ${todayStoppedActivityLogs.length}건은 안전을 위해 멈췄습니다.`;
+      : `오늘 AI는 답변 초안 ${todayGeneratedActivityCount}건을 준비했고, ${todayCompletedActivityCount}건은 완료했습니다. 혼자 처리하기 애매한 ${todayStoppedActivityLogs.length}건은 안전하게 멈춰뒀습니다.`;
+  const aiStaffDiaryNextAction =
+    todayAiActivityLogs.length === 0
+      ? "샘플 문의를 불러오거나 문의 답변을 생성하면 AI가 일한 기록이 여기에 남습니다."
+      : todayStoppedActivityLogs.length > 0
+        ? "먼저 멈춰둔 항목을 확인해 주세요. 사장님이 알려준 답변은 다음 비슷한 문의에 다시 활용됩니다."
+        : todayGeneratedActivityCount > todayCompletedActivityCount
+          ? "승인 대기 중인 초안을 확인하면 AI CS 처리함에서 완료 처리할 수 있습니다."
+          : "오늘은 큰 문제 없이 처리 중입니다. 새 문의가 들어오면 AI가 다시 초안을 준비합니다.";
   const stoppedReasonLogs = todayStoppedActivityLogs.slice(0, 3);
   const ownerInterventionLogs = todayOwnerInterventionLogs.slice(0, 3);
 
@@ -6763,9 +6815,14 @@ export default function Home() {
             </details>
 
             <div className="mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
-              <h3 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                먼저 확인할 항목
-              </h3>
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  먼저 확인할 항목
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  위험하거나 정보가 부족한 항목부터 위에 보여드립니다.
+                </p>
+              </div>
 
               {workflowSummaryLoading ? (
                 <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -6807,11 +6864,23 @@ export default function Home() {
                       <p className="text-sm font-medium leading-6 text-zinc-800 dark:text-zinc-100">
                         {truncateSummaryText(item.original)}
                       </p>
+                      <div className="mt-3 rounded-lg border border-white/80 bg-white/90 px-3 py-2 text-xs leading-5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          지금 할 일
+                        </p>
+                        <p className="mt-1">
+                          {workflowAttentionActionLabel(item)}
+                        </p>
+                      </div>
                       {item.aiReason ? (
                         <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                           {truncateSummaryText(item.aiReason, 82)}
                         </p>
-                      ) : null}
+                      ) : (
+                        <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                          {workflowAttentionFallbackReason(item)}
+                        </p>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -6883,6 +6952,9 @@ export default function Home() {
                   <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25">
                     <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
                       {aiStaffDiarySentence}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-indigo-800 dark:text-indigo-200">
+                      {aiStaffDiaryNextAction}
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       {aiStaffDiarySummaryItems.map((item) => (
