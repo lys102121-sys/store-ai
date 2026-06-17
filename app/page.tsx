@@ -23,7 +23,6 @@ import {
 import type { CsLearningMetrics } from "@/app/lib/csLearningMetrics";
 import {
   FREE_TRIAL_AI_REPLY_LIMIT,
-  FREE_TRIAL_BATCH_REVIEW_LIMIT,
   FREE_TRIAL_LIMIT_REACHED_MESSAGE,
 } from "@/app/lib/freeTrialLimits";
 import {
@@ -474,6 +473,26 @@ type StoreApiResponse = {
   store?: StoreSettings;
   error?: string;
   detail?: string;
+};
+
+type StoreSavePayload = {
+  store_name: string;
+  business_type: string;
+  shipping_policy: string;
+  refund_policy: string;
+  product_name: string;
+  product_description: string;
+  product_details: string;
+  product_caution: string;
+  product_catalog: string;
+  extra_faq: string;
+  owner_reply_examples: string;
+  owner_cs_examples: string;
+  auto_complete_low_risk_cs: boolean;
+  auto_complete_positive_reviews: boolean;
+  ai_work_mode: AiWorkMode;
+  ai_work_start_time: string;
+  ai_work_end_time: string;
 };
 
 type StoreDraft = {
@@ -1859,6 +1878,30 @@ const exampleStorePresets: readonly ExampleStorePreset[] = [
   },
 ];
 
+function createStoreSavePayloadFromPreset(
+  preset: ExampleStorePreset,
+): StoreSavePayload {
+  return {
+    store_name: preset.storeName,
+    business_type: preset.businessType,
+    shipping_policy: preset.shippingPolicy,
+    refund_policy: preset.refundPolicy,
+    product_name: preset.productName,
+    product_description: preset.productDescription,
+    product_details: preset.productDetails,
+    product_caution: preset.productCaution,
+    product_catalog: preset.productCatalog,
+    extra_faq: preset.extraFaq,
+    owner_reply_examples: preset.ownerReplyExamples,
+    owner_cs_examples: preset.ownerCsExamples,
+    auto_complete_low_risk_cs: false,
+    auto_complete_positive_reviews: false,
+    ai_work_mode: "safe_auto",
+    ai_work_start_time: "09:00",
+    ai_work_end_time: "22:00",
+  };
+}
+
 type InterpretedBusinessType = keyof typeof businessTypeInputGuides;
 
 function includesAnyKeyword(value: string, keywords: string[]) {
@@ -2043,6 +2086,9 @@ export default function Home() {
   const [storeSuccessMessage, setStoreSuccessMessage] = useState("");
   const [isExamplePickerOpen, setIsExamplePickerOpen] = useState(false);
   const [storeSaving, setStoreSaving] = useState(false);
+  const [threeMinuteDemoLoading, setThreeMinuteDemoLoading] = useState(false);
+  const [threeMinuteDemoMessage, setThreeMinuteDemoMessage] = useState("");
+  const [threeMinuteDemoError, setThreeMinuteDemoError] = useState("");
   const [hasStore, setHasStore] = useState(false);
   const [storeStatusLoading, setStoreStatusLoading] = useState(true);
   const [storeDraftReady, setStoreDraftReady] = useState(false);
@@ -3260,7 +3306,7 @@ export default function Home() {
     }
   }
 
-  function handleUseExampleStore(preset: ExampleStorePreset) {
+  function applyExampleStorePresetToForm(preset: ExampleStorePreset) {
     setStoreName(preset.storeName);
     setBusinessType(preset.businessType);
     setProductName(preset.productName);
@@ -3280,10 +3326,31 @@ export default function Home() {
     setAiWorkEndTime("22:00");
     setStoreError("");
     setStoreSuccessMessage("");
+  }
+
+  function handleUseExampleStore(preset: ExampleStorePreset) {
+    applyExampleStorePresetToForm(preset);
     setStoreExampleMessage(
       "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
     );
     setIsExamplePickerOpen(false);
+  }
+
+  async function saveStorePayload(payload: StoreSavePayload) {
+    const response = await fetch("/api/store", {
+      method: "POST",
+      headers: await getAuthenticatedRequestHeaders({
+        "Content-Type": "application/json",
+      }),
+      body: JSON.stringify(payload),
+    });
+    const data = (await response.json()) as StoreApiResponse;
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "가게 정보 저장에 실패했습니다.");
+    }
+
+    return data.store ?? null;
   }
 
   async function handleStoreSubmit(event: FormEvent<HTMLFormElement>) {
@@ -3305,38 +3372,25 @@ export default function Home() {
     setStoreSuccessMessage("");
 
     try {
-      const response = await fetch("/api/store", {
-        method: "POST",
-        headers: await getAuthenticatedRequestHeaders({
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({
-          store_name: name,
-          business_type: businessType,
-          shipping_policy: shippingPolicy,
-          refund_policy: refundPolicy,
-          product_name: productName,
-          product_description: productDescription,
-          product_details: productDetails,
-          product_caution: productCaution,
-          product_catalog: productCatalog,
-          extra_faq: extraFaq,
-          owner_reply_examples: ownerReplyExamples,
-          owner_cs_examples: ownerCsExamples,
-          auto_complete_low_risk_cs: autoCompleteLowRiskCs,
-          auto_complete_positive_reviews: autoCompletePositiveReviews,
-          ai_work_mode: aiWorkMode,
-          ai_work_start_time: aiWorkStartTime,
-          ai_work_end_time: aiWorkEndTime,
-        }),
+      await saveStorePayload({
+        store_name: name,
+        business_type: businessType,
+        shipping_policy: shippingPolicy,
+        refund_policy: refundPolicy,
+        product_name: productName,
+        product_description: productDescription,
+        product_details: productDetails,
+        product_caution: productCaution,
+        product_catalog: productCatalog,
+        extra_faq: extraFaq,
+        owner_reply_examples: ownerReplyExamples,
+        owner_cs_examples: ownerCsExamples,
+        auto_complete_low_risk_cs: autoCompleteLowRiskCs,
+        auto_complete_positive_reviews: autoCompletePositiveReviews,
+        ai_work_mode: aiWorkMode,
+        ai_work_start_time: aiWorkStartTime,
+        ai_work_end_time: aiWorkEndTime,
       });
-
-      const data = (await response.json()) as StoreApiResponse;
-
-      if (!response.ok) {
-        setStoreError(data.error ?? "저장에 실패했습니다.");
-        return;
-      }
 
       setHasStore(true);
       removeStoreDraft(authUser.id);
@@ -3348,6 +3402,89 @@ export default function Home() {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setStoreSaving(false);
+    }
+  }
+
+  async function handleStartThreeMinuteDemo() {
+    if (!authUser) {
+      setThreeMinuteDemoMessage("");
+      setThreeMinuteDemoError("카카오 로그인 후 3분 체험을 시작할 수 있습니다.");
+      void handleKakaoLogin();
+      return;
+    }
+
+    if (storeStatusLoading) {
+      setThreeMinuteDemoMessage("");
+      setThreeMinuteDemoError(
+        "가게 정보 상태를 확인 중입니다. 잠시 후 다시 눌러주세요.",
+      );
+      return;
+    }
+
+    setThreeMinuteDemoLoading(true);
+    setThreeMinuteDemoMessage("");
+    setThreeMinuteDemoError("");
+    setCopyError("");
+    setCopyMessage("");
+
+    try {
+      if (!hasStore) {
+        const preset =
+          exampleStorePresets.find(
+            (item) => item.label === "스마트스토어/생활용품",
+          ) ?? exampleStorePresets[0];
+
+        applyExampleStorePresetToForm(preset);
+        await saveStorePayload(createStoreSavePayloadFromPreset(preset));
+        setHasStore(true);
+        removeStoreDraft(authUser.id);
+        setStoreExampleMessage("");
+        setStoreSuccessMessage(
+          "3분 체험을 위해 예시 가게 정보가 저장되었습니다.",
+        );
+      }
+
+      const response = await fetch(
+        "/api/integrations/smartstore/mock-inquiries",
+        {
+          method: "POST",
+          headers: await getAuthenticatedRequestHeaders(),
+        },
+      );
+      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
+
+      if (!response.ok || !data.inserted) {
+        throw new Error(
+          data.error ?? "샘플 문의를 AI CS 처리함에 추가하지 못했습니다.",
+        );
+      }
+
+      await Promise.all([
+        loadCsMessages(),
+        loadMissingInfos(),
+        loadInsights(),
+        loadAiActivityLogs(),
+        loadBillingStatus(),
+      ]);
+
+      setSelectedWorkflowPlatform("smartstore");
+      setSelectedWorkflowStatus("pending");
+      setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
+      setThreeMinuteDemoMessage(
+        "샘플 문의가 준비되었습니다. AI CS 처리함에서 승인 완료를 눌러보세요.",
+      );
+      setCopyMessage(
+        "3분 체험이 준비되었습니다. 승인 대기 카드에서 AI 답변 초안을 확인해보세요.",
+      );
+      goToTabSection("manage", "ai-cs-inbox");
+    } catch (error) {
+      setThreeMinuteDemoError(
+        error instanceof Error
+          ? error.message
+          : "3분 체험을 준비하지 못했습니다.",
+      );
+    } finally {
+      setThreeMinuteDemoLoading(false);
     }
   }
 
@@ -5309,12 +5446,12 @@ export default function Home() {
     {
       id: "sample",
       step: "3",
-      title: "샘플이나 첫 문의 넣어보기",
+      title: "3분 체험 시작",
       description:
-        "샘플 데이터 또는 실제 문의로 AI가 초안을 만드는 흐름을 확인합니다.",
+        "예시 가게와 샘플 문의로 AI 직원이 초안을 만드는 장면을 봅니다.",
       isComplete: hasOnboardingWorkflowItem,
-      actionLabel: "샘플로 체험",
-      onAction: () => goToTabSection("integrations", "platform-integrations"),
+      actionLabel: threeMinuteDemoLoading ? "준비 중..." : "3분 체험 시작",
+      onAction: () => void handleStartThreeMinuteDemo(),
     },
     {
       id: "complete",
@@ -5353,14 +5490,13 @@ export default function Home() {
       : !hasStore
         ? {
             eyebrow: "추천 시작",
-            title: "예시 데이터로 먼저 체험해보기",
+            title: "AI CS 직원 3분 체험하기",
             description:
-              "처음부터 모두 입력하기 부담스럽다면 예시 업종을 골라 AI 답변 흐름을 먼저 확인해보세요.",
-            actionLabel: "예시 데이터 선택하기",
-            onAction: () => {
-              setIsExamplePickerOpen(true);
-              goToTabSection("store", "store-info");
-            },
+              "예시 가게 정보를 자동으로 넣고 샘플 문의를 만들어 AI CS 처리함까지 바로 보여드립니다.",
+            actionLabel: threeMinuteDemoLoading
+              ? "체험 준비 중..."
+              : "AI CS 직원 3분 체험하기",
+            onAction: () => void handleStartThreeMinuteDemo(),
           }
         : pendingMissingInfoCount > 0
           ? {
@@ -5397,11 +5533,13 @@ export default function Home() {
                 }
               : {
                 eyebrow: "다음 테스트",
-                title: "문의 답변을 하나 만들어보기",
+                title: "AI CS 직원 3분 체험하기",
                 description:
-                  "새 고객 문의를 입력해 AI가 현재 가게 정보를 어떻게 활용하는지 확인해보세요.",
-                actionLabel: "문의 답변 테스트",
-                onAction: () => goToTabSection("answer", "cs-reply"),
+                  "샘플 문의를 AI CS 처리함에 넣고, 답변 초안을 확인한 뒤 승인 완료까지 눌러보세요.",
+                actionLabel: threeMinuteDemoLoading
+                  ? "체험 준비 중..."
+                  : "AI CS 직원 3분 체험하기",
+                onAction: () => void handleStartThreeMinuteDemo(),
               };
   const startPaidAdoptionAction = {
     title: "AI CS 직원을 우리 가게에 도입하고 싶다면",
@@ -5427,14 +5565,20 @@ export default function Home() {
       }
     : !hasStore
       ? {
-          label: "가게 정보 먼저 입력",
-          onAction: () => goToTabSection("store", "store-info"),
+          label: threeMinuteDemoLoading
+            ? "체험 준비 중..."
+            : "AI CS 직원 3분 체험하기",
+          onAction: () => void handleStartThreeMinuteDemo(),
         }
       : {
           label: isPaidPlan
             ? "AI 답변 작성하기"
-            : "무료 답변 생성 체험하기",
-          onAction: () => goToTabSection("answer", "cs-reply"),
+            : threeMinuteDemoLoading
+              ? "체험 준비 중..."
+              : "AI CS 직원 3분 체험하기",
+          onAction: isPaidPlan
+            ? () => goToTabSection("answer", "cs-reply")
+            : () => void handleStartThreeMinuteDemo(),
         };
 
   function scrollToSection(targetId: string) {
@@ -6179,7 +6323,7 @@ export default function Home() {
           isVisible={activeTab === "start"}
           guideItems={startGuideItems}
           recommendedAction={startRecommendedAction}
-          actionLoading={authActionLoading}
+          actionLoading={authActionLoading || threeMinuteDemoLoading}
           paidAdoptionAction={startPaidAdoptionAction}
         />
 
@@ -6242,28 +6386,28 @@ export default function Home() {
               {[
                 {
                   step: "1",
-                  title: "가게 정보를 알려주세요",
+                  title: "예시 가게를 준비합니다",
                   tone: "emerald",
                   description:
-                    "상품, 정책, 말투를 입력하면 AI가 사장님 가게에 맞춰 답변합니다.",
+                    "가게 정보가 없으면 예시 상품과 정책을 자동으로 넣어 바로 체험합니다.",
                 },
                 {
                   step: "2",
                   title: isPaidPlan
                     ? "AI 답변 제한 없이 운영"
-                    : `AI 답변 ${FREE_TRIAL_AI_REPLY_LIMIT}건까지 체험`,
+                    : "샘플 문의가 처리함에 생깁니다",
                   tone: "sky",
                   description: isPaidPlan
                     ? "문의 답변과 리뷰 답글을 계속 생성하고, 처리함에서 승인/수정까지 이어갈 수 있습니다."
-                    : `문의 답변과 리뷰 답글을 직접 테스트하세요. 일괄 리뷰 답글은 ${FREE_TRIAL_BATCH_REVIEW_LIMIT}건까지 한 번에 체험할 수 있습니다.`,
+                    : "AI가 샘플 문의의 답변 초안과 확인 필요 여부를 판단합니다.",
                 },
                 {
                   step: "3",
-                  title: isPaidPlan ? "연동 기능 연결하기" : "계속 운영은 도입 상담",
+                  title: isPaidPlan ? "연동 기능 연결하기" : "승인 완료를 눌러봅니다",
                   tone: "amber",
                   description: isPaidPlan
                     ? "플랫폼 문의 가져오기, 자동 완료, 안전 항목 일괄 승인을 실제 운영에 맞춰 사용할 수 있습니다."
-                    : "플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다.",
+                    : "답변 하나를 완료 처리하면 운영 관리에서 AI 직원이 한 일이 보입니다.",
                 },
               ].map((step) => (
                 <article
@@ -6297,6 +6441,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={freeTrialPrimaryAction.onAction}
+                disabled={threeMinuteDemoLoading}
                 className={buttonClass("success", "md", "rounded-lg")}
               >
                 {freeTrialPrimaryAction.label}
@@ -6318,6 +6463,19 @@ export default function Home() {
                   : "로그인 후 상담 요청"}
               </button>
             </div>
+
+            {threeMinuteDemoMessage || threeMinuteDemoError ? (
+              <p
+                className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+                  threeMinuteDemoError
+                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                }`}
+                role="status"
+              >
+                {threeMinuteDemoError || threeMinuteDemoMessage}
+              </p>
+            ) : null}
 
             <div className="mt-4 rounded-xl border border-white/70 bg-white/70 px-4 py-3 text-xs leading-5 text-zinc-600 shadow-sm dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-300">
               <span className="font-bold text-zinc-900 dark:text-zinc-100">

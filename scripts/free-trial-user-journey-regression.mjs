@@ -58,9 +58,9 @@ assert.deepEqual(
 );
 
 const trialJourneySteps = [
-  "가게 정보를 알려주세요",
-  "AI 답변 ${FREE_TRIAL_AI_REPLY_LIMIT}건까지 체험",
-  "계속 운영은 도입 상담",
+  "예시 가게를 준비합니다",
+  "샘플 문의가 처리함에 생깁니다",
+  "승인 완료를 눌러봅니다",
 ];
 
 assert.match(pageSource, /무료 체험은 이렇게 진행됩니다/);
@@ -71,7 +71,7 @@ assert.match(pageSource, /학습 입력과 샘플 데이터는 무료/);
 assert.match(pageSource, /샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다/);
 assert.match(
   pageSource,
-  /플랫폼 연동, 자동 완료, 일괄 승인은 유료 도입 상담 후 연결됩니다/,
+  /실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜 또는\s+도입 상담 후 연결할 핵심 기능/,
 );
 assert.match(pageSource, /유료 플랜으로 AI CS 직원을 운영 중입니다/);
 assert.match(pageSource, /현재 상태/);
@@ -82,8 +82,12 @@ assert.doesNotMatch(pageSource, /유료 전환 후보/);
 assert.doesNotMatch(pageSource, /최근 30일 절감 가치/);
 assert.doesNotMatch(pageSource, /도입 가치는 절감액으로 판단할 수 있어요/);
 
-assert.match(pageSource, /첫 AI 답변을 바로 만들어보세요/);
-assert.match(pageSource, /샘플 데이터로 체험/);
+assert.match(pageSource, /AI CS 직원 3분 체험하기/);
+assert.match(pageSource, /handleStartThreeMinuteDemo/);
+assert.match(pageSource, /\/api\/integrations\/smartstore\/mock-inquiries/);
+assert.match(pageSource, /setSelectedWorkflowPlatform\("smartstore"\)/);
+assert.match(pageSource, /setSelectedWorkflowStatus\("pending"\)/);
+assert.match(pageSource, /승인 대기 카드에서 AI 답변 초안/);
 assert.match(startOnboardingSource, /유료 도입 상담/);
 assert.doesNotMatch(startOnboardingSource, /metricLabel/);
 assert.doesNotMatch(startOnboardingSource, /metricValue/);
