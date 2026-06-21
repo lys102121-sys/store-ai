@@ -564,28 +564,33 @@ function EmptyStateCard({
 }) {
   return (
     <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
+      <p className="mx-auto mb-2 inline-flex rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-500 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700">
+        다음 행동
+      </p>
       <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
         {title}
       </h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600 dark:text-zinc-400">
         {description}
       </p>
-      <button
-        type="button"
-        onClick={onAction}
-        className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      >
-        {actionLabel}
-      </button>
-      {secondaryActionLabel && onSecondaryAction ? (
+      <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <button
           type="button"
-          onClick={onSecondaryAction}
-          className="mt-4 ml-2 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          onClick={onAction}
+          className="inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
-          {secondaryActionLabel}
+          {actionLabel}
         </button>
-      ) : null}
+        {secondaryActionLabel && onSecondaryAction ? (
+          <button
+            type="button"
+            onClick={onSecondaryAction}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          >
+            {secondaryActionLabel}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -4917,24 +4922,24 @@ export default function Home() {
   const canCollapseWorkflowItems = visibleWorkflowCount > WORKFLOW_PAGE_SIZE;
   const selectedWorkflowEmptyState = {
     needs_review: {
-      title: "현재 확인이 필요한 항목이 없습니다",
+      title: "지금 확인할 항목이 없습니다",
       description:
-        "AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다. 지금은 샘플 데이터나 첫 문의로 처리함 흐름을 만들어볼 수 있어요.",
+        "샘플 데이터로 처리함 흐름을 보거나, 실제 문의를 하나 입력해보세요.",
     },
     pending: {
-      title: "현재 승인 대기 중인 답변이 없습니다",
+      title: "승인할 답변이 없습니다",
       description:
-        "AI가 새 답변 초안을 만들면 이곳에서 확인할 수 있습니다. 고객 문의를 하나 입력하거나 샘플 데이터를 불러와 테스트해보세요.",
+        "문의나 리뷰 답변을 만들면 AI 초안이 이곳에 쌓입니다.",
     },
     completed: {
-      title: "아직 답변 완료된 항목이 없습니다",
+      title: "완료된 답변이 없습니다",
       description:
-        "승인 완료한 답변이 이곳에 쌓입니다. 승인 대기 항목이 있다면 먼저 승인해보세요.",
+        "승인 대기 답변을 완료하면 이곳에서 확인할 수 있습니다.",
     },
     answered: {
-      title: "아직 답변 완료된 항목이 없습니다",
+      title: "완료된 답변이 없습니다",
       description:
-        "승인 완료한 답변이 이곳에 쌓입니다. 승인 대기 항목이 있다면 먼저 승인해보세요.",
+        "승인 대기 답변을 완료하면 이곳에서 확인할 수 있습니다.",
     },
   }[selectedWorkflowColumn.status];
   const openWorkflowStatus = (status: WorkflowStatus) => {
@@ -9905,9 +9910,13 @@ export default function Home() {
           ) : csMessages.length === 0 ? (
             <EmptyStateCard
               title="아직 고객 문의 기록이 없습니다"
-              description="자주 들어오는 문의를 입력하고 AI 답변을 생성해보세요."
+              description="문의 하나를 입력하면 AI 답변 초안과 처리 상태가 함께 저장됩니다."
               actionLabel="문의 답변 작성하기"
               onAction={() => goToTabSection("answer", "cs-reply")}
+              secondaryActionLabel="샘플 데이터로 체험"
+              onSecondaryAction={() =>
+                goToTabSection("integrations", "platform-integrations")
+              }
             />
           ) : (
             <>
@@ -10019,10 +10028,12 @@ export default function Home() {
             </p>
           ) : missingInfos.length === 0 ? (
             <EmptyStateCard
-              title="현재 확인이 필요한 정보가 없습니다"
-              description="AI가 답변하기 어려운 질문을 발견하면 이곳에 표시됩니다."
-              actionLabel="가게 정보 보강하기"
-              onAction={() => goToTabSection("store", "store-info")}
+              title="지금 보강할 정보가 없습니다"
+              description="AI가 모르는 질문을 만나면 이곳에 답변 입력 카드가 생깁니다."
+              actionLabel="문의 답변 테스트"
+              onAction={() => goToTabSection("answer", "cs-reply")}
+              secondaryActionLabel="가게 정보 보강"
+              onSecondaryAction={() => goToTabSection("store", "store-info")}
             />
           ) : (
             <ul className="space-y-4">
@@ -10190,10 +10201,14 @@ export default function Home() {
             </p>
           ) : negativeReviews.length === 0 ? (
             <EmptyStateCard
-              title="현재 주의가 필요한 부정 리뷰가 없습니다"
-              description="부정 리뷰가 생기면 이곳에서 먼저 확인할 수 있습니다."
+              title="지금 주의할 리뷰가 없습니다"
+              description="리뷰 답글을 만들면 부정 리뷰와 승인 필요 항목을 먼저 보여줍니다."
               actionLabel="리뷰 답글 작성하기"
               onAction={() => goToTabSection("answer", "review-reply")}
+              secondaryActionLabel="샘플 리뷰 체험"
+              onSecondaryAction={() =>
+                goToTabSection("integrations", "platform-integrations")
+              }
             />
           ) : (
             <ul className="space-y-4">
@@ -10476,9 +10491,13 @@ export default function Home() {
           ) : history.length === 0 ? (
             <EmptyStateCard
               title="아직 리뷰 답글 기록이 없습니다"
-              description="고객 리뷰를 입력하고 첫 AI 답글을 생성해보세요."
+              description="리뷰 하나를 입력하면 AI 답글 초안과 위험도 판단이 저장됩니다."
               actionLabel="리뷰 답글 작성하기"
               onAction={() => goToTabSection("answer", "review-reply")}
+              secondaryActionLabel="샘플 리뷰 체험"
+              onSecondaryAction={() =>
+                goToTabSection("integrations", "platform-integrations")
+              }
             />
           ) : (
             <>
