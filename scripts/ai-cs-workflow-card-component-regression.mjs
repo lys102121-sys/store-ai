@@ -14,13 +14,25 @@ const pageSource = readProjectFile("app/page.tsx");
 const workflowCardSource = readProjectFile(
   "app/components/dashboard/AiCsWorkflowItemCard.tsx",
 );
+const workflowControlsSource = readProjectFile(
+  "app/components/dashboard/AiCsWorkflowInboxControls.tsx",
+);
+const workflowEmptyStateSource = readProjectFile(
+  "app/components/dashboard/AiCsWorkflowInboxEmptyState.tsx",
+);
 
 assert.match(pageSource, /AiCsWorkflowItemCard/);
 assert.match(pageSource, /<AiCsWorkflowItemCard/);
+assert.match(pageSource, /AiCsWorkflowInboxControls/);
+assert.match(pageSource, /<AiCsWorkflowInboxControls/);
+assert.match(pageSource, /AiCsWorkflowInboxEmptyState/);
+assert.match(pageSource, /<AiCsWorkflowInboxEmptyState/);
 assert.doesNotMatch(pageSource, /const workflowCardSectionClass/);
 assert.doesNotMatch(pageSource, /const workflowCardDetailClass/);
 assert.doesNotMatch(pageSource, /function workflowEvidenceTitle/);
 assert.doesNotMatch(pageSource, /function workflowEvidenceMessage/);
+assert.doesNotMatch(pageSource, /function workflowStatusTabClass/);
+assert.doesNotMatch(pageSource, /플랫폼 출처[\s\S]*workflowPlatformFilters\.map/);
 
 assert.match(workflowCardSource, /export function AiCsWorkflowItemCard/);
 assert.match(workflowCardSource, /AI 판단 이유/);
@@ -30,4 +42,12 @@ assert.match(workflowCardSource, /승인 완료/);
 assert.match(workflowCardSource, /확인 필요로 되돌리기/);
 assert.match(workflowCardSource, /데모 데이터/);
 
-console.log("AI CS workflow card component regression tests passed.");
+assert.match(workflowControlsSource, /export function AiCsWorkflowInboxControls/);
+assert.match(workflowControlsSource, /플랫폼 출처/);
+assert.match(workflowControlsSource, /안전 항목 일괄 승인/);
+assert.match(workflowControlsSource, /workflowStatusTabClass/);
+
+assert.match(workflowEmptyStateSource, /export function AiCsWorkflowInboxEmptyState/);
+assert.match(workflowEmptyStateSource, /secondaryActionLabel/);
+
+console.log("AI CS workflow component regression tests passed.");

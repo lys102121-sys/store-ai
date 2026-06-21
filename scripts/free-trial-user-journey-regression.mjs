@@ -26,6 +26,9 @@ const dashboardTabsSource = readProjectFile(
 const startOnboardingSource = readProjectFile(
   "app/components/dashboard/StartOnboarding.tsx",
 );
+const workflowInboxControlsSource = readProjectFile(
+  "app/components/dashboard/AiCsWorkflowInboxControls.tsx",
+);
 const freeTrialLimitsSource = readProjectFile("app/lib/freeTrialLimits.ts");
 const freeTrialUsageSource = readProjectFile("app/lib/freeTrialUsage.ts");
 const billingPlanSource = readProjectFile("app/lib/billingPlan.ts");
@@ -114,7 +117,7 @@ assert.match(pageSource, /!isDemoExternalId\(item\.externalId\)/);
 assert.match(pageSource, /!isPaidPlan && freeTrialAiReplyLimitReached/);
 assert.match(pageSource, /!isPaidPlan && reviews\.length > trialAiReplyRemainingCount/);
 assert.match(pageSource, /무료 체험 중에는 설정을 미리 저장할 수 있지만/);
-assert.match(pageSource, /유료 플랜에서 일괄 승인/);
+assert.match(workflowInboxControlsSource, /유료 플랜에서 일괄 승인/);
 
 assertBefore(
   csReplyRouteSource,
