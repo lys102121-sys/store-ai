@@ -1,6 +1,7 @@
 "use client";
 
 import { buttonClass } from "@/app/lib/uiClasses";
+import { storeKnowledgeCategoryLabel } from "@/app/lib/storeKnowledgeUi";
 import {
   handlingTypeBadgeClass,
   handlingTypeLabel,
@@ -91,31 +92,6 @@ type AiCsWorkflowItemCardProps = {
   onCancelEdit: () => void;
   formatDate: (value: string) => string;
 };
-
-function storeKnowledgeCategoryLabel(value?: string | null) {
-  switch (value) {
-    case "product_catalog":
-      return "상품 목록";
-    case "pricing":
-      return "가격";
-    case "shipping":
-      return "배송/출고";
-    case "refund_exchange":
-      return "환불/교환";
-    case "stock":
-      return "재고";
-    case "reservation":
-      return "예약/픽업";
-    case "packaging":
-      return "포장";
-    case "allergy_ingredient":
-      return "알레르기/성분";
-    case "product":
-      return "상품 정보";
-    default:
-      return "기타 FAQ";
-  }
-}
 
 function isStoreInfoEvidenceItem(item: UsedKnowledgeItem) {
   return item.id.startsWith("store:");

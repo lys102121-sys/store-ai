@@ -20,6 +20,8 @@ const workflowControlsSource = readProjectFile(
 const workflowEmptyStateSource = readProjectFile(
   "app/components/dashboard/AiCsWorkflowInboxEmptyState.tsx",
 );
+const workflowUiSource = readProjectFile("app/lib/workflowUi.ts");
+const storeKnowledgeUiSource = readProjectFile("app/lib/storeKnowledgeUi.ts");
 
 assert.match(pageSource, /AiCsWorkflowItemCard/);
 assert.match(pageSource, /<AiCsWorkflowItemCard/);
@@ -27,27 +29,39 @@ assert.match(pageSource, /AiCsWorkflowInboxControls/);
 assert.match(pageSource, /<AiCsWorkflowInboxControls/);
 assert.match(pageSource, /AiCsWorkflowInboxEmptyState/);
 assert.match(pageSource, /<AiCsWorkflowInboxEmptyState/);
+assert.match(pageSource, /storeKnowledgeCategoryLabel/);
+assert.match(pageSource, /storeKnowledgeStatusLabel/);
+
 assert.doesNotMatch(pageSource, /const workflowCardSectionClass/);
 assert.doesNotMatch(pageSource, /const workflowCardDetailClass/);
 assert.doesNotMatch(pageSource, /function workflowEvidenceTitle/);
 assert.doesNotMatch(pageSource, /function workflowEvidenceMessage/);
 assert.doesNotMatch(pageSource, /function workflowStatusTabClass/);
-assert.doesNotMatch(pageSource, /플랫폼 출처[\s\S]*workflowPlatformFilters\.map/);
+assert.doesNotMatch(pageSource, /function storeKnowledgeCategoryLabel/);
+assert.doesNotMatch(pageSource, /function storeKnowledgeStatusLabel/);
+assert.doesNotMatch(pageSource, /function normalizeStoreKnowledgeStatus/);
 
 assert.match(workflowCardSource, /export function AiCsWorkflowItemCard/);
-assert.match(workflowCardSource, /AI 판단 이유/);
-assert.match(workflowCardSource, /답변에 참고한 가게 지식/);
-assert.match(workflowCardSource, /저장하고 답변에 반영/);
-assert.match(workflowCardSource, /승인 완료/);
-assert.match(workflowCardSource, /확인 필요로 되돌리기/);
-assert.match(workflowCardSource, /데모 데이터/);
+assert.match(workflowCardSource, /storeKnowledgeCategoryLabel/);
+assert.match(workflowCardSource, /workflowEvidenceTitle/);
+assert.match(workflowCardSource, /workflowEvidenceMessage/);
+assert.match(workflowCardSource, /onResolveMissingInfo/);
+assert.match(workflowCardSource, /onDeleteItem/);
+assert.doesNotMatch(workflowCardSource, /function storeKnowledgeCategoryLabel/);
 
 assert.match(workflowControlsSource, /export function AiCsWorkflowInboxControls/);
-assert.match(workflowControlsSource, /플랫폼 출처/);
-assert.match(workflowControlsSource, /안전 항목 일괄 승인/);
 assert.match(workflowControlsSource, /workflowStatusTabClass/);
+assert.match(workflowControlsSource, /onBulkApprove/);
 
 assert.match(workflowEmptyStateSource, /export function AiCsWorkflowInboxEmptyState/);
 assert.match(workflowEmptyStateSource, /secondaryActionLabel/);
+
+assert.match(workflowUiSource, /export function workflowStatusLabel/);
+assert.match(workflowUiSource, /export function sourcePlatformLabel/);
+assert.match(workflowUiSource, /export function workflowStatusTabClass/);
+
+assert.match(storeKnowledgeUiSource, /export function storeKnowledgeCategoryLabel/);
+assert.match(storeKnowledgeUiSource, /export function storeKnowledgeStatusLabel/);
+assert.match(storeKnowledgeUiSource, /export function storeKnowledgeStatusBadgeClass/);
 
 console.log("AI CS workflow component regression tests passed.");
