@@ -1,16 +1,11 @@
 "use client";
 
 import { buttonClass } from "@/app/lib/uiClasses";
-
-type WorkflowStatus = "pending" | "needs_review" | "completed" | "answered";
-type WorkflowPlatformFilter =
-  | "all"
-  | "manual"
-  | "smartstore"
-  | "coupang"
-  | "baemin"
-  | "yogiyo"
-  | "coupangeats";
+import {
+  workflowStatusTabClass,
+  type WorkflowPlatformFilter,
+  type WorkflowStatus,
+} from "@/app/lib/workflowUi";
 
 type WorkflowPlatformFilterItem = {
   id: WorkflowPlatformFilter;
@@ -37,22 +32,6 @@ type AiCsWorkflowInboxControlsProps = {
   onStatusChange: (status: WorkflowStatus) => void;
   onBulkApprove: () => void | Promise<void>;
 };
-
-function workflowStatusTabClass(status: WorkflowStatus, isSelected: boolean) {
-  if (!isSelected) {
-    return "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900";
-  }
-
-  switch (status) {
-    case "needs_review":
-      return "border-amber-400 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-200 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-900";
-    case "completed":
-    case "answered":
-      return "border-emerald-400 bg-emerald-50 text-emerald-950 shadow-sm ring-1 ring-emerald-200 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-900";
-    default:
-      return "border-indigo-400 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900";
-  }
-}
 
 export function AiCsWorkflowInboxControls({
   platformFilters,

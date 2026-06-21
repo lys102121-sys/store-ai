@@ -36,19 +36,26 @@ import {
 import { buildStoreKnowledgeUsageMap } from "@/app/lib/storeKnowledgeUsage";
 import { getSupabase } from "@/app/lib/supabase";
 import { buttonClass } from "@/app/lib/uiClasses";
+import {
+  normalizeHandlingType,
+  normalizeRiskLevel,
+  normalizeWorkflowStatus,
+  riskLevelBadgeClass,
+  riskLevelLabel,
+  semanticBadgeClass,
+  sourcePlatformLabel,
+  workflowStatusBadgeClass,
+  workflowStatusLabel,
+  type HandlingType,
+  type PlatformStatus,
+  type RiskLevel,
+  type SourcePlatform,
+  type WorkflowPlatformFilter,
+  type WorkflowItemType,
+  type WorkflowStatus,
+} from "@/app/lib/workflowUi";
 
 type Sentiment = "positive" | "neutral" | "negative";
-type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
-type RiskLevel = "low" | "normal" | "high";
-type SourcePlatform =
-  | "manual"
-  | "smartstore"
-  | "coupang"
-  | "baemin"
-  | "yogiyo"
-  | "coupangeats"
-  | string;
-type PlatformStatus = "local" | "synced" | "posted" | "failed" | string;
 type AiWorkMode = "approval_only" | "safe_auto" | "after_hours_conservative";
 type StoreKnowledgeStatus = "active" | "needs_review" | "archived" | string;
 type StoreKnowledgeStatusFilter =
@@ -261,18 +268,6 @@ type DeleteApiResponse = {
   error?: string;
   detail?: string;
 };
-
-type WorkflowStatus = "pending" | "needs_review" | "completed" | "answered";
-type WorkflowPlatformFilter =
-  | "all"
-  | "manual"
-  | "smartstore"
-  | "coupang"
-  | "baemin"
-  | "yogiyo"
-  | "coupangeats";
-
-type WorkflowItemType = "cs" | "review" | "missing_info";
 
 type WorkflowItem = {
   key: string;
@@ -647,82 +642,6 @@ const urgentBadgeClass =
 
 const ESTIMATED_CS_HOURLY_VALUE_KRW = 12_000;
 
-type SemanticTone = "neutral" | "info" | "success" | "warning" | "danger";
-
-const semanticBadgeClasses: Record<SemanticTone, string> = {
-  neutral:
-    "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
-  info:
-    "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-200 dark:ring-indigo-800",
-  success:
-    "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800",
-  warning:
-    "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800",
-  danger:
-    "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800",
-};
-
-function semanticBadgeClass(tone: SemanticTone) {
-  return semanticBadgeClasses[tone];
-}
-
-function normalizeWorkflowStatus(status?: string | null): WorkflowStatus {
-  if (
-    status === "pending" ||
-    status === "needs_review" ||
-    status === "completed" ||
-    status === "answered"
-  ) {
-    return status;
-  }
-
-  return "pending";
-}
-
-function workflowStatusLabel(status: WorkflowStatus) {
-  switch (status) {
-    case "needs_review":
-      return "확인 필요";
-    case "completed":
-    case "answered":
-      return "답변 완료";
-    default:
-      return "승인 대기";
-  }
-}
-
-function workflowStatusBadgeClass(status: WorkflowStatus) {
-  switch (status) {
-    case "needs_review":
-      return semanticBadgeClass("warning");
-    case "completed":
-    case "answered":
-      return semanticBadgeClass("success");
-    default:
-      return semanticBadgeClass("info");
-  }
-}
-
-function normalizeHandlingType(value?: string | null): HandlingType {
-  if (
-    value === "auto_ready" ||
-    value === "needs_review" ||
-    value === "needs_approval"
-  ) {
-    return value;
-  }
-
-  return "needs_approval";
-}
-
-function normalizeRiskLevel(value?: string | null): RiskLevel {
-  if (value === "low" || value === "normal" || value === "high") {
-    return value;
-  }
-
-  return "normal";
-}
-
 function normalizeInquiryText(value: string) {
   return value
     .trim()
@@ -783,49 +702,6 @@ function doesMissingInfoRepresentCsMessage(
     createdAtGap <= 5 * 60 * 1000 &&
     areInquiryTextsSimilar(missingInfoItem.original, csMessageItem.original)
   );
-}
-
-function riskLevelLabel(value: RiskLevel) {
-  switch (value) {
-    case "low":
-      return "낮음";
-    case "high":
-      return "높음";
-    default:
-      return "보통";
-  }
-}
-
-function riskLevelBadgeClass(value: RiskLevel) {
-  switch (value) {
-    case "low":
-      return semanticBadgeClass("success");
-    case "high":
-      return semanticBadgeClass("danger");
-    default:
-      return semanticBadgeClass("neutral");
-  }
-}
-
-function sourcePlatformLabel(value?: string | null) {
-  switch (value) {
-    case "manual":
-    case undefined:
-    case null:
-      return "수동 입력";
-    case "smartstore":
-      return "스마트스토어";
-    case "coupang":
-      return "쿠팡";
-    case "baemin":
-      return "배민";
-    case "yogiyo":
-      return "요기요";
-    case "coupangeats":
-      return "쿠팡이츠";
-    default:
-      return value;
-  }
 }
 
 function aiActivityStatusLabel(value?: string | null) {

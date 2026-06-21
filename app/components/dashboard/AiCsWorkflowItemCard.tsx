@@ -1,20 +1,25 @@
 "use client";
 
 import { buttonClass } from "@/app/lib/uiClasses";
-
-type WorkflowStatus = "pending" | "needs_review" | "completed" | "answered";
-type HandlingType = "auto_ready" | "needs_review" | "needs_approval";
-type RiskLevel = "low" | "normal" | "high";
-type SourcePlatform =
-  | "manual"
-  | "smartstore"
-  | "coupang"
-  | "baemin"
-  | "yogiyo"
-  | "coupangeats"
-  | string;
-type PlatformStatus = "local" | "synced" | "posted" | "failed" | string;
-type WorkflowItemType = "cs" | "review" | "missing_info";
+import {
+  handlingTypeBadgeClass,
+  handlingTypeLabel,
+  platformStatusBadgeClass,
+  platformStatusLabel,
+  riskLevelBadgeClass,
+  riskLevelLabel,
+  sourcePlatformLabel,
+  workflowAttentionTone,
+  workflowCardAttentionClass,
+  workflowStatusBadgeClass,
+  workflowStatusLabel,
+  type HandlingType,
+  type PlatformStatus,
+  type RiskLevel,
+  type SourcePlatform,
+  type WorkflowItemType,
+  type WorkflowStatus,
+} from "@/app/lib/workflowUi";
 
 type MissingInfoItem = {
   id: string;
@@ -86,162 +91,6 @@ type AiCsWorkflowItemCardProps = {
   onCancelEdit: () => void;
   formatDate: (value: string) => string;
 };
-
-type SemanticTone = "neutral" | "info" | "success" | "warning" | "danger";
-
-const semanticBadgeClasses: Record<SemanticTone, string> = {
-  neutral:
-    "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
-  info:
-    "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-200 dark:ring-indigo-800",
-  success:
-    "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800",
-  warning:
-    "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800",
-  danger:
-    "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/50 dark:text-red-200 dark:ring-red-800",
-};
-
-function semanticBadgeClass(tone: SemanticTone) {
-  return semanticBadgeClasses[tone];
-}
-
-function workflowStatusLabel(status: WorkflowStatus) {
-  switch (status) {
-    case "needs_review":
-      return "확인 필요";
-    case "completed":
-    case "answered":
-      return "답변 완료";
-    default:
-      return "승인 대기";
-  }
-}
-
-function workflowStatusBadgeClass(status: WorkflowStatus) {
-  switch (status) {
-    case "needs_review":
-      return semanticBadgeClass("warning");
-    case "completed":
-    case "answered":
-      return semanticBadgeClass("success");
-    default:
-      return semanticBadgeClass("info");
-  }
-}
-
-function handlingTypeLabel(value: HandlingType) {
-  switch (value) {
-    case "auto_ready":
-      return "바로 답변 가능";
-    case "needs_review":
-      return "사장님 확인 필요";
-    default:
-      return "승인 필수";
-  }
-}
-
-function handlingTypeBadgeClass(value: HandlingType) {
-  return value === "auto_ready"
-    ? semanticBadgeClass("success")
-    : semanticBadgeClass("warning");
-}
-
-function riskLevelLabel(value: RiskLevel) {
-  switch (value) {
-    case "low":
-      return "낮음";
-    case "high":
-      return "높음";
-    default:
-      return "보통";
-  }
-}
-
-function riskLevelBadgeClass(value: RiskLevel) {
-  switch (value) {
-    case "low":
-      return semanticBadgeClass("success");
-    case "high":
-      return semanticBadgeClass("danger");
-    default:
-      return semanticBadgeClass("neutral");
-  }
-}
-
-function sourcePlatformLabel(value?: string | null) {
-  switch (value) {
-    case "manual":
-    case undefined:
-    case null:
-      return "수동 입력";
-    case "smartstore":
-      return "스마트스토어";
-    case "coupang":
-      return "쿠팡";
-    case "baemin":
-      return "배민";
-    case "yogiyo":
-      return "요기요";
-    case "coupangeats":
-      return "쿠팡이츠";
-    default:
-      return value;
-  }
-}
-
-function platformStatusLabel(value?: string | null) {
-  switch (value) {
-    case "local":
-    case undefined:
-    case null:
-      return "앱 내부";
-    case "synced":
-      return "연동됨";
-    case "posted":
-      return "플랫폼 등록 완료";
-    case "failed":
-      return "등록 실패";
-    default:
-      return value;
-  }
-}
-
-function platformStatusBadgeClass(value?: string | null) {
-  switch (value) {
-    case "posted":
-      return semanticBadgeClass("success");
-    case "synced":
-      return semanticBadgeClass("info");
-    case "failed":
-      return semanticBadgeClass("danger");
-    default:
-      return semanticBadgeClass("neutral");
-  }
-}
-
-function workflowAttentionTone(
-  handlingType: HandlingType,
-  riskLevel: RiskLevel,
-): "warning" | "danger" | null {
-  if (riskLevel === "high") return "danger";
-  if (handlingType === "needs_review" || handlingType === "needs_approval") {
-    return "warning";
-  }
-
-  return null;
-}
-
-function workflowCardAttentionClass(tone: "warning" | "danger" | null) {
-  if (tone === "danger") {
-    return "border-red-300/90 ring-red-100/80 dark:border-red-700/80 dark:ring-red-900/50";
-  }
-  if (tone === "warning") {
-    return "border-amber-300/80 ring-amber-100/70 dark:border-amber-700/70 dark:ring-amber-900/40";
-  }
-
-  return "border-white/80 dark:border-white/10";
-}
 
 function storeKnowledgeCategoryLabel(value?: string | null) {
   switch (value) {
