@@ -5077,36 +5077,36 @@ export default function Home() {
     {
       label: "초안 작성",
       value: todayGeneratedActivityCount,
-      description: "AI가 먼저 작성한 답변",
+      description: "새 답변 초안",
     },
     {
       label: "완료 처리",
       value: todayCompletedActivityCount,
-      description: "승인 또는 완료된 업무",
+      description: "승인/자동 완료",
     },
     {
       label: "멈추고 확인",
       value: todayStoppedActivityLogs.length,
-      description: "위험하거나 정보가 부족한 업무",
+      description: "확인이 필요한 일",
     },
     {
       label: "학습 반영",
       value: todayLearningActivityCount,
-      description: "사장님 답변을 지식에 저장",
+      description: "새로 배운 지식",
     },
   ] as const;
   const aiStaffDiarySentence =
     todayAiActivityLogs.length === 0
-      ? "오늘 기록된 AI 업무가 아직 없습니다. 문의 답변을 만들거나 처리함에서 승인하면 일지가 쌓입니다."
-      : `오늘 AI는 답변 초안 ${todayGeneratedActivityCount}건을 준비했고, ${todayCompletedActivityCount}건은 완료했습니다. 혼자 처리하기 애매한 ${todayStoppedActivityLogs.length}건은 안전하게 멈춰뒀습니다.`;
+      ? "아직 오늘 기록은 없습니다."
+      : `초안 ${todayGeneratedActivityCount}건, 완료 ${todayCompletedActivityCount}건, 확인 필요 ${todayStoppedActivityLogs.length}건입니다.`;
   const aiStaffDiaryNextAction =
     todayAiActivityLogs.length === 0
-      ? "샘플 문의를 불러오거나 문의 답변을 생성하면 AI가 일한 기록이 여기에 남습니다."
+      ? "샘플 문의나 실제 문의를 처리하면 여기에 쌓입니다."
       : todayStoppedActivityLogs.length > 0
-        ? "먼저 멈춰둔 항목을 확인해 주세요. 사장님이 알려준 답변은 다음 비슷한 문의에 다시 활용됩니다."
+        ? "먼저 멈춘 항목을 확인해 주세요. 알려준 답은 다음 문의에 다시 씁니다."
         : todayGeneratedActivityCount > todayCompletedActivityCount
-          ? "승인 대기 중인 초안을 확인하면 AI CS 처리함에서 완료 처리할 수 있습니다."
-          : "오늘은 큰 문제 없이 처리 중입니다. 새 문의가 들어오면 AI가 다시 초안을 준비합니다.";
+          ? "승인 대기 초안을 처리함에서 확인해 주세요."
+          : "오늘은 큰 문제 없이 처리 중입니다.";
   const stoppedReasonLogs = todayStoppedActivityLogs.slice(0, 3);
   const ownerInterventionLogs = todayOwnerInterventionLogs.slice(0, 3);
 
@@ -5118,7 +5118,7 @@ export default function Home() {
     { label: "리뷰 히스토리", targetId: "review-history" },
     { label: "최근 CS 문의", targetId: "cs-history" },
     { label: "확인 필요 정보", targetId: "missing-infos" },
-    { label: "학습한 가게 지식", targetId: "store-knowledge" },
+    { label: "가게 지식", targetId: "store-knowledge" },
     { label: "AI 운영 분석", targetId: "ai-insights" },
   ] as const;
 
@@ -6256,7 +6256,7 @@ export default function Home() {
                   오늘의 AI CS 업무 요약
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  지금 처리할 일과 AI가 멈춘 항목만 먼저 보여드립니다.
+                  먼저 봐야 할 일만 추렸습니다.
                 </p>
               </div>
               <button
@@ -6350,13 +6350,12 @@ export default function Home() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
                     AI CS Impact
                   </p>
-                  <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                    AI가 오늘 줄여준 업무
-                  </h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                    오늘 생성된 답변 초안, 자동 완료, 사장님이 알려준 지식
-                    활용을 기준으로 처리 흐름과 시간을 요약했습니다.
-                  </p>
+                <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  AI가 오늘 줄여준 업무
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                    초안 작성, 자동 완료, 지식 활용을 기준으로 계산했습니다.
+                </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[26rem]">
                   <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950">
@@ -6504,7 +6503,7 @@ export default function Home() {
                   먼저 확인할 항목
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  위험하거나 정보가 부족한 항목부터 위에 보여드립니다.
+                  위험하거나 정보가 부족한 항목부터 보여드립니다.
                 </p>
               </div>
 
@@ -6514,7 +6513,7 @@ export default function Home() {
                 </p>
               ) : workflowAttentionItems.length === 0 ? (
                 <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
-                  현재 먼저 확인해야 할 위험 항목은 없습니다.
+                  지금 바로 볼 위험 항목은 없습니다.
                 </p>
               ) : (
                 <div className="grid gap-3 lg:grid-cols-3">
@@ -6598,7 +6597,7 @@ export default function Home() {
                       AI 직원 일지
                     </span>
                     <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                      오늘 AI가 처리하고 멈춘 기록
+                      오늘 처리 기록
                     </span>
                   </span>
                   <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
@@ -6625,7 +6624,7 @@ export default function Home() {
 
               {aiActivityLogsLoading ? (
                 <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-                  AI 업무 이력을 불러오는 중...
+                  업무 기록을 불러오는 중...
                 </p>
               ) : aiActivityLogsError ? (
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
@@ -6663,11 +6662,11 @@ export default function Home() {
                   <div className="grid gap-3 lg:grid-cols-2">
                     <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/25">
                       <h4 className="text-sm font-semibold text-amber-950 dark:text-amber-100">
-                        AI가 멈춘 이유
+                        멈춘 이유
                       </h4>
                       {stoppedReasonLogs.length === 0 ? (
                         <p className="mt-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                          오늘은 위험하거나 정보 부족으로 멈춘 기록이 없습니다.
+                          오늘은 멈춘 기록이 없습니다.
                         </p>
                       ) : (
                         <ul className="mt-3 space-y-2">
@@ -6735,8 +6734,7 @@ export default function Home() {
 
                   {recentAiActivityLogs.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm leading-6 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-                      아직 기록된 AI 업무 이력이 없습니다. 문의 답변을 만들거나
-                      처리함에서 답변을 승인하면 이곳에 이력이 쌓입니다.
+                      아직 기록이 없습니다. 문의를 처리하면 여기에 쌓입니다.
                     </p>
                   ) : (
                     <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -6790,8 +6788,7 @@ export default function Home() {
                             {isStoreKnowledgeCandidateLog(log) ? (
                               <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
                                 <p>
-                                  이 후보를 확인해 다시 사용으로 바꾸면 AI가 다음
-                                  비슷한 문의에 참고합니다.
+                                  확인 후 다시 사용으로 바꾸면 다음 문의에 참고합니다.
                                 </p>
                                 <button
                                   type="button"
@@ -9143,12 +9140,11 @@ export default function Home() {
                 AI Memory
               </p>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                AI가 학습한 가게 지식
+                가게 지식
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                사장님이 확인 필요 항목에 답변하며 알려준 내용을 AI가 기억하는
-                공간입니다. 답변에 사용할 지식과 검토가 필요한 지식, 보관할
-                지식을 나눠 관리할 수 있어요.
+                AI가 답변에 쓰는 기준표입니다. 맞는 내용만 “답변 사용 중”으로
+                남겨두세요.
               </p>
             </div>
             <button
@@ -9233,7 +9229,7 @@ export default function Home() {
                             </p>
                             <label className="block">
                               <span className="font-medium text-amber-900 dark:text-amber-100">
-                                AI가 기억할 질문
+                                고객 질문
                               </span>
                               <input
                                 type="text"
@@ -9252,7 +9248,7 @@ export default function Home() {
                             </label>
                             <label className="block">
                               <span className="font-medium text-amber-900 dark:text-amber-100">
-                                AI가 참고할 답변
+                                앞으로 쓸 답변
                               </span>
                               <textarea
                                 value={draft.answer}
@@ -9364,9 +9360,8 @@ export default function Home() {
               </div>
               {storeKnowledgeReviewItemCount > 0 ? (
                 <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                  검토 필요 배지가 있는 지식은 수정하거나 삭제해 주세요. AI가
-                  비슷한 문의에 답할 때는 충돌 가능 지식, 검토 필요 지식, 보관된
-                  지식을 답변 근거에서 제외합니다.
+                  검토 필요 지식은 답변에 쓰지 않습니다. 맞으면 다시 사용, 틀리면
+                  수정하거나 보관하세요.
                 </p>
               ) : null}
             </div>
@@ -9436,11 +9431,10 @@ export default function Home() {
           ) : storeKnowledgeItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center dark:border-zinc-700 dark:bg-zinc-950">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                아직 AI가 학습한 가게 지식이 없습니다
+                아직 저장된 가게 지식이 없습니다
               </h3>
               <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                확인 필요 항목에서 사장님이 답변을 입력하면 이곳에 지식으로
-                쌓입니다.
+                확인 필요 항목에 답하면 이곳에 쌓입니다.
               </p>
             </div>
           ) : filteredStoreKnowledgeItems.length === 0 ? (
@@ -9449,8 +9443,7 @@ export default function Home() {
                 선택한 상태의 지식이 없습니다
               </h3>
               <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                다른 상태 필터를 선택하거나, AI CS 처리함에서 새 정보를 학습하면
-                이곳에 표시됩니다.
+                다른 상태를 선택하거나 새 지식을 저장해보세요.
               </p>
             </div>
           ) : (
@@ -9543,7 +9536,7 @@ export default function Home() {
                           />
                         </label>
                         <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-                          AI가 참고할 답변
+                          앞으로 쓸 답변
                           <textarea
                             value={editingStoreKnowledgeAnswer}
                             onChange={(event) =>
@@ -9561,9 +9554,8 @@ export default function Home() {
                               먼저 판단해 주세요
                             </p>
                             <p className="mt-1">
-                              이 지식은 최근 수정 답변이나 품질 점검에서 확인이
-                              필요하다고 표시됐습니다. 맞는 내용이면 다시
-                              사용하고, 틀렸다면 수정하거나 보관해 주세요.
+                              답변에 쓰기 전 확인이 필요합니다. 맞으면 다시
+                              사용하고, 틀리면 수정하거나 보관하세요.
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button
@@ -9617,7 +9609,7 @@ export default function Home() {
                         </div>
                         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
                           <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                            AI가 참고할 답변
+                            앞으로 쓸 답변
                           </p>
                           <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
                             {item.answer}
@@ -9631,8 +9623,8 @@ export default function Home() {
                         {knowledgeStatus !== "active" ? (
                           <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
                             {knowledgeStatus === "needs_review"
-                              ? "이 지식은 검토 필요 상태라 AI 답변 근거에서 제외됩니다. 내용을 확인한 뒤 다시 사용으로 바꿀 수 있어요."
-                              : "이 지식은 보관 상태라 AI 답변 근거에서 제외됩니다. 필요하면 다시 사용으로 바꿀 수 있어요."}
+                              ? "검토 필요 상태라 답변에 쓰지 않습니다. 확인 후 다시 사용으로 바꿀 수 있어요."
+                              : "보관 상태라 답변에 쓰지 않습니다. 필요하면 다시 사용으로 바꿀 수 있어요."}
                           </p>
                         ) : null}
                         {needsKnowledgeReview ? (

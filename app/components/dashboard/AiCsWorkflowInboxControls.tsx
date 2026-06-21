@@ -122,13 +122,13 @@ export function AiCsWorkflowInboxControls({
                 안전 항목 일괄 승인
               </p>
               <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
-                일괄 승인은 AI가 바로 답변 가능하고 위험도 낮음으로 판단한
-                항목만 처리합니다. 확인 필요 또는 위험 항목은 제외됩니다.
+                바로 답해도 안전한 초안만 한 번에 완료합니다. 확인 필요와
+                위험 항목은 제외합니다.
               </p>
               <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 {isPaidPlan
-                  ? "유료 플랜에서 반복 업무를 빠르게 처리할 수 있습니다."
-                  : "유료 플랜으로 전환되면 반복 업무를 빠르게 처리할 수 있습니다. 개별 승인은 무료 체험에서도 가능합니다."}
+                  ? "반복 문의를 빠르게 정리할 수 있습니다."
+                  : "유료 플랜에서 반복 문의를 한 번에 정리할 수 있습니다. 개별 승인은 무료 체험에서도 가능합니다."}
               </p>
             </div>
             <button

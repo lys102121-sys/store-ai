@@ -126,34 +126,34 @@ function workflowEvidenceTitle(item: AiCsWorkflowItemCardItem) {
 
 function workflowEvidenceMessage(item: AiCsWorkflowItemCardItem) {
   if (item.type === "missing_info") {
-    return "AI가 답변하기 위해 추가 정보가 필요하다고 판단한 항목입니다. 사장님이 답변을 입력하면 가게 지식으로 저장됩니다.";
+    return "답변에 필요한 정보가 비어 있어 멈췄습니다. 답을 입력하면 다음 비슷한 문의에 다시 씁니다.";
   }
 
   if (item.usedKnowledgeItems.some(isStoreInfoEvidenceItem)) {
-    return "저장된 상품 목록, 정책, FAQ 또는 사장님이 확인해준 가게 지식을 답변 근거로 사용했습니다. 충돌 가능성이 있는 지식은 답변 근거에서 제외됩니다.";
+    return "저장된 상품/정책/FAQ를 근거로 썼습니다. 검토 필요 지식은 제외했습니다.";
   }
 
   if (item.usedKnowledgeItems.length > 0) {
-    return "사장님이 이전에 확인해준 가게 지식을 답변 근거로 함께 사용했습니다. 충돌 가능성이 있는 지식은 답변 근거에서 제외됩니다.";
+    return "사장님이 알려준 지식을 답변 근거로 함께 썼습니다.";
   }
 
   if (item.handlingType === "auto_ready") {
-    return "저장된 가게 기본 정보, 상품 정보, 정책 또는 FAQ에서 답변 가능한 항목으로 판단했습니다.";
+    return "저장된 정보만으로 답변 가능하다고 판단했습니다.";
   }
 
   if (item.riskLevel === "high") {
-    return "위험도가 높은 항목이라 등록된 정보가 있더라도 답변 전 확인이 필요합니다.";
+    return "위험 신호가 있어 답변 전 확인이 필요합니다.";
   }
 
   if (item.handlingType === "needs_review") {
-    return "답변에 필요한 정보가 충분하지 않거나 더 정확한 확인이 필요한 항목입니다.";
+    return "정보가 부족하거나 정확한 확인이 필요합니다.";
   }
 
   if (item.handlingType === "needs_approval") {
-    return "고객 상황에 맞는 답변인지 사장님이 확인한 뒤 승인하는 것이 안전합니다.";
+    return "고객 상황에 맞는지 승인 전 확인하세요.";
   }
 
-  return "AI가 저장된 가게 정보와 정책을 참고해 답변 초안을 작성했습니다.";
+  return "저장된 가게 정보를 참고해 초안을 만들었습니다.";
 }
 
 const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
@@ -415,13 +415,12 @@ export function AiCsWorkflowItemCard({
                 </div>
                 {item.handlingType === "auto_ready" && !isCompleted ? (
                   <p className="mt-2 text-emerald-700 dark:text-emerald-300">
-                    AI가 바로 답변 가능하다고 판단했습니다.
+                    바로 승인해도 되는 낮은 위험도 항목입니다.
                   </p>
                 ) : null}
                 {isAutoCompleted ? (
                   <p className="mt-2 text-emerald-700 dark:text-emerald-300">
-                    AI가 낮은 위험도의 바로 답변 가능한 항목으로 판단해 자동
-                    완료 처리했습니다.
+                    자동 완료 처리된 안전 항목입니다.
                   </p>
                 ) : null}
                 {needsAttention ? (
@@ -433,8 +432,8 @@ export function AiCsWorkflowItemCard({
                     }`}
                   >
                     {attentionTone === "danger"
-                      ? "고위험 항목입니다. 승인 전 답변 내용과 관련 정책을 반드시 확인해 주세요."
-                      : "사장님 확인이 필요한 항목입니다. 답변 내용과 정책을 한 번 더 확인해 주세요."}
+                      ? "고위험 항목입니다. 승인 전 꼭 확인하세요."
+                      : "확인이 필요한 항목입니다. 답변과 정책을 한 번 더 보세요."}
                   </p>
                 ) : null}
               </div>
@@ -508,8 +507,8 @@ export function AiCsWorkflowItemCard({
                 className={`${workflowCardDetailClass} border-violet-200 bg-violet-50 font-medium text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200`}
               >
                 {item.platformStatus === "posted"
-                  ? "샘플 데이터가 플랫폼 등록 완료 상태로 처리되었습니다. 실제 플랫폼 API 등록은 실연동 단계에서 연결됩니다."
-                  : "이 항목은 실제 플랫폼에서 가져온 데이터가 아니라, 연동 흐름을 체험하기 위한 샘플 데이터입니다."}
+                  ? "샘플 데이터가 등록 완료 상태로 처리됐습니다. 실제 등록은 연동 단계에서 연결됩니다."
+                  : "실제 플랫폼 데이터가 아닌 체험용 샘플입니다."}
               </p>
             ) : null}
 
@@ -517,8 +516,7 @@ export function AiCsWorkflowItemCard({
             item.sourcePlatform !== "manual" &&
             item.platformStatus === "posted" ? (
               <p className="px-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                승인 완료되어 플랫폼 등록 완료 상태로 표시됩니다. 실제 플랫폼 API
-                등록은 연동 단계에서 연결될 예정입니다.
+                플랫폼 등록 완료 상태입니다. 실제 등록 API는 연동 단계에서 연결됩니다.
               </p>
             ) : null}
           </div>
