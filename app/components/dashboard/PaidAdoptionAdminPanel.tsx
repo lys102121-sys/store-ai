@@ -37,6 +37,13 @@ const statusOptions = [
   { value: "cancelled", label: "보류/취소" },
 ] as const;
 
+const paidFeatureItems = [
+  "무료 답변 한도 해제",
+  "실제 플랫폼 문의 가져오기",
+  "AI 답변 등록/승인 운영",
+  "자동 완료와 안전 항목 일괄 승인",
+];
+
 function statusLabel(status: string) {
   return (
     statusOptions.find((option) => option.value === status)?.label ?? status
@@ -59,6 +66,46 @@ function numberValue(value: number | null) {
   return Math.max(0, value ?? 0).toLocaleString("ko-KR");
 }
 
+function statusCount(requests: AdminPaidAdoptionRequest[], status: string) {
+  return requests.filter((request) => request.status === status).length;
+}
+
+function adoptionPriorityLabel(request: AdminPaidAdoptionRequest) {
+  if (request.status === "active") return "유료 계정";
+  if (request.status === "cancelled") return "보류";
+
+  const score =
+    (request.workflow_items_30d ?? 0) +
+    (request.platform_items_30d ?? 0) * 2 +
+    (request.needs_review_active ?? 0) * 2 +
+    (request.auto_completed_30d ?? 0);
+
+  if (score >= 30) return "전환 우선";
+  if (score >= 10) return "상담 우선";
+  if (score > 0) return "체험 진행 중";
+  return "초기 문의";
+}
+
+function adoptionNextAction(status: string) {
+  if (status === "requested") {
+    return "먼저 연락해 도입 범위와 결제 의사를 확인하고, 대화가 시작되면 상담 중으로 바꾸세요.";
+  }
+
+  if (status === "contacted") {
+    return "플랫폼 연동 범위와 결제가 확정되면 유료 전환을 눌러 계정 기능을 열어주세요.";
+  }
+
+  if (status === "active") {
+    return "유료 기능이 열린 계정입니다. 플랫폼 연동 설정과 자동 처리 운영을 이어가면 됩니다.";
+  }
+
+  if (status === "cancelled") {
+    return "보류된 요청입니다. 다시 진행하기로 하면 요청 접수 또는 상담 중으로 되돌릴 수 있습니다.";
+  }
+
+  return "상담 상태를 확인하고 다음 처리 단계로 바꿔주세요.";
+}
+
 export function PaidAdoptionAdminPanel({
   isVisible,
   requests,
@@ -70,6 +117,11 @@ export function PaidAdoptionAdminPanel({
   onStatusChange,
 }: PaidAdoptionAdminPanelProps) {
   if (!isVisible) return null;
+
+  const statusSummaryItems = statusOptions.map((option) => ({
+    ...option,
+    count: statusCount(requests, option.value),
+  }));
 
   return (
     <section className="order-[39] rounded-[1.5rem] border border-violet-200/80 bg-gradient-to-br from-white via-violet-50/70 to-cyan-50/60 p-5 shadow-sm dark:border-violet-900/60 dark:from-zinc-900 dark:via-violet-950/25 dark:to-cyan-950/20 sm:p-6">
@@ -84,6 +136,10 @@ export function PaidAdoptionAdminPanel({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             상담 요청은 우리 운영자/세일즈 담당자가 확인합니다. 상담과 결제가
             끝난 요청을 유료 전환으로 바꾸면 해당 계정의 유료 기능이 열립니다.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            요청 접수 → 상담 중 → 유료 전환 순서로 관리하면 무료 체험 사용자를
+            실제 결제 고객으로 넘기기 쉽습니다.
           </p>
         </div>
         <button
@@ -109,6 +165,41 @@ export function PaidAdoptionAdminPanel({
         </p>
       ) : null}
 
+      {requests.length > 0 ? (
+        <div className="mt-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="grid gap-2 sm:grid-cols-4">
+            {statusSummaryItems.map((item) => (
+              <div
+                key={item.value}
+                className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm dark:border-white/10 dark:bg-zinc-950/60"
+              >
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-black text-zinc-950 dark:text-zinc-50">
+                  {item.count.toLocaleString("ko-KR")}건
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 p-4 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
+            <p className="font-bold text-emerald-900 dark:text-emerald-100">
+              유료 전환 시 열리는 기능
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {paidFeatureItems.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100 dark:bg-zinc-950/50 dark:text-emerald-200 dark:ring-emerald-900"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-5 grid gap-3">
         {loading && requests.length === 0 ? (
           <div className="rounded-2xl border border-white/80 bg-white/75 p-5 text-sm text-zinc-500 shadow-sm dark:border-white/10 dark:bg-zinc-950/60 dark:text-zinc-400">
@@ -118,7 +209,8 @@ export function PaidAdoptionAdminPanel({
 
         {!loading && requests.length === 0 ? (
           <div className="rounded-2xl border border-white/80 bg-white/75 p-5 text-sm text-zinc-500 shadow-sm dark:border-white/10 dark:bg-zinc-950/60 dark:text-zinc-400">
-            아직 도입 상담 요청이 없습니다.
+            아직 도입 상담 요청이 없습니다. 시작하기 화면에서 사용자가 도입 상담
+            요청을 누르면 이곳에 쌓입니다.
           </div>
         ) : null}
 
@@ -136,6 +228,9 @@ export function PaidAdoptionAdminPanel({
                     <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-200 dark:ring-violet-900">
                       {statusLabel(request.status)}
                     </span>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                      {adoptionPriorityLabel(request)}
+                    </span>
                     <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                       {formatDateTime(request.updated_at)}
                     </span>
@@ -151,6 +246,9 @@ export function PaidAdoptionAdminPanel({
                       {request.memo}
                     </p>
                   ) : null}
+                  <p className="mt-3 rounded-xl border border-violet-100 bg-violet-50/80 px-3 py-2 text-sm leading-6 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/25 dark:text-violet-200">
+                    다음 처리: {adoptionNextAction(request.status)}
+                  </p>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-2 lg:w-80">
