@@ -4621,6 +4621,12 @@ export default function Home() {
     !isPaidPlan &&
     !billingStatusLoading &&
     trialAiReplyUsedCount >= FREE_TRIAL_AI_REPLY_LIMIT;
+  const freeTrialAiReplyNearlyUsed =
+    !isPaidPlan &&
+    !billingStatusLoading &&
+    !freeTrialAiReplyLimitReached &&
+    trialAiReplyUsedCount > 0 &&
+    trialAiReplyRemainingCount <= 5;
   const answerGenerationBlocked =
     aiGenerationBlocked || freeTrialAiReplyLimitReached;
   const activeWorkflowSummaryItems = workflowSummaryItems.filter(
@@ -6198,6 +6204,36 @@ export default function Home() {
                   : "로그인 후 상담 요청"}
               </button>
             </div>
+
+            {freeTrialAiReplyNearlyUsed ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold">
+                      무료 답변이 {trialAiReplyRemainingCount.toLocaleString("ko-KR")}
+                      건 남았습니다
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                      실제 고객 응대를 계속 맡기려면 지금 도입 범위를 정리해두세요.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={
+                      authUser
+                        ? () => void handleRequestPaidAdoption()
+                        : () => void handleKakaoLogin()
+                    }
+                    disabled={
+                      authUser ? paidAdoptionRequestLoading : authActionLoading
+                    }
+                    className={buttonClass("warning", "sm", "w-fit rounded-lg")}
+                  >
+                    {authUser ? "도입 상담 요청" : "로그인 후 상담 요청"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             {threeMinuteDemoMessage || threeMinuteDemoError ? (
               <p
@@ -8768,6 +8804,35 @@ export default function Home() {
                 <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
                   가게 정보와 지식 학습은 계속 사용할 수 있습니다. 실제 고객
                   응대를 계속 맡기려면 도입 상담을 요청해 주세요.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={
+                  authUser
+                    ? () => void handleRequestPaidAdoption()
+                    : () => void handleKakaoLogin()
+                }
+                disabled={authUser ? paidAdoptionRequestLoading : authActionLoading}
+                className={buttonClass("warning", "sm", "w-fit rounded-lg")}
+              >
+                {authUser ? "도입 상담 요청" : "로그인 후 상담 요청"}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {activeTab === "answer" && freeTrialAiReplyNearlyUsed ? (
+          <section className="order-[29] rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  무료 답변이 {trialAiReplyRemainingCount.toLocaleString("ko-KR")}
+                  건 남았습니다
+                </p>
+                <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                  계속 운영하려면 도입 상담으로 플랫폼 연동과 유료 전환 범위를
+                  정리해두세요.
                 </p>
               </div>
               <button
