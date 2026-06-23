@@ -104,9 +104,10 @@ assert.match(pageSource, /answerGenerationBlocked/);
 assert.match(pageSource, /generationBlocked=\{answerGenerationBlocked\}/);
 assert.match(pageSource, /reviews\.length > trialAiReplyRemainingCount/);
 assert.match(pageSource, /무료 체험 남은 AI 답변 생성/);
-assert.match(pageSource, /무료 답변이 \{trialAiReplyRemainingCount\.toLocaleString\("ko-KR"\)\}/);
-assert.match(pageSource, /실제 고객 응대를 계속 맡기려면 지금 도입 범위를 정리해두세요/);
-assert.match(pageSource, /계속 운영하려면 도입 상담으로 플랫폼 연동과 유료 전환 범위를/);
+assert.match(pageSource, /freeTrialNearlyUsedTitle/);
+assert.match(pageSource, /무료 답변 \$\{trialAiReplyRemainingCount\.toLocaleString/);
+assert.match(pageSource, /운영을 계속하려면 지금 도입 상담을 요청하세요/);
+assert.match(pageSource, /연동 범위와 유료 전환을 같이 정리해드립니다/);
 
 assert.match(freeTrialUsageSource, /checkFreeTrialAiReplyCapacity/);
 assert.match(freeTrialUsageSource, /createFreeTrialLimitResponse/);
