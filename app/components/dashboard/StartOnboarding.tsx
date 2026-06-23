@@ -27,6 +27,9 @@ export type StartPaidAdoptionAction = {
   isLoading: boolean;
   message: string;
   error: string;
+  statusLabel?: string;
+  statusDescription?: string;
+  updatedAtLabel?: string;
 };
 
 type StartOnboardingProps = {
@@ -200,20 +203,37 @@ export function StartOnboarding({
                 </li>
               ))}
             </ul>
-            <button
-              type="button"
-              onClick={paidAdoptionAction.onAction}
-              disabled={paidAdoptionAction.isLoading}
-              className={buttonClass(
-                "success",
-                "lg",
-                "font-bold lg:justify-self-end",
-              )}
-            >
-              {paidAdoptionAction.isLoading
-                ? "저장 중..."
-                : paidAdoptionAction.actionLabel}
-            </button>
+            <div className="grid gap-3 lg:justify-self-end">
+              {paidAdoptionAction.statusLabel ? (
+                <div className="rounded-2xl border border-emerald-200 bg-white/85 px-4 py-3 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                      {paidAdoptionAction.statusLabel}
+                    </span>
+                    {paidAdoptionAction.updatedAtLabel ? (
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {paidAdoptionAction.updatedAtLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  {paidAdoptionAction.statusDescription ? (
+                    <p className="mt-2 max-w-64 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                      {paidAdoptionAction.statusDescription}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={paidAdoptionAction.onAction}
+                disabled={paidAdoptionAction.isLoading}
+                className={buttonClass("success", "lg", "font-bold")}
+              >
+                {paidAdoptionAction.isLoading
+                  ? "저장 중..."
+                  : paidAdoptionAction.actionLabel}
+              </button>
+            </div>
           </div>
           {paidAdoptionAction.message || paidAdoptionAction.error ? (
             <p

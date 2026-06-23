@@ -56,21 +56,29 @@ const coupangReplyRouteSource = fs.readFileSync(
 );
 
 assert.match(routeSource, /requireAuthenticatedUser/);
+assert.match(routeSource, /export async function GET/);
 assert.match(routeSource, /paid_adoption_requests/);
 assert.match(routeSource, /unique\(user_id, source\)/);
 assert.match(routeSource, /onConflict: "user_id,source"/);
+assert.match(routeSource, /\.eq\("source", "start_onboarding"\)/);
+assert.match(routeSource, /\.maybeSingle\(\)/);
 assert.match(routeSource, /start_onboarding/);
 assert.match(routeSource, /estimated_saved_value_krw_30d/);
 assert.match(routeSource, /workflow_items_30d/);
 assert.match(routeSource, /missingTableSql/);
 
 assert.match(pageSource, /handleRequestPaidAdoption/);
+assert.match(pageSource, /loadPaidAdoptionRequest/);
 assert.match(pageSource, /startPaidAdoptionAction/);
 assert.match(pageSource, /paidAdoptionAction=\{startPaidAdoptionAction\}/);
 assert.match(pageSource, /\/api\/paid-adoption-requests/);
 assert.match(pageSource, /recent30EstimatedSavedValueKrw/);
 assert.match(pageSource, /needsReviewSummaryCount/);
 assert.match(pageSource, /도입 상담 요청이 저장되었습니다/);
+assert.match(pageSource, /요청 접수됨/);
+assert.match(pageSource, /상담 진행 중/);
+assert.match(pageSource, /유료 기능 열림/);
+assert.match(pageSource, /최근 업데이트/);
 assert.doesNotMatch(pageSource, /href=\{paidConsultHref\}/);
 
 const startOnboardingSource = fs.readFileSync(
@@ -80,6 +88,9 @@ const startOnboardingSource = fs.readFileSync(
 assert.match(startOnboardingSource, /paidAdoptionAction/);
 assert.match(startOnboardingSource, /유료 도입 상담/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.highlights/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.statusLabel/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.statusDescription/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.updatedAtLabel/);
 assert.doesNotMatch(startOnboardingSource, /metricLabel/);
 assert.doesNotMatch(startOnboardingSource, /metricValue/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.actionLabel/);

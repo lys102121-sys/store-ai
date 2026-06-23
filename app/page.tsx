@@ -366,11 +366,30 @@ type PlatformCredentialsApiResponse = {
 };
 
 type PaidAdoptionRequestApiResponse = {
-  request?: unknown;
+  request?: PaidAdoptionRequestRecord | null;
   message?: string;
   error?: string;
   detail?: string;
   missingTableSql?: string;
+};
+
+type PaidAdoptionRequestRecord = {
+  id: string;
+  user_id: string;
+  status: string;
+  source: string;
+  store_name: string | null;
+  estimated_saved_minutes_today: number | null;
+  estimated_saved_value_krw_today: number | null;
+  estimated_saved_minutes_30d: number | null;
+  estimated_saved_value_krw_30d: number | null;
+  workflow_items_30d: number | null;
+  auto_completed_30d: number | null;
+  needs_review_active: number | null;
+  platform_items_30d: number | null;
+  memo: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 type AdminPaidAdoptionRequestsApiResponse = {
@@ -603,6 +622,34 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function paidAdoptionStatusLabel(status?: string | null) {
+  if (status === "contacted") return "상담 진행 중";
+  if (status === "active") return "유료 기능 열림";
+  if (status === "cancelled") return "보류/취소";
+  if (status === "requested") return "요청 접수됨";
+  return undefined;
+}
+
+function paidAdoptionStatusDescription(status?: string | null) {
+  if (status === "contacted") {
+    return "운영자가 도입 범위와 플랫폼 연동 방법을 확인하고 있습니다.";
+  }
+
+  if (status === "active") {
+    return "유료 기능이 열렸습니다. 실제 플랫폼 연동과 자동 처리 운영을 이어갈 수 있습니다.";
+  }
+
+  if (status === "cancelled") {
+    return "이번 요청은 보류되었습니다. 다시 상담이 필요하면 요청을 다시 남길 수 있습니다.";
+  }
+
+  if (status === "requested") {
+    return "요청이 접수되었습니다. 운영자가 확인 후 도입 범위와 연결 방법을 안내드릴게요.";
+  }
+
+  return undefined;
 }
 
 function getCoupangConnectionStatusLabel(status?: string) {
@@ -1927,6 +1974,8 @@ export default function Home() {
   const [paidAdoptionRequestMessage, setPaidAdoptionRequestMessage] =
     useState("");
   const [paidAdoptionRequestError, setPaidAdoptionRequestError] = useState("");
+  const [paidAdoptionRequest, setPaidAdoptionRequest] =
+    useState<PaidAdoptionRequestRecord | null>(null);
   const [adminPaidAdoptionRequests, setAdminPaidAdoptionRequests] = useState<
     AdminPaidAdoptionRequest[]
   >([]);
@@ -2359,6 +2408,24 @@ export default function Home() {
     }
   }, []);
 
+  const loadPaidAdoptionRequest = useCallback(async () => {
+    try {
+      const response = await fetch("/api/paid-adoption-requests", {
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as PaidAdoptionRequestApiResponse;
+
+      if (!response.ok) {
+        setPaidAdoptionRequest(null);
+        return;
+      }
+
+      setPaidAdoptionRequest(data.request ?? null);
+    } catch {
+      setPaidAdoptionRequest(null);
+    }
+  }, []);
+
   const loadAdminPaidAdoptionRequests = useCallback(async () => {
     setAdminPaidAdoptionRequestsLoading(true);
     setAdminPaidAdoptionRequestsError("");
@@ -2445,6 +2512,7 @@ export default function Home() {
         setPaidAdoptionRequestLoading(false);
         setPaidAdoptionRequestMessage("");
         setPaidAdoptionRequestError("");
+        setPaidAdoptionRequest(null);
         setAdminPaidAdoptionRequests([]);
         setIsAdminPaidAdoptionPanelVisible(false);
         setAdminPaidAdoptionRequestsLoading(false);
@@ -2492,6 +2560,7 @@ export default function Home() {
       void loadIntegrationRequests();
       void loadPlatformCredentials();
       void loadBillingStatus();
+      void loadPaidAdoptionRequest();
       void loadAdminPaidAdoptionRequests();
     });
 
@@ -2503,6 +2572,7 @@ export default function Home() {
     loadAdminPaidAdoptionRequests,
     loadBillingStatus,
     loadIntegrationRequests,
+    loadPaidAdoptionRequest,
     loadPlatformCredentials,
   ]);
 
@@ -5298,6 +5368,13 @@ export default function Home() {
     isLoading: authUser ? paidAdoptionRequestLoading : authActionLoading,
     message: paidAdoptionRequestMessage,
     error: paidAdoptionRequestError,
+    statusLabel: paidAdoptionStatusLabel(paidAdoptionRequest?.status),
+    statusDescription: paidAdoptionStatusDescription(
+      paidAdoptionRequest?.status,
+    ),
+    updatedAtLabel: paidAdoptionRequest
+      ? `최근 업데이트 ${formatDate(paidAdoptionRequest.updated_at)}`
+      : undefined,
   };
   const freeTrialPrimaryAction = !authUser
     ? {
@@ -5547,7 +5624,9 @@ export default function Home() {
       setPaidAdoptionRequestMessage(
         "도입 상담 요청이 저장되었습니다. 운영자가 확인 후 도입 범위와 연동 방법을 안내드릴게요.",
       );
+      setPaidAdoptionRequest(data.request);
       void loadBillingStatus();
+      void loadPaidAdoptionRequest();
       void loadAdminPaidAdoptionRequests();
     } catch {
       setPaidAdoptionRequestError("도입 상담 요청 저장에 실패했습니다.");
@@ -5588,6 +5667,7 @@ export default function Home() {
       await Promise.all([
         loadAdminPaidAdoptionRequests(),
         loadBillingStatus(),
+        loadPaidAdoptionRequest(),
       ]);
     } catch {
       setAdminPaidAdoptionRequestsError(

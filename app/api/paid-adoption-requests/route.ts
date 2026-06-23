@@ -68,6 +68,49 @@ function isMissingPaidAdoptionTableError(error: { message?: string } | null) {
   );
 }
 
+export async function GET(request: Request) {
+  const auth = await requireAuthenticatedUser(request);
+  if ("response" in auth) {
+    return auth.response;
+  }
+
+  const { data, error } = await auth.supabase
+    .from("paid_adoption_requests")
+    .select(
+      "id, user_id, status, source, store_name, estimated_saved_minutes_today, estimated_saved_value_krw_today, estimated_saved_minutes_30d, estimated_saved_value_krw_30d, workflow_items_30d, auto_completed_30d, needs_review_active, platform_items_30d, memo, created_at, updated_at",
+    )
+    .eq("user_id", auth.userId)
+    .eq("source", "start_onboarding")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingPaidAdoptionTableError(error)) {
+      console.warn(
+        `paid_adoption_requests table is missing. Run this SQL in Supabase SQL editor: ${paidAdoptionRequestsSql}`,
+      );
+      return Response.json(
+        {
+          error: "Paid adoption request table is missing.",
+          missingTableSql: paidAdoptionRequestsSql,
+        },
+        { status: 500 },
+      );
+    }
+
+    return Response.json(
+      {
+        error: "Failed to load paid adoption request.",
+        detail: error.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ request: data });
+}
+
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser(request);
   if ("response" in auth) {
