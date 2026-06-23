@@ -79,6 +79,10 @@ assert.match(pageSource, /요청 접수됨/);
 assert.match(pageSource, /상담 진행 중/);
 assert.match(pageSource, /유료 기능 열림/);
 assert.match(pageSource, /최근 업데이트/);
+assert.match(pageSource, /가게 정보 준비하기/);
+assert.match(pageSource, /플랫폼 연동 준비하기/);
+assert.match(pageSource, /유료 운영 시작하기/);
+assert.match(pageSource, /다시 상담 요청/);
 assert.doesNotMatch(pageSource, /href=\{paidConsultHref\}/);
 
 const startOnboardingSource = fs.readFileSync(
@@ -91,6 +95,8 @@ assert.match(startOnboardingSource, /paidAdoptionAction\.highlights/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.statusLabel/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.statusDescription/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.updatedAtLabel/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.statusActionLabel/);
+assert.match(startOnboardingSource, /paidAdoptionAction\.onStatusAction/);
 assert.doesNotMatch(startOnboardingSource, /metricLabel/);
 assert.doesNotMatch(startOnboardingSource, /metricValue/);
 assert.match(startOnboardingSource, /paidAdoptionAction\.actionLabel/);

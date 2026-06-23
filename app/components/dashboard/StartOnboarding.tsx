@@ -30,6 +30,8 @@ export type StartPaidAdoptionAction = {
   statusLabel?: string;
   statusDescription?: string;
   updatedAtLabel?: string;
+  statusActionLabel?: string;
+  onStatusAction?: () => void;
 };
 
 type StartOnboardingProps = {
@@ -220,6 +222,20 @@ export function StartOnboarding({
                     <p className="mt-2 max-w-64 text-xs leading-5 text-slate-600 dark:text-slate-300">
                       {paidAdoptionAction.statusDescription}
                     </p>
+                  ) : null}
+                  {paidAdoptionAction.statusActionLabel &&
+                  paidAdoptionAction.onStatusAction ? (
+                    <button
+                      type="button"
+                      onClick={paidAdoptionAction.onStatusAction}
+                      className={buttonClass(
+                        "secondary",
+                        "sm",
+                        "mt-3 w-full rounded-lg",
+                      )}
+                    >
+                      {paidAdoptionAction.statusActionLabel}
+                    </button>
                   ) : null}
                 </div>
               ) : null}

@@ -5380,6 +5380,26 @@ export default function Home() {
     updatedAtLabel: paidAdoptionRequest
       ? `최근 업데이트 ${formatDate(paidAdoptionRequest.updated_at)}`
       : undefined,
+    statusActionLabel:
+      paidAdoptionRequest?.status === "requested"
+        ? "가게 정보 준비하기"
+        : paidAdoptionRequest?.status === "contacted"
+          ? "플랫폼 연동 준비하기"
+          : paidAdoptionRequest?.status === "active"
+            ? "유료 운영 시작하기"
+            : paidAdoptionRequest?.status === "cancelled"
+              ? "다시 상담 요청"
+              : undefined,
+    onStatusAction:
+      paidAdoptionRequest?.status === "requested"
+        ? () => goToTabSection("store", "store-info")
+        : paidAdoptionRequest?.status === "contacted"
+          ? () => goToTabSection("integrations", "platform-integrations")
+          : paidAdoptionRequest?.status === "active"
+            ? () => goToTabSection("manage", "ai-cs-inbox")
+            : paidAdoptionRequest?.status === "cancelled"
+              ? () => void handleRequestPaidAdoption()
+              : undefined,
   };
   const freeTrialPrimaryAction = !authUser
     ? {
