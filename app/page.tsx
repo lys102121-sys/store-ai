@@ -658,6 +658,18 @@ function getCoupangConnectionStatusLabel(status?: string) {
   return "연결 전";
 }
 
+function integrationPriorityBadgeClass(tone: "ready" | "next" | "demo") {
+  if (tone === "ready") {
+    return "bg-emerald-100 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-200 dark:ring-emerald-900";
+  }
+
+  if (tone === "next") {
+    return "bg-sky-100 text-sky-800 ring-sky-200 dark:bg-sky-950/70 dark:text-sky-200 dark:ring-sky-900";
+  }
+
+  return "bg-violet-100 text-violet-800 ring-violet-200 dark:bg-violet-950/70 dark:text-violet-200 dark:ring-violet-900";
+}
+
 function sentimentLabel(sentiment: string) {
   switch (sentiment) {
     case "positive":
@@ -1408,36 +1420,48 @@ const integrationPlatforms: ReadonlyArray<{
   id: IntegrationPlatform;
   name: string;
   description: string;
+  priorityLabel: string;
+  priorityTone: "ready" | "next" | "demo";
 }> = [
   {
-    id: "baemin",
-    name: "배민",
+    id: "coupang",
+    name: "쿠팡",
     description:
-      "배민 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
-  },
-  {
-    id: "yogiyo",
-    name: "요기요",
-    description:
-      "요기요 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
-  },
-  {
-    id: "coupangeats",
-    name: "쿠팡이츠",
-    description:
-      "쿠팡이츠 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+      "쿠팡 상품 문의를 실제로 가져오고 AI CS 처리함에 저장하는 흐름을 우선 연결합니다.",
+    priorityLabel: "실제 연동 우선",
+    priorityTone: "ready",
   },
   {
     id: "smartstore",
     name: "스마트스토어",
     description:
       "스마트스토어 상품 문의와 리뷰 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+    priorityLabel: "다음 연동 후보",
+    priorityTone: "next",
   },
   {
-    id: "coupang",
-    name: "쿠팡",
+    id: "baemin",
+    name: "배민",
     description:
-      "쿠팡 상품 문의와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+      "배민 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+    priorityLabel: "샘플 리뷰 체험",
+    priorityTone: "demo",
+  },
+  {
+    id: "yogiyo",
+    name: "요기요",
+    description:
+      "요기요 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+    priorityLabel: "샘플 리뷰 체험",
+    priorityTone: "demo",
+  },
+  {
+    id: "coupangeats",
+    name: "쿠팡이츠",
+    description:
+      "쿠팡이츠 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
+    priorityLabel: "샘플 리뷰 체험",
+    priorityTone: "demo",
   },
 ];
 
@@ -8271,10 +8295,56 @@ export default function Home() {
               연결할 플랫폼을 선택하세요
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              플랫폼 카드를 열면 샘플 데이터로 먼저 체험하거나 연동 희망을
-              등록할 수 있습니다. 실제 API 설정은 지원되는 플랫폼에서만
-              표시됩니다.
+              지금은 쿠팡 실제 문의 연동을 가장 먼저 연결하고, 스마트스토어와
+              배달앱은 샘플 체험과 연동 희망 등록으로 준비합니다.
             </p>
+          </div>
+
+          <div className="mt-6 grid gap-3 lg:grid-cols-3">
+            {[
+              {
+                step: "1",
+                title: "쿠팡 실제 연동",
+                description:
+                  "API 설정, 연결 테스트, 실제 문의 가져오기까지 이어지는 1순위 도입 흐름입니다.",
+                tone: "emerald",
+              },
+              {
+                step: "2",
+                title: "스마트스토어 준비",
+                description:
+                  "샘플 문의로 처리함 흐름을 확인하고, 실제 연동 희망을 먼저 등록합니다.",
+                tone: "sky",
+              },
+              {
+                step: "3",
+                title: "배달앱 샘플/수요 확인",
+                description:
+                  "배민, 요기요, 쿠팡이츠는 샘플 리뷰로 데모하고 연동 수요를 모읍니다.",
+                tone: "violet",
+              },
+            ].map((item) => (
+              <article
+                key={item.title}
+                className={`rounded-2xl border p-4 ${
+                  item.tone === "emerald"
+                    ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/60 dark:bg-emerald-950/25"
+                    : item.tone === "sky"
+                      ? "border-sky-200 bg-sky-50/80 dark:border-sky-900/60 dark:bg-sky-950/25"
+                      : "border-violet-200 bg-violet-50/80 dark:border-violet-900/60 dark:bg-violet-950/25"
+                }`}
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-black text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/10">
+                  {item.step}
+                </span>
+                <h3 className="mt-3 text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                  {item.description}
+                </p>
+              </article>
+            ))}
           </div>
 
           {!authUser ? (
@@ -8330,6 +8400,13 @@ export default function Home() {
                         <h3 className="text-base font-semibold">
                           {platform.name}
                         </h3>
+                        <span
+                          className={`mt-2 mr-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${integrationPriorityBadgeClass(
+                            platform.priorityTone,
+                          )}`}
+                        >
+                          {platform.priorityLabel}
+                        </span>
                         {platform.id === "coupang" ? (
                           <span
                             className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
