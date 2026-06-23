@@ -6212,10 +6212,13 @@ export default function Home() {
               {[
                 {
                   step: "1",
-                  title: "예시 가게를 준비합니다",
+                  title: isPaidPlan
+                    ? "가게 지식 최종 확인"
+                    : "예시 가게를 준비합니다",
                   tone: "emerald",
-                  description:
-                    "가게 정보가 없으면 예시 상품과 정책을 자동으로 넣어 바로 체험합니다.",
+                  description: isPaidPlan
+                    ? "상품, 정책, 말투 학습이 실제 고객 응대에 맞게 들어갔는지 먼저 확인합니다."
+                    : "가게 정보가 없으면 예시 상품과 정책을 자동으로 넣어 바로 체험합니다.",
                 },
                 {
                   step: "2",
@@ -6263,6 +6266,79 @@ export default function Home() {
               ))}
             </div>
 
+            {isPaidPlan ? (
+              <div className="mt-5 rounded-2xl border border-indigo-200 bg-white/80 p-5 shadow-sm dark:border-indigo-900/60 dark:bg-zinc-950/65">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                      Paid Onboarding
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold text-zinc-950 dark:text-zinc-50">
+                      유료 플랜 운영 시작 체크리스트
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                      이제 무료 답변 한도는 해제되었습니다. 실제 고객 응대에
+                      필요한 설정부터 연결하면 바로 운영 흐름을 만들 수 있어요.
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                    유료 기능 활성화
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                  {[
+                    {
+                      title: "1. 플랫폼 연동 준비",
+                      description:
+                        "쿠팡, 스마트스토어, 배달앱 문의와 리뷰를 연결할 준비를 합니다.",
+                      actionLabel: "플랫폼 연동 열기",
+                      onAction: () =>
+                        goToTabSection("integrations", "platform-integrations"),
+                    },
+                    {
+                      title: "2. 자동 처리 범위 확인",
+                      description:
+                        "AI가 어디까지 자동 완료하고, 어떤 항목은 승인 대기로 둘지 정합니다.",
+                      actionLabel: "자동 처리 설정 보기",
+                      onAction: () =>
+                        goToTabSection("store", "auto-processing-settings"),
+                    },
+                    {
+                      title: "3. AI CS 처리함 운영",
+                      description:
+                        "승인 대기, 확인 필요, 답변 완료 항목을 실제 업무판처럼 관리합니다.",
+                      actionLabel: "처리함 보기",
+                      onAction: () => goToTabSection("manage", "ai-cs-inbox"),
+                    },
+                  ].map((item) => (
+                    <article
+                      key={item.title}
+                      className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/45"
+                    >
+                      <h4 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
+                        {item.title}
+                      </h4>
+                      <p className="mt-2 min-h-10 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
+                        {item.description}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={item.onAction}
+                        className={buttonClass(
+                          "secondary",
+                          "sm",
+                          "mt-3 w-full rounded-lg",
+                        )}
+                      >
+                        {item.actionLabel}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
@@ -6272,22 +6348,36 @@ export default function Home() {
               >
                 {freeTrialPrimaryAction.label}
               </button>
-              <button
-                type="button"
-                onClick={
-                  authUser
-                    ? () => void handleRequestPaidAdoption()
-                    : () => void handleKakaoLogin()
-                }
-                disabled={authUser ? paidAdoptionRequestLoading : authActionLoading}
-                className={buttonClass("secondary", "md", "rounded-lg")}
-              >
-                {authUser
-                  ? paidAdoptionRequestLoading
-                    ? "상담 요청 저장 중..."
-                    : "도입 상담 요청"
-                  : "로그인 후 상담 요청"}
-              </button>
+              {isPaidPlan ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    goToTabSection("integrations", "platform-integrations")
+                  }
+                  className={buttonClass("secondary", "md", "rounded-lg")}
+                >
+                  플랫폼 연동 설정
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={
+                    authUser
+                      ? () => void handleRequestPaidAdoption()
+                      : () => void handleKakaoLogin()
+                  }
+                  disabled={
+                    authUser ? paidAdoptionRequestLoading : authActionLoading
+                  }
+                  className={buttonClass("secondary", "md", "rounded-lg")}
+                >
+                  {authUser
+                    ? paidAdoptionRequestLoading
+                      ? "상담 요청 저장 중..."
+                      : "도입 상담 요청"
+                    : "로그인 후 상담 요청"}
+                </button>
+              )}
             </div>
 
             {freeTrialAiReplyNearlyUsed ? (
@@ -7330,7 +7420,10 @@ export default function Home() {
               </div>
             </div>
 
-            <details className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20">
+            <details
+              id="auto-processing-settings"
+              className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20"
+            >
               <summary className="cursor-pointer list-none">
                 <span className="block text-sm font-semibold text-violet-950 dark:text-violet-100">
                   AI 자동 처리 설정

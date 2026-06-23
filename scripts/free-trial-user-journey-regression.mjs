@@ -77,6 +77,14 @@ assert.match(
   /실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜 또는\s+도입 상담 후 연결할 핵심 기능/,
 );
 assert.match(pageSource, /유료 플랜으로 AI CS 직원을 운영 중입니다/);
+assert.match(pageSource, /유료 플랜 운영 시작 체크리스트/);
+assert.match(pageSource, /무료 답변 한도는 해제되었습니다/);
+assert.match(pageSource, /유료 기능 활성화/);
+assert.match(pageSource, /가게 지식 최종 확인/);
+assert.match(pageSource, /플랫폼 연동 열기/);
+assert.match(pageSource, /자동 처리 설정 보기/);
+assert.match(pageSource, /처리함 보기/);
+assert.match(pageSource, /id="auto-processing-settings"/);
 assert.match(pageSource, /현재 상태/);
 assert.match(pageSource, /답변 생성 제한이 해제/);
 assert.doesNotMatch(pageSource, /학습 신호/);
