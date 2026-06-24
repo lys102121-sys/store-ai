@@ -69,6 +69,10 @@ const coupangRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/integrations/coupang/inquiries/route.ts"),
   "utf8",
 );
+const smartstoreRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/smartstore/inquiries/route.ts"),
+  "utf8",
+);
 const mockInquiryUtility = fs.readFileSync(
   path.join(projectRoot, "app/lib/mockPlatformInquiries.ts"),
   "utf8",
@@ -82,13 +86,24 @@ const manualCsReplyRoute = fs.readFileSync(
   "utf8",
 );
 
-for (const integrationSource of [coupangRoute, mockInquiryUtility]) {
+for (const integrationSource of [
+  coupangRoute,
+  smartstoreRoute,
+  mockInquiryUtility,
+]) {
   assert.match(integrationSource, /preparePlatformInquiryForStorage/);
   assert.doesNotMatch(integrationSource, /openai\.responses\.create/);
   assert.doesNotMatch(integrationSource, /buildCsReplySystemPrompt/);
   assert.doesNotMatch(integrationSource, /resolveCsWorkflowStatus/);
   assert.doesNotMatch(integrationSource, /selectRelevantStoreKnowledgeItems/);
 }
+
+assert.match(smartstoreRoute, /parseSmartstoreInquiries/);
+assert.match(smartstoreRoute, /sourcePlatform: "smartstore"/);
+assert.match(smartstoreRoute, /platform", "smartstore"/);
+assert.match(smartstoreRoute, /not_implemented/);
+assert.match(smartstoreRoute, /TODO: 스마트스토어 문서 확인 후 실제 상품 문의 조회 endpoint/);
+assert.match(smartstoreRoute, /Failed to check existing Smartstore inquiries/);
 
 assert.match(platformInquiryProcessing, /generatePlatformInquiryDecision/);
 assert.match(platformInquiryProcessing, /createPlatformCsMessageRow/);

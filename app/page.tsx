@@ -2044,6 +2044,12 @@ export default function Home() {
     useState("");
   const [smartstoreCredentialsMessage, setSmartstoreCredentialsMessage] =
     useState("");
+  const [smartstoreInquiryImportLoading, setSmartstoreInquiryImportLoading] =
+    useState(false);
+  const [smartstoreInquiryImportError, setSmartstoreInquiryImportError] =
+    useState("");
+  const [smartstoreInquiryImportMessage, setSmartstoreInquiryImportMessage] =
+    useState("");
   const [coupangConnectionTesting, setCoupangConnectionTesting] =
     useState(false);
   const [coupangConnectionTestError, setCoupangConnectionTestError] =
@@ -2596,6 +2602,9 @@ export default function Home() {
         setSmartstoreCredentialsSaving(false);
         setSmartstoreCredentialsError("");
         setSmartstoreCredentialsMessage("");
+        setSmartstoreInquiryImportLoading(false);
+        setSmartstoreInquiryImportError("");
+        setSmartstoreInquiryImportMessage("");
         setCoupangConnectionTesting(false);
         setCoupangConnectionTestError("");
         setCoupangConnectionTestMessage("");
@@ -5979,6 +5988,80 @@ export default function Home() {
     }
   }
 
+  async function handleImportSmartstoreInquiries() {
+    if (!authUser) {
+      setSmartstoreInquiryImportMessage("");
+      setSmartstoreInquiryImportError("로그인이 필요합니다");
+      return;
+    }
+
+    if (!isPaidPlan) {
+      setSmartstoreInquiryImportMessage("");
+      setSmartstoreInquiryImportError(
+        "스마트스토어 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트하거나 도입 상담을 요청해 주세요.",
+      );
+      return;
+    }
+
+    if (
+      !smartstoreCredential?.vendor_id ||
+      !smartstoreCredential.access_key ||
+      !smartstoreCredential.has_secret_key
+    ) {
+      setSmartstoreInquiryImportMessage("");
+      setSmartstoreInquiryImportError(
+        "스마트스토어 연동 설정을 먼저 저장해 주세요.",
+      );
+      return;
+    }
+
+    setSmartstoreInquiryImportLoading(true);
+    setSmartstoreInquiryImportMessage("");
+    setSmartstoreInquiryImportError("");
+
+    try {
+      const response = await fetch("/api/integrations/smartstore/inquiries", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data = (await response.json()) as CoupangInquiryImportApiResponse & {
+        not_implemented?: boolean;
+      };
+
+      if (data.not_implemented) {
+        setSmartstoreInquiryImportMessage(
+          "스마트스토어 문의 가져오기 기능은 다음 단계에서 실제 API와 연결될 예정입니다.",
+        );
+        return;
+      }
+
+      if (!response.ok || data.imported === undefined) {
+        setSmartstoreInquiryImportError(
+          "스마트스토어 문의 가져오기에 실패했습니다. 연동 설정을 확인해 주세요.",
+        );
+        await loadPlatformCredentials();
+        return;
+      }
+
+      setSmartstoreInquiryImportMessage(
+        `스마트스토어 문의를 AI CS 처리함에 추가했습니다. 새 문의 ${data.imported}개, 중복 제외 ${data.skipped ?? 0}개`,
+      );
+      await Promise.all([
+        loadCsMessages(),
+        loadMissingInfos(),
+        loadInsights(),
+        loadPlatformCredentials(),
+      ]);
+    } catch {
+      setSmartstoreInquiryImportError(
+        "스마트스토어 문의 가져오기에 실패했습니다. 연동 설정을 확인해 주세요.",
+      );
+      await loadPlatformCredentials();
+    } finally {
+      setSmartstoreInquiryImportLoading(false);
+    }
+  }
+
   async function handleLoadCoupangMockInquiries() {
     if (!authUser) {
       setCoupangMockInquiriesMessage("");
@@ -8856,6 +8939,54 @@ export default function Home() {
                                 : "설정 저장"}
                             </button>
                           </div>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                        <h4 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                          스마트스토어 문의 가져오기
+                        </h4>
+                        <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                          저장된 스마트스토어 설정을 사용해 실제 문의를 AI CS
+                          처리함에 넣는 API 형태를 준비했습니다. 실제 API 호출은
+                          다음 단계에서 연결됩니다.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={smartstoreInquiryImportLoading}
+                          onClick={() =>
+                            void handleImportSmartstoreInquiries()
+                          }
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                        >
+                          {smartstoreInquiryImportLoading
+                            ? "스마트스토어 문의 확인 중..."
+                            : "스마트스토어 문의 가져오기"}
+                        </button>
+                        {!isPaidPlan ? (
+                          <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                            현재 {billingPlanLabel} 상태입니다. 유료 플랜으로
+                            전환되면 실제 스마트스토어 문의 가져오기를 연결할 수
+                            있습니다.
+                          </p>
+                        ) : null}
+
+                        {smartstoreInquiryImportMessage ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                            role="status"
+                          >
+                            {smartstoreInquiryImportMessage}
+                          </p>
+                        ) : null}
+
+                        {smartstoreInquiryImportError ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {smartstoreInquiryImportError}
+                          </p>
                         ) : null}
                       </div>
 
