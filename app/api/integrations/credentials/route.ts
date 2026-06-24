@@ -1,6 +1,7 @@
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 
 type CredentialsRequestBody = {
+  platform?: unknown;
   vendor_id?: unknown;
   access_key?: unknown;
   secret_key?: unknown;
@@ -13,6 +14,18 @@ function normalizeText(value: unknown) {
   }
 
   return typeof value === "string" ? value.trim() : null;
+}
+
+function normalizeCredentialPlatform(value: unknown) {
+  if (value === undefined || value === null || value === "") {
+    return "coupang";
+  }
+
+  if (value === "coupang" || value === "smartstore") {
+    return value;
+  }
+
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -61,8 +74,10 @@ export async function POST(request: Request) {
   const accessKey = normalizeText(body.access_key);
   const secretKey = normalizeText(body.secret_key);
   const wingId = normalizeText(body.wing_id);
+  const platform = normalizeCredentialPlatform(body.platform);
 
   if (
+    platform === null ||
     vendorId === null ||
     accessKey === null ||
     secretKey === null ||
@@ -79,7 +94,7 @@ export async function POST(request: Request) {
       .from("platform_credentials")
       .select("secret_key, status")
       .eq("user_id", auth.userId)
-      .eq("platform", "coupang")
+      .eq("platform", platform)
       .maybeSingle();
 
   if (existingCredentialError) {
@@ -98,7 +113,7 @@ export async function POST(request: Request) {
     .upsert(
       {
         user_id: auth.userId,
-        platform: "coupang",
+        platform,
         vendor_id: vendorId || null,
         access_key: accessKey || null,
         secret_key: savedSecretKey,

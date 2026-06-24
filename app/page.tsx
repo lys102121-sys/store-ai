@@ -652,7 +652,7 @@ function paidAdoptionStatusDescription(status?: string | null) {
   return undefined;
 }
 
-function getCoupangConnectionStatusLabel(status?: string) {
+function getPlatformConnectionStatusLabel(status?: string) {
   if (status === "connected") return "연결됨";
   if (status === "error") return "연결 오류";
   return "연결 전";
@@ -2023,12 +2023,26 @@ export default function Home() {
   const [coupangCredentialDraft, setCoupangCredentialDraft] =
     useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
   const [isCoupangSettingsOpen, setIsCoupangSettingsOpen] = useState(false);
+  const [smartstoreCredential, setSmartstoreCredential] =
+    useState<PlatformCredential | null>(null);
+  const [smartstoreCredentialDraft, setSmartstoreCredentialDraft] =
+    useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
+  const [isSmartstoreSettingsOpen, setIsSmartstoreSettingsOpen] =
+    useState(false);
   const [coupangCredentialsLoading, setCoupangCredentialsLoading] =
     useState(false);
   const [coupangCredentialsSaving, setCoupangCredentialsSaving] =
     useState(false);
   const [coupangCredentialsError, setCoupangCredentialsError] = useState("");
   const [coupangCredentialsMessage, setCoupangCredentialsMessage] =
+    useState("");
+  const [smartstoreCredentialsLoading, setSmartstoreCredentialsLoading] =
+    useState(false);
+  const [smartstoreCredentialsSaving, setSmartstoreCredentialsSaving] =
+    useState(false);
+  const [smartstoreCredentialsError, setSmartstoreCredentialsError] =
+    useState("");
+  const [smartstoreCredentialsMessage, setSmartstoreCredentialsMessage] =
     useState("");
   const [coupangConnectionTesting, setCoupangConnectionTesting] =
     useState(false);
@@ -2489,6 +2503,8 @@ export default function Home() {
   const loadPlatformCredentials = useCallback(async () => {
     setCoupangCredentialsLoading(true);
     setCoupangCredentialsError("");
+    setSmartstoreCredentialsLoading(true);
+    setSmartstoreCredentialsError("");
 
     try {
       const response = await fetch("/api/integrations/credentials", {
@@ -2501,23 +2517,42 @@ export default function Home() {
           data.error ?? "쿠팡 연동 설정을 불러오지 못했습니다.",
         );
         setCoupangCredential(null);
+        setSmartstoreCredentialsError(
+          data.error ?? "스마트스토어 연동 설정을 불러오지 못했습니다.",
+        );
+        setSmartstoreCredential(null);
         return;
       }
 
-      const credential =
+      const coupangCredential =
         data.credentials?.find((item) => item.platform === "coupang") ?? null;
-      setCoupangCredential(credential);
+      const smartstoreCredential =
+        data.credentials?.find((item) => item.platform === "smartstore") ??
+        null;
+      setCoupangCredential(coupangCredential);
       setCoupangCredentialDraft({
-        vendorId: credential?.vendor_id ?? "",
-        accessKey: credential?.access_key ?? "",
+        vendorId: coupangCredential?.vendor_id ?? "",
+        accessKey: coupangCredential?.access_key ?? "",
         secretKey: "",
-        wingId: credential?.wing_id ?? "",
+        wingId: coupangCredential?.wing_id ?? "",
+      });
+      setSmartstoreCredential(smartstoreCredential);
+      setSmartstoreCredentialDraft({
+        vendorId: smartstoreCredential?.vendor_id ?? "",
+        accessKey: smartstoreCredential?.access_key ?? "",
+        secretKey: "",
+        wingId: smartstoreCredential?.wing_id ?? "",
       });
     } catch {
       setCoupangCredentialsError("쿠팡 연동 설정을 불러오지 못했습니다.");
       setCoupangCredential(null);
+      setSmartstoreCredentialsError(
+        "스마트스토어 연동 설정을 불러오지 못했습니다.",
+      );
+      setSmartstoreCredential(null);
     } finally {
       setCoupangCredentialsLoading(false);
+      setSmartstoreCredentialsLoading(false);
     }
   }, []);
 
@@ -2550,10 +2585,17 @@ export default function Home() {
         setCoupangCredential(null);
         setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
         setIsCoupangSettingsOpen(false);
+        setSmartstoreCredential(null);
+        setSmartstoreCredentialDraft(createEmptyCoupangCredentialDraft());
+        setIsSmartstoreSettingsOpen(false);
         setCoupangCredentialsLoading(false);
         setCoupangCredentialsSaving(false);
         setCoupangCredentialsError("");
         setCoupangCredentialsMessage("");
+        setSmartstoreCredentialsLoading(false);
+        setSmartstoreCredentialsSaving(false);
+        setSmartstoreCredentialsError("");
+        setSmartstoreCredentialsMessage("");
         setCoupangConnectionTesting(false);
         setCoupangConnectionTestError("");
         setCoupangConnectionTestMessage("");
@@ -5573,6 +5615,16 @@ export default function Home() {
     }));
   }
 
+  function updateSmartstoreCredentialDraft(
+    field: keyof CoupangCredentialDraft,
+    value: string,
+  ) {
+    setSmartstoreCredentialDraft((currentDraft) => ({
+      ...currentDraft,
+      [field]: value,
+    }));
+  }
+
   async function handleRequestIntegration(platform: IntegrationPlatform) {
     if (!authUser) {
       setIntegrationsMessage("");
@@ -5745,6 +5797,7 @@ export default function Home() {
           "Content-Type": "application/json",
         }),
         body: JSON.stringify({
+          platform: "coupang",
           vendor_id: coupangCredentialDraft.vendorId,
           access_key: coupangCredentialDraft.accessKey,
           secret_key: coupangCredentialDraft.secretKey,
@@ -5768,6 +5821,57 @@ export default function Home() {
       setCoupangCredentialsError("쿠팡 연동 설정 저장에 실패했습니다.");
     } finally {
       setCoupangCredentialsSaving(false);
+    }
+  }
+
+  async function handleSaveSmartstoreCredentials() {
+    if (!authUser) {
+      setSmartstoreCredentialsMessage("");
+      setSmartstoreCredentialsError("로그인이 필요합니다");
+      return;
+    }
+
+    setSmartstoreCredentialsSaving(true);
+    setSmartstoreCredentialsMessage("");
+    setSmartstoreCredentialsError("");
+
+    try {
+      const response = await fetch("/api/integrations/credentials", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          platform: "smartstore",
+          vendor_id: smartstoreCredentialDraft.vendorId,
+          access_key: smartstoreCredentialDraft.accessKey,
+          secret_key: smartstoreCredentialDraft.secretKey,
+          wing_id: smartstoreCredentialDraft.wingId,
+        }),
+      });
+      const data = (await response.json()) as PlatformCredentialsApiResponse;
+
+      if (!response.ok || !data.credential) {
+        setSmartstoreCredentialsError(
+          "스마트스토어 연동 설정 저장에 실패했습니다.",
+        );
+        return;
+      }
+
+      setSmartstoreCredential(data.credential);
+      setSmartstoreCredentialDraft((currentDraft) => ({
+        ...currentDraft,
+        secretKey: "",
+      }));
+      setSmartstoreCredentialsMessage(
+        "스마트스토어 연동 설정이 저장되었습니다.",
+      );
+    } catch {
+      setSmartstoreCredentialsError(
+        "스마트스토어 연동 설정 저장에 실패했습니다.",
+      );
+    } finally {
+      setSmartstoreCredentialsSaving(false);
     }
   }
 
@@ -8413,7 +8517,7 @@ export default function Home() {
                               coupangCredential?.status,
                             )}`}
                           >
-                            {getCoupangConnectionStatusLabel(
+                            {getPlatformConnectionStatusLabel(
                               coupangCredential?.status,
                             )}
                           </span>
@@ -8580,48 +8684,224 @@ export default function Home() {
                   ) : null}
 
                   {platform.id === "smartstore" ? (
-                    <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                        데모 체험
-                      </p>
-                      <h4 className="mt-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
-                        샘플 문의로 흐름 확인
-                      </h4>
-                      <p className="mt-2 text-xs leading-5 text-sky-900 dark:text-sky-100">
-                        샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
-                        아니며, 상품 문의가 AI CS 처리함에 모이는 흐름을 체험하기
-                        위한 데모용입니다.
-                      </p>
-                      <button
-                        type="button"
-                        disabled={smartstoreMockInquiriesLoading}
-                        onClick={() =>
-                          void handleLoadSmartstoreMockInquiries()
-                        }
-                        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
-                      >
-                        {smartstoreMockInquiriesLoading
-                          ? "샘플 문의 불러오는 중..."
-                          : "샘플 문의 불러오기"}
-                      </button>
+                    <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                      <div className="rounded-xl border border-sky-200 bg-white p-4 dark:border-sky-900/60 dark:bg-zinc-950">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                              연동 준비
+                            </p>
+                            <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                              스마트스토어 연동 설정
+                            </h4>
+                            <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                              실제 스마트스토어 API 연결 전에 필요한 값을 먼저
+                              저장합니다. 실제 문의 조회는 다음 단계에서
+                              연결합니다.
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                              smartstoreCredential?.status,
+                            )}`}
+                          >
+                            {getPlatformConnectionStatusLabel(
+                              smartstoreCredential?.status,
+                            )}
+                          </span>
+                        </div>
 
-                      {smartstoreMockInquiriesMessage ? (
-                        <p
-                          className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
-                          role="status"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsSmartstoreSettingsOpen((isOpen) => !isOpen)
+                          }
+                          className={buttonClass(
+                            "secondary",
+                            "md",
+                            "mt-4 w-full text-sky-700 dark:text-sky-300",
+                          )}
+                          aria-expanded={isSmartstoreSettingsOpen}
                         >
-                          {smartstoreMockInquiriesMessage}
-                        </p>
-                      ) : null}
+                          {isSmartstoreSettingsOpen
+                            ? "스마트스토어 설정 닫기"
+                            : "스마트스토어 설정 열기"}
+                        </button>
 
-                      {smartstoreMockInquiriesError ? (
-                        <p
-                          className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                          role="alert"
-                        >
-                          {smartstoreMockInquiriesError}
+                        {isSmartstoreSettingsOpen ? (
+                          <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/25">
+                            <div className="space-y-4">
+                              <div className="space-y-1.5">
+                                <label
+                                  htmlFor="smartstore_vendor_id"
+                                  className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                                >
+                                  스토어 ID 또는 커머스 ID
+                                </label>
+                                <input
+                                  id="smartstore_vendor_id"
+                                  type="text"
+                                  value={smartstoreCredentialDraft.vendorId}
+                                  onChange={(event) =>
+                                    updateSmartstoreCredentialDraft(
+                                      "vendorId",
+                                      event.target.value,
+                                    )
+                                  }
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label
+                                  htmlFor="smartstore_access_key"
+                                  className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                                >
+                                  clientId 또는 accessKey
+                                </label>
+                                <input
+                                  id="smartstore_access_key"
+                                  type="text"
+                                  value={smartstoreCredentialDraft.accessKey}
+                                  onChange={(event) =>
+                                    updateSmartstoreCredentialDraft(
+                                      "accessKey",
+                                      event.target.value,
+                                    )
+                                  }
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label
+                                  htmlFor="smartstore_secret_key"
+                                  className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                                >
+                                  clientSecret 또는 secretKey
+                                </label>
+                                <input
+                                  id="smartstore_secret_key"
+                                  type="password"
+                                  value={smartstoreCredentialDraft.secretKey}
+                                  onChange={(event) =>
+                                    updateSmartstoreCredentialDraft(
+                                      "secretKey",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder={
+                                    smartstoreCredential?.has_secret_key
+                                      ? "저장된 secretKey가 있습니다. 변경하려면 새로 입력하세요."
+                                      : ""
+                                  }
+                                  autoComplete="new-password"
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label
+                                  htmlFor="smartstore_wing_id"
+                                  className="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                                >
+                                  채널 ID 또는 스토어 식별값
+                                </label>
+                                <input
+                                  id="smartstore_wing_id"
+                                  type="text"
+                                  value={smartstoreCredentialDraft.wingId}
+                                  onChange={(event) =>
+                                    updateSmartstoreCredentialDraft(
+                                      "wingId",
+                                      event.target.value,
+                                    )
+                                  }
+                                  className={inputClass}
+                                />
+                              </div>
+                            </div>
+
+                            {smartstoreCredentialsMessage ? (
+                              <p
+                                className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                role="status"
+                              >
+                                {smartstoreCredentialsMessage}
+                              </p>
+                            ) : null}
+
+                            {smartstoreCredentialsError ? (
+                              <p
+                                className="mt-4 text-sm font-medium text-red-700 dark:text-red-300"
+                                role="alert"
+                              >
+                                {smartstoreCredentialsError}
+                              </p>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              disabled={
+                                smartstoreCredentialsLoading ||
+                                smartstoreCredentialsSaving
+                              }
+                              onClick={() =>
+                                void handleSaveSmartstoreCredentials()
+                              }
+                              className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                            >
+                              {smartstoreCredentialsSaving
+                                ? "저장 중..."
+                                : "설정 저장"}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                          데모 체험
                         </p>
-                      ) : null}
+                        <h4 className="mt-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
+                          샘플 문의로 흐름 확인
+                        </h4>
+                        <p className="mt-2 text-xs leading-5 text-sky-900 dark:text-sky-100">
+                          샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
+                          아니며, 상품 문의가 AI CS 처리함에 모이는 흐름을
+                          체험하기 위한 데모용입니다.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={smartstoreMockInquiriesLoading}
+                          onClick={() =>
+                            void handleLoadSmartstoreMockInquiries()
+                          }
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                        >
+                          {smartstoreMockInquiriesLoading
+                            ? "샘플 문의 불러오는 중..."
+                            : "샘플 문의 불러오기"}
+                        </button>
+
+                        {smartstoreMockInquiriesMessage ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            role="status"
+                          >
+                            {smartstoreMockInquiriesMessage}
+                          </p>
+                        ) : null}
+
+                        {smartstoreMockInquiriesError ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {smartstoreMockInquiriesError}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
 
@@ -8646,7 +8926,7 @@ export default function Home() {
                                 coupangCredential?.status,
                               )}`}
                             >
-                              {getCoupangConnectionStatusLabel(
+                              {getPlatformConnectionStatusLabel(
                                 coupangCredential?.status,
                               )}
                             </span>
@@ -8672,7 +8952,7 @@ export default function Home() {
                             coupangCredential?.status,
                           )}`}
                         >
-                          {getCoupangConnectionStatusLabel(
+                          {getPlatformConnectionStatusLabel(
                             coupangCredential?.status,
                           )}
                         </span>

@@ -49,6 +49,9 @@ const coupangReplyRouteSource = readProjectFile(
 const paidAdoptionRouteSource = readProjectFile(
   "app/api/paid-adoption-requests/route.ts",
 );
+const platformCredentialsRouteSource = readProjectFile(
+  "app/api/integrations/credentials/route.ts",
+);
 
 const tabLabels = [...dashboardTabsSource.matchAll(/label: "([^"]+)"/g)].map(
   (match) => match[1],
@@ -133,6 +136,15 @@ assert.match(pageSource, /실제 연동 우선/);
 assert.match(pageSource, /다음 연동 후보/);
 assert.match(pageSource, /id: "coupang"[\s\S]*?id: "smartstore"/);
 assert.match(pageSource, /지금은 쿠팡 실제 문의 연동을 가장 먼저 연결/);
+assert.match(pageSource, /스마트스토어 연동 설정/);
+assert.match(pageSource, /스마트스토어 설정 열기/);
+assert.match(pageSource, /platform: "smartstore"/);
+assert.match(pageSource, /handleSaveSmartstoreCredentials/);
+assert.match(pageSource, /스마트스토어 연동 설정이 저장되었습니다/);
+assert.match(platformCredentialsRouteSource, /normalizeCredentialPlatform/);
+assert.match(platformCredentialsRouteSource, /value === "smartstore"/);
+assert.match(platformCredentialsRouteSource, /platform,/);
+assert.match(platformCredentialsRouteSource, /onConflict: "user_id,platform"/);
 assert.match(pageSource, /!isDemoExternalId\(item\.externalId\)/);
 assert.match(pageSource, /!isPaidPlan && freeTrialAiReplyLimitReached/);
 assert.match(pageSource, /!isPaidPlan && reviews\.length > trialAiReplyRemainingCount/);
