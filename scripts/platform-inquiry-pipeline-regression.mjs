@@ -73,6 +73,10 @@ const smartstoreRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/integrations/smartstore/inquiries/route.ts"),
   "utf8",
 );
+const smartstoreOpenApi = fs.readFileSync(
+  path.join(projectRoot, "app/lib/smartstoreOpenApi.ts"),
+  "utf8",
+);
 const mockInquiryUtility = fs.readFileSync(
   path.join(projectRoot, "app/lib/mockPlatformInquiries.ts"),
   "utf8",
@@ -98,12 +102,19 @@ for (const integrationSource of [
   assert.doesNotMatch(integrationSource, /selectRelevantStoreKnowledgeItems/);
 }
 
-assert.match(smartstoreRoute, /parseSmartstoreInquiries/);
-assert.match(smartstoreRoute, /sourcePlatform: "smartstore"/);
-assert.match(smartstoreRoute, /platform", "smartstore"/);
-assert.match(smartstoreRoute, /not_implemented/);
-assert.match(smartstoreRoute, /TODO: 스마트스토어 문서 확인 후 실제 상품 문의 조회 endpoint/);
+assert.match(smartstoreRoute, /parseSmartstoreProductInquiries/);
+assert.match(smartstoreRoute, /source_platform", "smartstore"/);
+assert.match(smartstoreRoute, /requestSmartstoreAccessToken/);
+assert.match(smartstoreRoute, /fetchSmartstoreProductInquiries/);
 assert.match(smartstoreRoute, /Failed to check existing Smartstore inquiries/);
+
+assert.match(smartstoreOpenApi, /SMARTSTORE_OPEN_API_HOST/);
+assert.match(smartstoreOpenApi, /\/v1\/oauth2\/token/);
+assert.match(smartstoreOpenApi, /\/v1\/contents\/qnas/);
+assert.match(smartstoreOpenApi, /client_secret_sign/);
+assert.match(smartstoreOpenApi, /bcrypt/);
+assert.match(smartstoreOpenApi, /questionId/);
+assert.match(smartstoreOpenApi, /productName/);
 
 assert.match(platformInquiryProcessing, /generatePlatformInquiryDecision/);
 assert.match(platformInquiryProcessing, /createPlatformCsMessageRow/);

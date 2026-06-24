@@ -17,6 +17,11 @@ import {
 import { preparePlatformInquiryForStorage } from "@/app/lib/platformInquiryProcessing";
 import type { CsReplyPromptStore } from "@/app/lib/prompts/csReplyPrompt";
 import {
+  fetchSmartstoreProductInquiries,
+  parseSmartstoreInquiries as parseSmartstoreProductInquiries,
+  requestSmartstoreAccessToken,
+} from "@/app/lib/smartstoreOpenApi";
+import {
   isMissingUsedKnowledgeColumnError,
   loadStoreKnowledgeItems,
   warnMissingUsedKnowledgeColumn,
@@ -25,22 +30,17 @@ import {
 
 export const runtime = "nodejs";
 
-type SmartstoreCredential = {
-  vendor_id: string | null;
-  access_key: string | null;
-  secret_key: string | null;
-  wing_id: string | null;
+type CompleteSmartstoreCredential = {
+  vendor_id: string;
+  access_key: string;
+  secret_key: string;
+  wing_id: string;
 };
 
-type SmartstoreInquiryFetchResult =
-  | {
-      status: "not_implemented";
-      inquiries: NormalizedPlatformInquiry[];
-    }
-  | {
-      status: "ready";
-      inquiries: NormalizedPlatformInquiry[];
-    };
+type SmartstoreInquiryFetchResult = {
+  status: "ready";
+  inquiries: NormalizedPlatformInquiry[];
+};
 
 const smartstoreStoreSelect =
   "user_id, store_name, business_type, shipping_policy, refund_policy, product_name, product_description, product_details, product_caution, product_catalog, extra_faq, owner_cs_examples, auto_complete_low_risk_cs, ai_work_mode, ai_work_start_time, ai_work_end_time, created_at, updated_at";
@@ -138,14 +138,21 @@ export function parseSmartstoreInquiries(
 }
 
 async function fetchSmartstoreInquiries(
-  credential: Required<SmartstoreCredential>,
+  credential: CompleteSmartstoreCredential,
 ): Promise<SmartstoreInquiryFetchResult> {
-  void credential;
-  // TODO: 스마트스토어 문서 확인 후 실제 상품 문의 조회 endpoint, 인증 헤더,
-  // query parameter를 연결한다. 지금 단계에서는 실제 API를 호출하지 않는다.
+  const accessToken = await requestSmartstoreAccessToken({
+    clientId: credential.access_key,
+    clientSecret: credential.secret_key,
+    accountId: credential.wing_id || credential.vendor_id,
+  });
+  const payload = await fetchSmartstoreProductInquiries({
+    accessToken,
+    page: 1,
+    size: 20,
+  });
   return {
-    status: "not_implemented",
-    inquiries: [],
+    status: "ready",
+    inquiries: parseSmartstoreProductInquiries(payload),
   };
 }
 
@@ -382,28 +389,36 @@ export async function POST(request: Request) {
     );
   }
 
-  const fetchResult = await fetchSmartstoreInquiries({
-    vendor_id: vendorId,
-    access_key: accessKey,
-    secret_key: secretKey,
-    wing_id: wingId ?? "",
-  });
-
-  if (fetchResult.status === "not_implemented") {
-    return Response.json(
-      {
-        error:
-          "스마트스토어 문의 가져오기 기능은 다음 단계에서 실제 API와 연결될 예정입니다.",
-        not_implemented: true,
-      },
-      { status: 501 },
-    );
-  }
-
   if (!process.env.OPENAI_API_KEY) {
     return Response.json(
       { error: "OPENAI_API_KEY is not configured." },
       { status: 500 },
+    );
+  }
+
+  let fetchResult: SmartstoreInquiryFetchResult;
+  try {
+    fetchResult = await fetchSmartstoreInquiries({
+      vendor_id: vendorId,
+      access_key: accessKey,
+      secret_key: secretKey,
+      wing_id: wingId ?? "",
+    });
+  } catch (error) {
+    console.error("Smartstore inquiry import failed.", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+    await updateCredentialStatus(auth.supabase, auth.userId, "error");
+
+    const message = error instanceof Error ? error.message : "";
+    return Response.json(
+      {
+        error: message.includes("bcrypt package")
+          ? "Smartstore OAuth signature dependency is not installed."
+          : "Failed to fetch Smartstore inquiries.",
+        detail: message.includes("bcrypt package") ? message : undefined,
+      },
+      { status: message.includes("bcrypt package") ? 500 : 502 },
     );
   }
 

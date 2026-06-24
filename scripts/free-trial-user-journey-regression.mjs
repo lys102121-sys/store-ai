@@ -144,7 +144,7 @@ assert.match(pageSource, /스마트스토어 연동 설정이 저장되었습니
 assert.match(pageSource, /handleImportSmartstoreInquiries/);
 assert.match(pageSource, /\/api\/integrations\/smartstore\/inquiries/);
 assert.match(pageSource, /스마트스토어 문의 가져오기/);
-assert.match(pageSource, /다음 단계에서 실제 API와 연결될 예정/);
+assert.match(pageSource, /가져온 문의는 AI가 답변 초안과/);
 assert.match(platformCredentialsRouteSource, /normalizeCredentialPlatform/);
 assert.match(platformCredentialsRouteSource, /value === "smartstore"/);
 assert.match(platformCredentialsRouteSource, /platform,/);

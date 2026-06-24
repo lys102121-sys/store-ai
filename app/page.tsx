@@ -6024,16 +6024,7 @@ export default function Home() {
         method: "POST",
         headers: await getAuthenticatedRequestHeaders(),
       });
-      const data = (await response.json()) as CoupangInquiryImportApiResponse & {
-        not_implemented?: boolean;
-      };
-
-      if (data.not_implemented) {
-        setSmartstoreInquiryImportMessage(
-          "스마트스토어 문의 가져오기 기능은 다음 단계에서 실제 API와 연결될 예정입니다.",
-        );
-        return;
-      }
+      const data = (await response.json()) as CoupangInquiryImportApiResponse;
 
       if (!response.ok || data.imported === undefined) {
         setSmartstoreInquiryImportError(
@@ -8948,8 +8939,8 @@ export default function Home() {
                         </h4>
                         <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
                           저장된 스마트스토어 설정을 사용해 실제 문의를 AI CS
-                          처리함에 넣는 API 형태를 준비했습니다. 실제 API 호출은
-                          다음 단계에서 연결됩니다.
+                          처리함에 불러옵니다. 가져온 문의는 AI가 답변 초안과
+                          위험도를 판단한 뒤 승인 대기 또는 확인 필요로 분류합니다.
                         </p>
                         <button
                           type="button"
@@ -8966,7 +8957,7 @@ export default function Home() {
                         {!isPaidPlan ? (
                           <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
                             현재 {billingPlanLabel} 상태입니다. 유료 플랜으로
-                            전환되면 실제 스마트스토어 문의 가져오기를 연결할 수
+                            전환되면 실제 스마트스토어 문의 가져오기를 사용할 수
                             있습니다.
                           </p>
                         ) : null}
