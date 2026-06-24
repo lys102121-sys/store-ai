@@ -163,12 +163,26 @@ export async function PATCH(
         existingCsMessage?.source_platform === "coupang" &&
         externalId &&
         !externalId.startsWith("mock-coupang");
+      const requiresSmartstoreReplyRegistration =
+        existingCsMessage?.source_platform === "smartstore" &&
+        externalId &&
+        !externalId.startsWith("mock-smartstore");
 
       if (requiresCoupangReplyRegistration) {
         return Response.json(
           {
             error:
               "Coupang inquiries must be completed through the Coupang reply registration API.",
+          },
+          { status: 409 },
+        );
+      }
+
+      if (requiresSmartstoreReplyRegistration) {
+        return Response.json(
+          {
+            error:
+              "Smartstore inquiries must be completed through the Smartstore reply registration API.",
           },
           { status: 409 },
         );

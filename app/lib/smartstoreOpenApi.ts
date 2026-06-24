@@ -28,6 +28,17 @@ type FetchSmartstoreProductInquiriesOptions = {
   size?: number;
 };
 
+type CreateSmartstoreProductInquiryReplyBodyOptions = {
+  questionId: string;
+  reply: string;
+};
+
+type SubmitSmartstoreProductInquiryReplyOptions = {
+  accessToken: string;
+  questionId: string;
+  reply: string;
+};
+
 type BcryptModule = {
   hashSync: (password: string, salt: string) => string;
 };
@@ -189,6 +200,31 @@ export function createSmartstoreProductInquiryPath() {
   return "/v1/contents/qnas";
 }
 
+export function createSmartstoreProductInquiryReplyPath(questionId: string) {
+  if (!questionId.trim()) {
+    throw new Error("Smartstore product inquiry questionId is required.");
+  }
+
+  return `/v1/contents/qnas/${encodeURIComponent(questionId.trim())}`;
+}
+
+export function createSmartstoreProductInquiryReplyBody({
+  questionId,
+  reply,
+}: CreateSmartstoreProductInquiryReplyBodyOptions) {
+  const normalizedReply = reply.replace(/\r\n/g, "\n").trim();
+
+  if (!questionId.trim() || !normalizedReply) {
+    throw new Error("Smartstore product inquiry reply parameters are missing.");
+  }
+
+  // 네이버 커머스API 문서에서 body 상세 필드가 정적 HTML에 충분히 노출되지 않아
+  // 공식 상품 문의 답변 등록/수정 의미에 맞춰 answer 필드로 격리합니다.
+  return {
+    answer: normalizedReply,
+  };
+}
+
 export function createSmartstoreProductInquiryQuery({
   page = 1,
   size = 20,
@@ -227,6 +263,31 @@ export async function fetchSmartstoreProductInquiries({
   }
 
   return (await response.json()) as unknown;
+}
+
+export async function submitSmartstoreProductInquiryReply({
+  accessToken,
+  questionId,
+  reply,
+}: SubmitSmartstoreProductInquiryReplyOptions) {
+  const path = createSmartstoreProductInquiryReplyPath(questionId);
+  const body = createSmartstoreProductInquiryReplyBody({ questionId, reply });
+  const response = await fetch(`${SMARTSTORE_OPEN_API_HOST}${path}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Smartstore product inquiry reply request failed: HTTP ${response.status}`,
+    );
+  }
 }
 
 export function parseSmartstoreInquiries(

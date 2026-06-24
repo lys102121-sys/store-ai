@@ -4053,20 +4053,39 @@ export default function Home() {
       (item.platformStatus === "synced" ||
         item.platformStatus === "failed") &&
       Boolean(item.externalId?.trim());
+    const shouldRegisterSmartstoreReply =
+      item.type === "cs" &&
+      payload.status === "completed" &&
+      item.sourcePlatform === "smartstore" &&
+      (item.platformStatus === "synced" ||
+        item.platformStatus === "failed") &&
+      Boolean(item.externalId?.trim());
+    const shouldRegisterPlatformReply =
+      shouldRegisterCoupangReply || shouldRegisterSmartstoreReply;
+    const platformReplyEndpoint = shouldRegisterCoupangReply
+      ? "/api/integrations/coupang/reply"
+      : shouldRegisterSmartstoreReply
+        ? "/api/integrations/smartstore/reply"
+        : null;
+    const platformReplyFailureMessage = shouldRegisterCoupangReply
+      ? "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+      : shouldRegisterSmartstoreReply
+        ? "스마트스토어 답변 등록에 실패했습니다. 스마트스토어 연동 설정을 확인해 주세요."
+        : "처리 항목을 업데이트하지 못했습니다.";
 
     try {
-      const endpoint = shouldRegisterCoupangReply
-        ? "/api/integrations/coupang/reply"
+      const endpoint = platformReplyEndpoint
+        ? platformReplyEndpoint
         : item.type === "review"
           ? `/api/reviews/${item.id}`
           : `/api/cs-messages/${item.id}`;
       const response = await fetch(endpoint, {
-        method: shouldRegisterCoupangReply ? "POST" : "PATCH",
+        method: shouldRegisterPlatformReply ? "POST" : "PATCH",
         headers: await getAuthenticatedRequestHeaders({
           "Content-Type": "application/json",
         }),
         body: JSON.stringify(
-          shouldRegisterCoupangReply
+          shouldRegisterPlatformReply
             ? { csMessageId: String(item.id) }
             : payload,
         ),
@@ -4076,11 +4095,9 @@ export default function Home() {
       if (!response.ok || data.success === false) {
         return {
           success: false,
-          shouldRefreshAfterFailure: shouldRegisterCoupangReply,
-          error: shouldRegisterCoupangReply
-            ? data.message ??
-                data.error ??
-                "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+          shouldRefreshAfterFailure: shouldRegisterPlatformReply,
+          error: shouldRegisterPlatformReply
+            ? data.message ?? data.error ?? platformReplyFailureMessage
             : data.error ?? "처리 항목을 업데이트하지 못했습니다.",
         };
       }
@@ -4089,9 +4106,9 @@ export default function Home() {
     } catch {
       return {
         success: false,
-        shouldRefreshAfterFailure: shouldRegisterCoupangReply,
-        error: shouldRegisterCoupangReply
-          ? "쿠팡 답변 등록에 실패했습니다. 쿠팡 연동 설정을 확인해 주세요."
+        shouldRefreshAfterFailure: shouldRegisterPlatformReply,
+        error: shouldRegisterPlatformReply
+          ? platformReplyFailureMessage
           : "네트워크 오류로 처리 항목을 업데이트하지 못했습니다.",
       };
     }

@@ -73,10 +73,19 @@ const smartstoreRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/integrations/smartstore/inquiries/route.ts"),
   "utf8",
 );
+const smartstoreReplyRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/smartstore/reply/route.ts"),
+  "utf8",
+);
 const smartstoreOpenApi = fs.readFileSync(
   path.join(projectRoot, "app/lib/smartstoreOpenApi.ts"),
   "utf8",
 );
+const csMessageRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/cs-messages/[id]/route.ts"),
+  "utf8",
+);
+const pageSource = fs.readFileSync(path.join(projectRoot, "app/page.tsx"), "utf8");
 const mockInquiryUtility = fs.readFileSync(
   path.join(projectRoot, "app/lib/mockPlatformInquiries.ts"),
   "utf8",
@@ -115,6 +124,21 @@ assert.match(smartstoreOpenApi, /client_secret_sign/);
 assert.match(smartstoreOpenApi, /bcrypt/);
 assert.match(smartstoreOpenApi, /questionId/);
 assert.match(smartstoreOpenApi, /productName/);
+assert.match(smartstoreOpenApi, /createSmartstoreProductInquiryReplyPath/);
+assert.match(smartstoreOpenApi, /submitSmartstoreProductInquiryReply/);
+assert.match(smartstoreOpenApi, /method: "PUT"/);
+
+assert.match(smartstoreReplyRoute, /platform", "smartstore"/);
+assert.match(smartstoreReplyRoute, /requestSmartstoreAccessToken/);
+assert.match(smartstoreReplyRoute, /submitSmartstoreProductInquiryReply/);
+assert.match(smartstoreReplyRoute, /externalId\.startsWith\("mock-smartstore"\)/);
+assert.match(smartstoreReplyRoute, /platformStatus: "failed"/);
+assert.match(smartstoreReplyRoute, /platformStatus: "posted"/);
+
+assert.match(csMessageRoute, /requiresSmartstoreReplyRegistration/);
+assert.match(csMessageRoute, /Smartstore reply registration API/);
+assert.match(pageSource, /shouldRegisterSmartstoreReply/);
+assert.match(pageSource, /\/api\/integrations\/smartstore\/reply/);
 
 assert.match(platformInquiryProcessing, /generatePlatformInquiryDecision/);
 assert.match(platformInquiryProcessing, /createPlatformCsMessageRow/);
