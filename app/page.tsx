@@ -313,11 +313,9 @@ type IntegrationPlatform =
   | "smartstore"
   | "coupang";
 
-type DeliveryMockReviewPlatform =
-  | "baemin"
-  | "yogiyo"
-  | "coupangeats"
-  | "smartstore";
+type DeliveryMockReviewPlatform = "baemin" | "yogiyo" | "coupangeats";
+
+type MockReviewPlatform = DeliveryMockReviewPlatform | "smartstore";
 
 type PlatformIntegrationRequest = {
   id: string;
@@ -1493,12 +1491,7 @@ function isIntegrationPlatform(value: string): value is IntegrationPlatform {
 function isDeliveryMockReviewPlatform(
   value: IntegrationPlatform,
 ): value is DeliveryMockReviewPlatform {
-  return (
-    value === "baemin" ||
-    value === "yogiyo" ||
-    value === "coupangeats" ||
-    value === "smartstore"
-  );
+  return value === "baemin" || value === "yogiyo" || value === "coupangeats";
 }
 
 const businessTypeInputGuides = {
@@ -2088,14 +2081,14 @@ export default function Home() {
   const [smartstoreMockInquiriesMessage, setSmartstoreMockInquiriesMessage] =
     useState("");
   const [
-    deliveryMockReviewsLoadingPlatform,
-    setDeliveryMockReviewsLoadingPlatform,
-  ] = useState<DeliveryMockReviewPlatform | null>(null);
-  const [deliveryMockReviewsErrors, setDeliveryMockReviewsErrors] = useState<
-    Partial<Record<DeliveryMockReviewPlatform, string>>
+    mockReviewsLoadingPlatform,
+    setMockReviewsLoadingPlatform,
+  ] = useState<MockReviewPlatform | null>(null);
+  const [mockReviewsErrors, setMockReviewsErrors] = useState<
+    Partial<Record<MockReviewPlatform, string>>
   >({});
-  const [deliveryMockReviewsMessages, setDeliveryMockReviewsMessages] = useState<
-    Partial<Record<DeliveryMockReviewPlatform, string>>
+  const [mockReviewsMessages, setMockReviewsMessages] = useState<
+    Partial<Record<MockReviewPlatform, string>>
   >({});
 
   const storeDraft = useMemo<StoreDraft>(
@@ -2631,9 +2624,9 @@ export default function Home() {
         setSmartstoreMockInquiriesLoading(false);
         setSmartstoreMockInquiriesError("");
         setSmartstoreMockInquiriesMessage("");
-        setDeliveryMockReviewsLoadingPlatform(null);
-        setDeliveryMockReviewsErrors({});
-        setDeliveryMockReviewsMessages({});
+        setMockReviewsLoadingPlatform(null);
+        setMockReviewsErrors({});
+        setMockReviewsMessages({});
       });
 
       return () => {
@@ -6254,28 +6247,28 @@ export default function Home() {
     }
   }
 
-  async function handleLoadDeliveryMockReviews(
-    platform: DeliveryMockReviewPlatform,
+  async function handleLoadPlatformMockReviews(
+    platform: MockReviewPlatform,
     platformName: string,
   ) {
     if (!authUser) {
-      setDeliveryMockReviewsMessages((current) => ({
+      setMockReviewsMessages((current) => ({
         ...current,
         [platform]: "",
       }));
-      setDeliveryMockReviewsErrors((current) => ({
+      setMockReviewsErrors((current) => ({
         ...current,
         [platform]: "로그인이 필요합니다",
       }));
       return;
     }
 
-    setDeliveryMockReviewsLoadingPlatform(platform);
-    setDeliveryMockReviewsMessages((current) => ({
+    setMockReviewsLoadingPlatform(platform);
+    setMockReviewsMessages((current) => ({
       ...current,
       [platform]: "",
     }));
-    setDeliveryMockReviewsErrors((current) => ({
+    setMockReviewsErrors((current) => ({
       ...current,
       [platform]: "",
     }));
@@ -6291,25 +6284,25 @@ export default function Home() {
       const data = (await response.json()) as MockReviewsApiResponse;
 
       if (!response.ok || !data.inserted) {
-        setDeliveryMockReviewsErrors((current) => ({
+        setMockReviewsErrors((current) => ({
           ...current,
           [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
         }));
         return;
       }
 
-      setDeliveryMockReviewsMessages((current) => ({
+      setMockReviewsMessages((current) => ({
         ...current,
         [platform]: `${platformName} 샘플 리뷰가 AI CS 처리함에 추가되었습니다.`,
       }));
       await Promise.all([loadHistory(), loadInsights()]);
     } catch {
-      setDeliveryMockReviewsErrors((current) => ({
+      setMockReviewsErrors((current) => ({
         ...current,
         [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
       }));
     } finally {
-      setDeliveryMockReviewsLoadingPlatform(null);
+      setMockReviewsLoadingPlatform(null);
     }
   }
 
@@ -8811,22 +8804,22 @@ export default function Home() {
                         </p>
                         <button
                           type="button"
-                          disabled={deliveryMockReviewsLoadingPlatform !== null}
+                          disabled={mockReviewsLoadingPlatform !== null}
                           onClick={() =>
-                            void handleLoadDeliveryMockReviews(
+                            void handleLoadPlatformMockReviews(
                               deliveryMockReviewPlatform,
                               platform.name,
                             )
                           }
                           className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
-                          {deliveryMockReviewsLoadingPlatform ===
+                          {mockReviewsLoadingPlatform ===
                           deliveryMockReviewPlatform
                             ? "샘플 리뷰 불러오는 중..."
                             : "샘플 리뷰 불러오기"}
                         </button>
 
-                        {deliveryMockReviewsMessages[
+                        {mockReviewsMessages[
                           deliveryMockReviewPlatform
                         ] ? (
                           <p
@@ -8834,14 +8827,14 @@ export default function Home() {
                             role="status"
                           >
                             {
-                              deliveryMockReviewsMessages[
+                              mockReviewsMessages[
                                 deliveryMockReviewPlatform
                               ]
                             }
                           </p>
                         ) : null}
 
-                        {deliveryMockReviewsErrors[
+                        {mockReviewsErrors[
                           deliveryMockReviewPlatform
                         ] ? (
                           <p
@@ -8849,7 +8842,7 @@ export default function Home() {
                             role="alert"
                           >
                             {
-                              deliveryMockReviewsErrors[
+                              mockReviewsErrors[
                                 deliveryMockReviewPlatform
                               ]
                             }
@@ -9170,12 +9163,12 @@ export default function Home() {
                           데모 체험
                         </p>
                         <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
-                          샘플 문의로 흐름 확인
+                          샘플 데이터로 스마트스토어 흐름 확인
                         </h4>
                         <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
                           샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
-                          아니며, 상품 문의가 AI CS 처리함에 모이는 흐름을
-                          체험하기 위한 데모용입니다.
+                          아니며, 상품 문의와 리뷰가 AI CS 처리함에 모이는
+                          흐름을 체험하기 위한 데모용입니다.
                         </p>
                         <button
                           type="button"
@@ -9188,6 +9181,22 @@ export default function Home() {
                           {smartstoreMockInquiriesLoading
                             ? "샘플 문의 불러오는 중..."
                             : "샘플 문의 불러오기"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={mockReviewsLoadingPlatform !== null}
+                          onClick={() =>
+                            void handleLoadPlatformMockReviews(
+                              "smartstore",
+                              platform.name,
+                            )
+                          }
+                          className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                        >
+                          {mockReviewsLoadingPlatform === "smartstore"
+                            ? "샘플 리뷰 불러오는 중..."
+                            : "샘플 리뷰 불러오기"}
                         </button>
 
                         {smartstoreMockInquiriesMessage ? (
@@ -9205,6 +9214,24 @@ export default function Home() {
                             role="alert"
                           >
                             {smartstoreMockInquiriesError}
+                          </p>
+                        ) : null}
+
+                        {mockReviewsMessages.smartstore ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
+                            role="status"
+                          >
+                            {mockReviewsMessages.smartstore}
+                          </p>
+                        ) : null}
+
+                        {mockReviewsErrors.smartstore ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {mockReviewsErrors.smartstore}
                           </p>
                         ) : null}
                       </div>
