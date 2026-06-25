@@ -7414,8 +7414,8 @@ export default function Home() {
                 가게 정보
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                가게명, 업종, 대표 상품만 입력하면 바로 AI 답변을 테스트할 수
-                있어요. 나머지 정보는 필요할 때 천천히 보강하세요.
+                처음에는 가게명, 업종, 대표 상품만 저장해도 AI 답변을 테스트할 수
+                있어요. 나머지는 실제 문의를 보며 천천히 보강하면 됩니다.
               </p>
             </div>
             <button
@@ -7424,7 +7424,7 @@ export default function Home() {
               className={buttonClass("secondary")}
               aria-expanded={isExamplePickerOpen}
             >
-              예시 데이터로 체험하기
+              예시로 채우기
             </button>
           </div>
 
@@ -7467,14 +7467,39 @@ export default function Home() {
             </p>
           ) : null}
 
-          <form onSubmit={handleStoreSubmit} className="space-y-5">
+          <form onSubmit={handleStoreSubmit} className="space-y-4">
             <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                Quick start
+              </p>
+              <h3 className="mt-1 text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                처음엔 3가지만 입력하세요
+              </h3>
+              <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                {["가게명", "업종", "대표 상품"].map((item, index) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 rounded-xl bg-white/85 px-3 py-2 text-zinc-700 ring-1 ring-blue-100 dark:bg-zinc-950/60 dark:text-zinc-200 dark:ring-blue-900/60"
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                      {index + 1}
+                    </span>
+                    <span className="font-medium">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
+                가격, 배송, 말투 예시는 정확도를 높이는 선택 정보입니다.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div className="mb-4">
                 <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
                   기본 정보
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                  가게명, 업종, 대표 상품을 입력하고 먼저 저장해 보세요.
+                  이 영역만 채워도 첫 AI 답변 테스트를 시작할 수 있습니다.
                 </p>
               </div>
 
@@ -7499,7 +7524,11 @@ export default function Home() {
               </label>
               <select
                 id="business_type"
-                value={businessType}
+                value={
+                  businessTypeOptions.some((option) => option === businessType)
+                    ? businessType
+                    : ""
+                }
                 onChange={(event) => setBusinessType(event.target.value)}
                 className={inputClass}
               >
@@ -7510,41 +7539,23 @@ export default function Home() {
                   </option>
                 ))}
               </select>
-              {businessType &&
-              !businessTypeOptions.some((option) => option === businessType) ? (
-                <input
-                  type="text"
-                  value={businessType}
-                  onChange={(event) => setBusinessType(event.target.value)}
-                  placeholder="예: 반려동물 용품"
-                  className={inputClass}
-                  aria-label="업종 직접 입력"
-                />
-              ) : (
-                <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                    목록에 없는 업종 직접 입력
-                  </p>
-                  <input
-                    type="text"
-                    value=""
-                    onChange={(event) => setBusinessType(event.target.value)}
-                    placeholder="예: 반려동물 용품"
-                    className={`${inputClass} mt-3`}
-                    aria-label="업종 직접 입력"
-                  />
-                </div>
-              )}
+              <input
+                type="text"
+                value={
+                  businessTypeOptions.some((option) => option === businessType)
+                    ? ""
+                    : businessType
+                }
+                onChange={(event) => setBusinessType(event.target.value)}
+                placeholder="목록에 없으면 직접 입력"
+                className={inputClass}
+                aria-label="업종 직접 입력"
+              />
 
-              <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/25">
-                <div>
-                  <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
-                    업종별 입력 가이드
-                  </p>
-                  <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">
-                    아래 항목을 채워두면 AI가 더 정확하게 답변합니다.
-                  </p>
-                </div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3 dark:border-blue-900/50 dark:bg-blue-950/20">
+                <p className="text-xs font-semibold text-blue-950 dark:text-blue-100">
+                  업종별로 나중에 채우면 좋은 정보
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {businessTypeGuideItems.map((item) => (
                     <span
@@ -7593,6 +7604,10 @@ export default function Home() {
                   >
                     상품 설명
                   </label>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    한 줄만 적어도 됩니다. 자세한 구성은 아래 선택 정보에 넣어도
+                    좋아요.
+                  </p>
                   <textarea
                     id="product_description"
                     value={productDescription}
@@ -7607,11 +7622,11 @@ export default function Home() {
                 <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                   <div>
                     <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      선택 입력: 정확도를 높이는 정보
+                      선택 입력: 정확도를 높이는 상품 정보
                     </span>
                     <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                      가격, 구성, 주의사항, 포장 가능 여부처럼 정확히 답해야
-                      하는 내용을 더 적어둘 수 있어요.
+                      가격, 구성, 주의사항, 포장 가능 여부처럼 틀리면 안 되는
+                      내용만 먼저 적어두면 됩니다.
                     </span>
                   </div>
 
@@ -7680,23 +7695,23 @@ export default function Home() {
 
             <section
               id="auto-processing-settings"
-              className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20"
+              className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <div>
-                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
-                  AI 자동 처리 설정
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  선택 설정: AI 자동 처리
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
-                  낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
-                  처음에는 나중에 설정해도 괜찮아요.
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  처음에는 그대로 두고 시작해도 됩니다. 운영에 익숙해진 뒤 안전한
+                  항목만 자동 완료로 바꿔보세요.
                 </span>
               </div>
               <div className="space-y-4">
                 <div className="mt-4">
-                  <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     자동 처리 범위
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
+                  <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                     AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
                     긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
                     모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
@@ -7799,22 +7814,22 @@ export default function Home() {
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  AI 답변 정확도 높이기
+                  선택 입력: AI 답변 정확도 높이기
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  상품 목록과 평소 말투를 추가하면 더 정확하고 사장님다운 답변을
-                  만들 수 있어요.
+                  필수는 아닙니다. 가격, 정책, 말투처럼 자주 물어보거나 틀리면
+                  안 되는 정보부터 천천히 추가하세요.
                 </span>
               </div>
 
               <div className="mt-4 grid gap-4 xl:grid-cols-2">
-            <section className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+            <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <div>
-                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   상품 목록 학습
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
-                  상품별 구성, 가격, 옵션, 주의사항을 입력합니다.
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  가격, 옵션, 구성처럼 정확한 답이 필요한 상품만 먼저 적어두세요.
                 </span>
               </div>
               <div className="mt-4 space-y-2">
@@ -7824,15 +7839,15 @@ export default function Home() {
                 >
                   상품 목록 학습
                 </label>
-                <div className="rounded-lg border border-blue-200 bg-white/80 p-3 dark:border-blue-900/70 dark:bg-zinc-950/60">
-                  <p className="text-xs font-semibold text-blue-950 dark:text-blue-100">
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                  <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                     추천 입력 형식
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
                     상품명은 [ ] 안에 적고, 상품 정보는 - 로 줄마다 나눠 적으면
                     AI가 더 정확하게 답변할 수 있어요.
                   </p>
-                  <pre className="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-950 dark:bg-blue-950/40 dark:text-blue-100">
+                  <pre className="mt-3 rounded-md bg-white px-3 py-2 text-xs leading-5 text-zinc-700 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-800">
                     {"[상품명]\n- 구성/용량\n- 옵션/가격\n- 보관법\n- 알레르기/주의사항"}
                   </pre>
                   <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
@@ -7862,30 +7877,30 @@ export default function Home() {
                     "- 예약 주문 필요",
                     "- 파손 우려로 택배 불가, 픽업 권장",
                   ].join("\n")}
-                  className="min-h-48 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
+                  className="min-h-40 w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950"
                 />
               </div>
             </section>
 
-            <section className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+            <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <div>
-                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   사장님 말투 학습
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
-                  리뷰 답글과 CS 응대 예시를 넣으면 AI가 사장님 말투를 더 잘
-                  따라갑니다.
+                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  예시가 없으면 기본 말투로 시작하고, 나중에 사장님 문장을 추가하면
+                  더 비슷해집니다.
                 </span>
               </div>
 
               <div className="mt-4 space-y-2">
                 <label
                   htmlFor="owner_reply_examples"
-                  className="text-sm font-semibold text-blue-950 dark:text-blue-100"
+                  className="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
                 >
                   사장님 리뷰 말투 학습
                 </label>
-                <p className="text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
+                <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                   평소 직접 쓰셨던 리뷰 답글을 3개 이상 붙여넣어 주세요. AI가
                   문장 길이, 말투, 이모지 사용, 감사/사과 표현을 참고해 리뷰
                   답글을 작성합니다.
@@ -7904,7 +7919,7 @@ export default function Home() {
                     "",
                     "솔직한 후기 남겨주셔서 감사합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
                   ].join("\n")}
-                  className="min-h-40 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
+                  className="min-h-32 w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950"
                 />
               </div>
 
@@ -7914,15 +7929,15 @@ export default function Home() {
                 따라갑니다.
               </p>
 
-              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="space-y-2">
                   <label
                     htmlFor="owner_cs_examples"
-                    className="text-sm font-semibold text-blue-950 dark:text-blue-100"
+                    className="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
                   >
                     CS 응대 말투 학습
                   </label>
-                  <p className="text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
+                  <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                     평소 고객 문의에 답변하실 때 쓰는 문장을 3개 이상 붙여넣어
                     주세요. AI가 문장 길이, 안내 방식, 마무리 표현을 참고해 문의
                     답변을 작성합니다.
@@ -7939,7 +7954,7 @@ export default function Home() {
                       "",
                       "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
                     ].join("\n")}
-                    className="min-h-40 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
+                    className="min-h-32 w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950"
                   />
                 </div>
               </div>
@@ -7950,11 +7965,11 @@ export default function Home() {
             <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
               <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  운영 정책 입력
+                  선택 입력: 운영 정책
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  배송, 픽업, 취소, 환불처럼 정확한 안내가 필요한 기준을
-                  입력합니다.
+                  배송, 픽업, 취소, 환불처럼 정확히 답해야 하는 기준만 먼저
+                  정리해두세요.
                 </span>
               </div>
 
@@ -7965,7 +7980,7 @@ export default function Home() {
                   배송정책
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  출고, 배송, 픽업, 배달 기준을 입력합니다.
+                  출고, 배송, 픽업, 배달 기준을 정리합니다.
                 </span>
               </div>
               <label htmlFor="shipping_policy" className="sr-only">
@@ -7978,7 +7993,7 @@ export default function Home() {
                       배송정책 작성 도우미
                     </p>
                     <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      자주 묻는 배송 정보를 문장으로 정리합니다.
+                      알고 있는 기준만 입력하면 아래 문장으로 정리됩니다.
                     </p>
                   </div>
                   <button
@@ -8106,7 +8121,7 @@ export default function Home() {
                 id="shipping_policy"
                 value={shippingPolicy}
                 onChange={(e) => setShippingPolicy(e.target.value)}
-                placeholder="배송 안내, 기간, 지역 등"
+                placeholder="예: 오후 2시 이전 주문은 당일 출고됩니다. 제주/도서산간은 추가 배송비가 있습니다."
                 className={textareaClass}
               />
             </section>
@@ -8117,7 +8132,7 @@ export default function Home() {
                   환불정책
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  취소, 환불, 교환 기준을 입력합니다.
+                  취소, 환불, 교환 기준을 정리합니다.
                 </span>
               </div>
               <label htmlFor="refund_policy" className="sr-only">
@@ -8130,7 +8145,7 @@ export default function Home() {
                       환불정책 작성 도우미
                     </p>
                     <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      환불 가능 여부와 문의 기준을 문장으로 정리합니다.
+                      알고 있는 기준만 입력하면 아래 문장으로 정리됩니다.
                     </p>
                   </div>
                   <button
@@ -8433,7 +8448,7 @@ export default function Home() {
                 id="refund_policy"
                 value={refundPolicy}
                 onChange={(e) => setRefundPolicy(e.target.value)}
-                placeholder="환불·교환 조건 등"
+                placeholder="예: 단순 변심 환불은 상품 발송 전까지만 가능합니다. 제품 이상은 확인 후 안내드립니다."
                 className={textareaClass}
               />
             </section>

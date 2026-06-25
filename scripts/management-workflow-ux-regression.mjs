@@ -83,7 +83,16 @@ assert.doesNotMatch(pageSource, /AI 직원 일지[\s\S]{0,220}펼쳐보기/);
 assert.ok(storeInfoSectionMatch, "The store settings section should exist.");
 assert.doesNotMatch(storeInfoSectionMatch[0], /<details\b/);
 assert.doesNotMatch(storeInfoSectionMatch[0], /<summary\b/);
-assert.match(storeInfoSectionMatch[0], /선택 입력: 정확도를 높이는 정보/);
+assert.match(storeInfoSectionMatch[0], /처음엔 3가지만 입력하세요/);
+assert.match(storeInfoSectionMatch[0], /가게명/);
+assert.match(storeInfoSectionMatch[0], /업종/);
+assert.match(storeInfoSectionMatch[0], /대표 상품/);
+assert.match(storeInfoSectionMatch[0], /선택 입력: 정확도를 높이는 상품 정보/);
+assert.match(storeInfoSectionMatch[0], /선택 설정: AI 자동 처리/);
+assert.match(storeInfoSectionMatch[0], /선택 입력: AI 답변 정확도 높이기/);
+assert.match(storeInfoSectionMatch[0], /선택 입력: 운영 정책/);
+assert.doesNotMatch(storeInfoSectionMatch[0], /업종별 입력 가이드/);
+assert.doesNotMatch(storeInfoSectionMatch[0], /운영 정책 입력/);
 
 assert.match(workflowCardSource, /답변에 필요한 정보가 비어 있어 멈췄습니다/);
 assert.match(workflowCardSource, /저장된 정보만으로 답변 가능하다고 판단했습니다/);
