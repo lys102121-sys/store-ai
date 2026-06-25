@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { recordAiActivityLog } from "@/app/lib/aiActivityLog";
 import { requireAuthenticatedUser } from "@/app/lib/auth";
 import { getBillingPlanStatus } from "@/app/lib/billingPlan";
 import {
@@ -63,6 +64,49 @@ function buildSmartstoreReplyFailureResponse(status = 502) {
     },
     { status },
   );
+}
+
+async function recordSmartstoreReplyActivity({
+  supabase,
+  userId,
+  csMessageId,
+  eventType,
+  title,
+  description,
+  status,
+  platformStatus,
+  errorMessage,
+  isMock = false,
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  csMessageId: string;
+  eventType: string;
+  title: string;
+  description?: string;
+  status: "completed" | "failed";
+  platformStatus: "posted" | "failed";
+  errorMessage?: string;
+  isMock?: boolean;
+}) {
+  await recordAiActivityLog(supabase, {
+    userId,
+    eventType,
+    title,
+    description,
+    relatedType: "cs_message",
+    relatedId: csMessageId,
+    status,
+    handlingType: null,
+    riskLevel: null,
+    sourcePlatform: "smartstore",
+    metadata: {
+      platform: "smartstore",
+      platformStatus,
+      isMock,
+      errorMessage,
+    },
+  });
 }
 
 export async function POST(request: Request) {
@@ -150,6 +194,19 @@ export async function POST(request: Request) {
       return buildSmartstoreReplyFailureResponse(500);
     }
 
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_mock_completed",
+      title: "스마트스토어 샘플 문의를 등록 완료로 처리했습니다",
+      description:
+        "샘플 데이터라 실제 스마트스토어 API를 호출하지 않고 플랫폼 등록 완료 상태로 표시했습니다.",
+      status: "completed",
+      platformStatus: "posted",
+      isMock: true,
+    });
+
     return Response.json({
       success: true,
       mock: true,
@@ -169,6 +226,18 @@ export async function POST(request: Request) {
       userId: auth.userId,
       csMessageId,
       platformStatus: "failed",
+    });
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_paid_plan_required",
+      title: "스마트스토어 답변 등록을 멈췄습니다",
+      description:
+        "실제 스마트스토어 답변 등록은 유료 플랜에서만 사용할 수 있어 처리하지 않았습니다.",
+      status: "failed",
+      platformStatus: "failed",
+      errorMessage: "paid_plan_required",
     });
 
     return Response.json(
@@ -199,6 +268,18 @@ export async function POST(request: Request) {
       csMessageId,
       platformStatus: "failed",
     });
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_credentials_failed",
+      title: "스마트스토어 연동 설정을 불러오지 못했습니다",
+      description:
+        "저장된 스마트스토어 연동 설정을 확인하는 중 오류가 발생했습니다.",
+      status: "failed",
+      platformStatus: "failed",
+      errorMessage: credentialError.message,
+    });
     return buildSmartstoreReplyFailureResponse(500);
   }
 
@@ -213,6 +294,18 @@ export async function POST(request: Request) {
       userId: auth.userId,
       csMessageId,
       platformStatus: "failed",
+    });
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_credentials_missing",
+      title: "스마트스토어 답변 등록 설정이 부족합니다",
+      description:
+        "clientId 또는 clientSecret이 없어 실제 스마트스토어 답변을 등록하지 못했습니다.",
+      status: "failed",
+      platformStatus: "failed",
+      errorMessage: "missing_credentials",
     });
     return buildSmartstoreReplyFailureResponse(400);
   }
@@ -241,6 +334,18 @@ export async function POST(request: Request) {
       return buildSmartstoreReplyFailureResponse(500);
     }
 
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_posted",
+      title: "스마트스토어에 답변을 등록했습니다",
+      description:
+        "AI CS 처리함에서 승인 완료한 답변을 스마트스토어 상품 문의에 등록했습니다.",
+      status: "completed",
+      platformStatus: "posted",
+    });
+
     return Response.json({
       success: true,
       message: "스마트스토어에 답변을 등록했습니다.",
@@ -255,6 +360,18 @@ export async function POST(request: Request) {
       userId: auth.userId,
       csMessageId,
       platformStatus: "failed",
+    });
+    await recordSmartstoreReplyActivity({
+      supabase: auth.supabase,
+      userId: auth.userId,
+      csMessageId,
+      eventType: "smartstore_reply_failed",
+      title: "스마트스토어 답변 등록에 실패했습니다",
+      description:
+        "스마트스토어 API 호출 또는 인증 과정에서 오류가 발생했습니다. 연동 설정과 권한을 확인해 주세요.",
+      status: "failed",
+      platformStatus: "failed",
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
     });
     return buildSmartstoreReplyFailureResponse();
   }

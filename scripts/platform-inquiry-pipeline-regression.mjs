@@ -134,6 +134,10 @@ assert.match(smartstoreReplyRoute, /submitSmartstoreProductInquiryReply/);
 assert.match(smartstoreReplyRoute, /externalId\.startsWith\("mock-smartstore"\)/);
 assert.match(smartstoreReplyRoute, /platformStatus: "failed"/);
 assert.match(smartstoreReplyRoute, /platformStatus: "posted"/);
+assert.match(smartstoreReplyRoute, /recordSmartstoreReplyActivity/);
+assert.match(smartstoreReplyRoute, /smartstore_reply_posted/);
+assert.match(smartstoreReplyRoute, /smartstore_reply_failed/);
+assert.match(smartstoreReplyRoute, /smartstore_reply_credentials_missing/);
 
 assert.match(csMessageRoute, /requiresSmartstoreReplyRegistration/);
 assert.match(csMessageRoute, /Smartstore reply registration API/);
