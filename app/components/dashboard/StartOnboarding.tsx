@@ -305,7 +305,7 @@ export function StartOnboarding({
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.72fr)_auto] lg:items-center">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                유료 운영 상담
+                유료 도입 상담
               </p>
               <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                 {paidAdoptionAction.title}

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:harness": "node scripts/agent-harness-check.mjs",
     "test:cs-guard": "node scripts/cs-operational-guard-regression.mjs && node scripts/cs-cross-industry-guard-regression.mjs && node scripts/risk-signals-regression.mjs && node scripts/cs-incident-response-regression.mjs && node scripts/cs-response-playbook-regression.mjs && node scripts/cs-service-escalation-regression.mjs && node scripts/cs-service-escalation-cross-industry-regression.mjs && node scripts/cs-case-intake-regression.mjs && node scripts/cs-reply-output-validator-regression.mjs && node scripts/cs-workflow-claim-regression.mjs && node scripts/platform-inquiry-pipeline-regression.mjs",
     "test:learning": "node scripts/missing-info-learning-regression.mjs && node scripts/cs-reply-correction-learning-regression.mjs && node scripts/cs-learning-metrics-regression.mjs",
     "test:risk-signals": "node scripts/risk-signals-regression.mjs",

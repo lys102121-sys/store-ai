@@ -1,0 +1,29 @@
+{
+  "name": "store-ai-agent-harness",
+  "mission": "Build a trustworthy AI CS employee that learns from owner input, avoids unsafe guesses, and supports paid platform operations.",
+  "sourceOfTruth": [
+    "AGENTS.md",
+    ".agents/project/context.md",
+    ".agents/project/status.md"
+  ],
+  "commands": {
+    "preflight": ".agents/commands/preflight.md",
+    "verify": ".agents/commands/verify.md",
+    "commitPush": ".agents/commands/commit-push.md"
+  },
+  "requiredPackageScripts": [
+    "test:harness",
+    "test:cs-guard",
+    "test:learning",
+    "test:workflow-safety",
+    "test:monetization",
+    "test:store-knowledge-quality",
+    "test:store-knowledge-usage"
+  ],
+  "commitPolicy": {
+    "commitAfterValidatedWork": true,
+    "pushAfterCommit": true,
+    "reportNextAndNextNextWork": true
+  }
+}
+

@@ -20,7 +20,7 @@ export function AiCsWorkflowInboxEmptyState({
   return (
     <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
       <p className="mx-auto mb-2 inline-flex rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-500 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700">
-        지금 할 일
+        다음 행동
       </p>
       <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
         {title}
