@@ -72,12 +72,10 @@ type AiCsWorkflowItemCardProps = {
   isEditing: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  isDetailExpanded: boolean;
   editingReply: string;
   missingInfoAnswer: string;
   missingInfoTargetField: string;
   isResolvingMissingInfo: boolean;
-  onToggleDetail: (itemKey: string) => void;
   onCopyReply: (reply: string) => void;
   onEditingReplyChange: (value: string) => void;
   onMissingInfoAnswerChange: (itemId: string, value: string) => void;
@@ -169,12 +167,10 @@ export function AiCsWorkflowItemCard({
   isEditing,
   isUpdating,
   isDeleting,
-  isDetailExpanded,
   editingReply,
   missingInfoAnswer,
   missingInfoTargetField,
   isResolvingMissingInfo,
-  onToggleDetail,
   onCopyReply,
   onEditingReplyChange,
   onMissingInfoAnswerChange,
@@ -200,6 +196,7 @@ export function AiCsWorkflowItemCard({
   const isDemoData = isDemoExternalId(item.externalId);
   const evidenceTitle = workflowEvidenceTitle(item);
   const evidenceMessage = workflowEvidenceMessage(item);
+  const primaryUsedKnowledgeItem = item.usedKnowledgeItems[0] ?? null;
   const canApproveWorkflowItem =
     !isCompleted && item.canMutate && item.type !== "missing_info";
 
@@ -367,30 +364,10 @@ export function AiCsWorkflowItemCard({
         </div>
 
         {item.type !== "missing_info" ? (
-          <button
-            type="button"
-            onClick={() => onToggleDetail(item.key)}
-            className={buttonClass(
-              "secondary",
-              "sm",
-              "mt-4 h-8 w-fit rounded-lg",
-            )}
-            aria-expanded={isDetailExpanded}
-          >
-            {isDetailExpanded ? "자세히 접기" : "자세히 보기"}
-          </button>
-        ) : null}
-
-        {isDetailExpanded ? (
           <div className="mt-4 space-y-3 border-t border-slate-200/70 pt-4 dark:border-white/10">
-            {item.type !== "missing_info" ? (
-              <div
-                className={`${workflowCardDetailClass} border-slate-200 bg-slate-50/80 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200`}
-              >
-                <p className="font-bold text-slate-900 dark:text-white">
-                  AI 판단
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 text-xs leading-5 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-2">
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-bold ${handlingTypeBadgeClass(
                       item.handlingType,
@@ -413,6 +390,10 @@ export function AiCsWorkflowItemCard({
                     {platformStatusLabel(item.platformStatus)}
                   </span>
                 </div>
+                <p className="text-slate-500 dark:text-slate-400">
+                  {evidenceTitle}
+                </p>
+              </div>
                 {item.handlingType === "auto_ready" && !isCompleted ? (
                   <p className="mt-2 text-blue-700 dark:text-blue-300">
                     바로 승인해도 되는 낮은 위험도 항목입니다.
@@ -436,8 +417,7 @@ export function AiCsWorkflowItemCard({
                       : "확인이 필요한 항목입니다. 답변과 정책을 한 번 더 보세요."}
                   </p>
                 ) : null}
-              </div>
-            ) : null}
+            </div>
 
             {item.aiReason ? (
               <div
@@ -466,40 +446,18 @@ export function AiCsWorkflowItemCard({
                 ) : null}
               </div>
               <p className="mt-2">{evidenceMessage}</p>
-              {item.usedKnowledgeItems.length > 0 ? (
-                <ul className="mt-3 space-y-2">
-                  {item.usedKnowledgeItems.slice(0, 3).map((knowledgeItem) => (
-                    <li
-                      key={`${item.key}-${knowledgeItem.id}`}
-                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:ring-blue-900/70"
-                    >
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-                          {storeKnowledgeCategoryLabel(knowledgeItem.category)}
-                        </span>
-                        <span className="font-medium">
-                          {truncateSummaryText(knowledgeItem.question, 56)}
-                        </span>
-                      </div>
-                      <p className="text-blue-800 dark:text-blue-200">
-                        {truncateSummaryText(knowledgeItem.answer, 100)}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+              {primaryUsedKnowledgeItem ? (
+                <p className="mt-2 rounded-lg bg-white/70 px-2.5 py-2 text-blue-800 ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:text-blue-200 dark:ring-blue-900/70">
+                  <span className="font-semibold">
+                    {storeKnowledgeCategoryLabel(primaryUsedKnowledgeItem.category)}
+                  </span>
+                  {" · "}
+                  {truncateSummaryText(primaryUsedKnowledgeItem.question, 48)}
+                  {item.usedKnowledgeItems.length > 1
+                    ? ` 외 ${item.usedKnowledgeItems.length - 1}개`
+                    : ""}
+                </p>
               ) : null}
-            </div>
-
-            <div
-              className={`${workflowCardDetailClass} grid gap-2 border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 sm:grid-cols-2`}
-            >
-              <p className="min-w-0">
-                생성 시간:{" "}
-                <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
-              </p>
-              <p className="min-w-0 sm:text-right">
-                플랫폼 상태: {platformStatusLabel(item.platformStatus)}
-              </p>
             </div>
 
             {isDemoData ? (
@@ -593,22 +551,6 @@ export function AiCsWorkflowItemCard({
                     className={buttonClass("warning", "sm", "rounded-lg")}
                   >
                     확인 필요
-                  </button>
-                ) : null}
-                {isCompleted && item.canMutate && isDetailExpanded ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void onUpdateItem(item, { status: "needs_review" })
-                    }
-                    disabled={isUpdating}
-                    className={buttonClass(
-                      "secondary",
-                      "sm",
-                      "rounded-lg text-slate-500 dark:text-slate-400",
-                    )}
-                  >
-                    확인 필요로 되돌리기
                   </button>
                 ) : null}
                 <button

@@ -1920,9 +1920,6 @@ export default function Home() {
     null,
   );
   const [editingWorkflowReply, setEditingWorkflowReply] = useState("");
-  const [expandedWorkflowDetailKeys, setExpandedWorkflowDetailKeys] = useState<
-    Record<string, boolean>
-  >({});
   const [selectedWorkflowStatus, setSelectedWorkflowStatus] =
     useState<WorkflowStatus>("needs_review");
   const [selectedWorkflowPlatform, setSelectedWorkflowPlatform] =
@@ -7565,10 +7562,10 @@ export default function Home() {
                   aria-label="업종 직접 입력"
                 />
               ) : (
-                <details className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-                  <summary className="cursor-pointer list-none text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                     목록에 없는 업종 직접 입력
-                  </summary>
+                  </p>
                   <input
                     type="text"
                     value=""
@@ -7577,22 +7574,19 @@ export default function Home() {
                     className={`${inputClass} mt-3`}
                     aria-label="업종 직접 입력"
                   />
-                </details>
+                </div>
               )}
 
-              <details className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/25">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-blue-950 dark:text-blue-100">
-                  업종별 입력 가이드 보기
-                </summary>
-                <div className="mt-3">
+              <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/25">
+                <div>
                   <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
-                    이 업종은 이런 정보를 입력하면 좋아요
+                    업종별 입력 가이드
                   </p>
                   <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">
-                    아래 정보를 채워두면 AI가 고객 문의에 더 정확하게 답변할 수 있어요.
+                    아래 항목을 채워두면 AI가 더 정확하게 답변합니다.
                   </p>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {businessTypeGuideItems.map((item) => (
                     <span
                       key={item}
@@ -7602,7 +7596,7 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-              </details>
+              </div>
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -7651,16 +7645,16 @@ export default function Home() {
                   />
                 </div>
 
-                <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-                  <summary className="cursor-pointer list-none">
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <div>
                     <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      정확도를 높이는 추가 정보
+                      선택 입력: 정확도를 높이는 정보
                     </span>
                     <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                       가격, 구성, 주의사항, 포장 가능 여부처럼 정확히 답해야
                       하는 내용을 더 적어둘 수 있어요.
                     </span>
-                  </summary>
+                  </div>
 
                   <div className="mt-4 grid gap-4">
                     <div className="space-y-2">
@@ -7719,17 +7713,17 @@ export default function Home() {
                       />
                     </div>
                   </div>
-                </details>
+                </div>
               </div>
             </div>
               </div>
             </div>
 
-            <details
+            <section
               id="auto-processing-settings"
               className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20"
             >
-              <summary className="cursor-pointer list-none">
+              <div>
                 <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   AI 자동 처리 설정
                 </span>
@@ -7737,7 +7731,7 @@ export default function Home() {
                   낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
                   처음에는 나중에 설정해도 괜찮아요.
                 </span>
-              </summary>
+              </div>
               <div className="space-y-4">
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
@@ -7841,10 +7835,10 @@ export default function Home() {
                   <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
                 </label>
               </div>
-            </details>
+            </section>
 
-            <details className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-              <summary className="cursor-pointer list-none">
+            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   AI 답변 정확도 높이기
                 </span>
@@ -7852,19 +7846,18 @@ export default function Home() {
                   상품 목록과 평소 말투를 추가하면 더 정확하고 사장님다운 답변을
                   만들 수 있어요.
                 </span>
-              </summary>
+              </div>
 
-              <div className="mt-4 space-y-4">
-            <details className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
-              <summary className="cursor-pointer list-none">
+              <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <section className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+              <div>
                 <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   상품 목록 학습
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
-                  여러 상품이 있을 때 열어서 상품별 구성, 가격, 옵션, 주의사항을
-                  입력합니다.
+                  상품별 구성, 가격, 옵션, 주의사항을 입력합니다.
                 </span>
-              </summary>
+              </div>
               <div className="mt-4 space-y-2">
                 <label
                   htmlFor="product_catalog"
@@ -7910,13 +7903,13 @@ export default function Home() {
                     "- 예약 주문 필요",
                     "- 파손 우려로 택배 불가, 픽업 권장",
                   ].join("\n")}
-                  className="min-h-64 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
+                  className="min-h-48 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
                 />
               </div>
-            </details>
+            </section>
 
-            <details className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
-              <summary className="cursor-pointer list-none">
+            <section className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+              <div>
                 <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   사장님 말투 학습
                 </span>
@@ -7924,7 +7917,7 @@ export default function Home() {
                   리뷰 답글과 CS 응대 예시를 넣으면 AI가 사장님 말투를 더 잘
                   따라갑니다.
                 </span>
-              </summary>
+              </div>
 
               <div className="mt-4 space-y-2">
                 <label
@@ -7991,12 +7984,12 @@ export default function Home() {
                   />
                 </div>
               </div>
-            </details>
+            </section>
               </div>
-            </details>
+            </section>
 
-            <details className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-              <summary className="cursor-pointer list-none">
+            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+              <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   운영 정책 입력
                 </span>
@@ -8004,18 +7997,18 @@ export default function Home() {
                   배송, 픽업, 취소, 환불처럼 정확한 안내가 필요한 기준을
                   입력합니다.
                 </span>
-              </summary>
+              </div>
 
-              <div className="mt-4 space-y-4">
-            <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <summary className="cursor-pointer list-none">
+              <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   배송정책
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  출고, 배송, 픽업, 배달 기준을 자세히 입력할 때 열어주세요.
+                  출고, 배송, 픽업, 배달 기준을 입력합니다.
                 </span>
-              </summary>
+              </div>
               <label htmlFor="shipping_policy" className="sr-only">
                 배송정책
               </label>
@@ -8157,17 +8150,17 @@ export default function Home() {
                 placeholder="배송 안내, 기간, 지역 등"
                 className={textareaClass}
               />
-            </details>
+            </section>
 
-            <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <summary className="cursor-pointer list-none">
+            <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <div>
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   환불정책
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  취소, 환불, 교환 기준을 자세히 입력할 때 열어주세요.
+                  취소, 환불, 교환 기준을 입력합니다.
                 </span>
-              </summary>
+              </div>
               <label htmlFor="refund_policy" className="sr-only">
                 환불정책
               </label>
@@ -8484,9 +8477,9 @@ export default function Home() {
                 placeholder="환불·교환 조건 등"
                 className={textareaClass}
               />
-            </details>
+            </section>
               </div>
-            </details>
+            </section>
 
             <button
               type="submit"
@@ -9891,10 +9884,6 @@ export default function Home() {
                       (item.type === "review" && deletingReviewId === item.id) ||
                       (item.type === "cs" && deletingCsMessageId === item.id)
                     }
-                    isDetailExpanded={
-                      Boolean(expandedWorkflowDetailKeys[item.key]) ||
-                      item.type === "missing_info"
-                    }
                     editingReply={editingWorkflowReply}
                     missingInfoAnswer={
                       missingInfoAnswers[String(item.id)] ?? ""
@@ -9904,12 +9893,6 @@ export default function Home() {
                     }
                     isResolvingMissingInfo={
                       missingInfoResolvingId === String(item.id)
-                    }
-                    onToggleDetail={(itemKey) =>
-                      setExpandedWorkflowDetailKeys((current) => ({
-                        ...current,
-                        [itemKey]: !current[itemKey],
-                      }))
                     }
                     onCopyReply={(reply) =>
                       void handleCopyText(reply, "답변이 복사되었습니다")
