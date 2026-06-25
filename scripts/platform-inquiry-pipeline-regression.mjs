@@ -73,6 +73,10 @@ const smartstoreRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/integrations/smartstore/inquiries/route.ts"),
   "utf8",
 );
+const smartstoreTestRoute = fs.readFileSync(
+  path.join(projectRoot, "app/api/integrations/smartstore/test/route.ts"),
+  "utf8",
+);
 const smartstoreReplyRoute = fs.readFileSync(
   path.join(projectRoot, "app/api/integrations/smartstore/reply/route.ts"),
   "utf8",
@@ -116,6 +120,13 @@ assert.match(smartstoreRoute, /source_platform", "smartstore"/);
 assert.match(smartstoreRoute, /requestSmartstoreAccessToken/);
 assert.match(smartstoreRoute, /fetchSmartstoreProductInquiries/);
 assert.match(smartstoreRoute, /Failed to check existing Smartstore inquiries/);
+
+assert.match(smartstoreTestRoute, /platform", "smartstore"/);
+assert.match(smartstoreTestRoute, /requestSmartstoreAccessToken/);
+assert.match(smartstoreTestRoute, /fetchSmartstoreProductInquiries/);
+assert.match(smartstoreTestRoute, /status: "connected"/);
+assert.match(smartstoreTestRoute, /status: "error"/);
+assert.match(smartstoreTestRoute, /last_tested_at/);
 
 assert.match(smartstoreOpenApi, /SMARTSTORE_OPEN_API_HOST/);
 assert.match(smartstoreOpenApi, /\/v1\/oauth2\/token/);

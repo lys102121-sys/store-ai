@@ -436,6 +436,8 @@ type CoupangConnectionTestApiResponse = {
   detail?: string;
 };
 
+type SmartstoreConnectionTestApiResponse = CoupangConnectionTestApiResponse;
+
 type CoupangInquiryImportApiResponse = {
   imported?: number;
   skipped?: number;
@@ -2050,6 +2052,12 @@ export default function Home() {
     useState("");
   const [smartstoreInquiryImportMessage, setSmartstoreInquiryImportMessage] =
     useState("");
+  const [smartstoreConnectionTesting, setSmartstoreConnectionTesting] =
+    useState(false);
+  const [smartstoreConnectionTestError, setSmartstoreConnectionTestError] =
+    useState("");
+  const [smartstoreConnectionTestMessage, setSmartstoreConnectionTestMessage] =
+    useState("");
   const [coupangConnectionTesting, setCoupangConnectionTesting] =
     useState(false);
   const [coupangConnectionTestError, setCoupangConnectionTestError] =
@@ -2605,6 +2613,9 @@ export default function Home() {
         setSmartstoreInquiryImportLoading(false);
         setSmartstoreInquiryImportError("");
         setSmartstoreInquiryImportMessage("");
+        setSmartstoreConnectionTesting(false);
+        setSmartstoreConnectionTestError("");
+        setSmartstoreConnectionTestMessage("");
         setCoupangConnectionTesting(false);
         setCoupangConnectionTestError("");
         setCoupangConnectionTestMessage("");
@@ -5860,6 +5871,8 @@ export default function Home() {
     setSmartstoreCredentialsSaving(true);
     setSmartstoreCredentialsMessage("");
     setSmartstoreCredentialsError("");
+    setSmartstoreConnectionTestMessage("");
+    setSmartstoreConnectionTestError("");
 
     try {
       const response = await fetch("/api/integrations/credentials", {
@@ -5950,6 +5963,58 @@ export default function Home() {
     }
   }
 
+  async function handleTestSmartstoreConnection() {
+    if (!authUser) {
+      setSmartstoreConnectionTestMessage("");
+      setSmartstoreConnectionTestError("로그인이 필요합니다");
+      return;
+    }
+
+    setSmartstoreConnectionTesting(true);
+    setSmartstoreConnectionTestMessage("");
+    setSmartstoreConnectionTestError("");
+    setSmartstoreInquiryImportError("");
+    setSmartstoreInquiryImportMessage("");
+
+    try {
+      const response = await fetch("/api/integrations/smartstore/test", {
+        method: "POST",
+        headers: await getAuthenticatedRequestHeaders(),
+      });
+      const data =
+        (await response.json()) as SmartstoreConnectionTestApiResponse;
+
+      if (!response.ok || !data.success) {
+        setSmartstoreConnectionTestError(
+          "스마트스토어 연결 테스트에 실패했습니다. clientId/clientSecret/accountId를 확인해 주세요.",
+        );
+        await loadPlatformCredentials();
+        return;
+      }
+
+      setSmartstoreCredential((currentCredential) =>
+        currentCredential
+          ? {
+              ...currentCredential,
+              status: data.status ?? "connected",
+              last_tested_at:
+                data.last_tested_at ?? currentCredential.last_tested_at,
+            }
+          : currentCredential,
+      );
+      setSmartstoreConnectionTestMessage(
+        "스마트스토어 연결 테스트에 성공했습니다.",
+      );
+    } catch {
+      setSmartstoreConnectionTestError(
+        "스마트스토어 연결 테스트에 실패했습니다. clientId/clientSecret/accountId를 확인해 주세요.",
+      );
+      await loadPlatformCredentials();
+    } finally {
+      setSmartstoreConnectionTesting(false);
+    }
+  }
+
   async function handleImportCoupangInquiries() {
     if (!authUser) {
       setCoupangInquiryImportMessage("");
@@ -6028,6 +6093,14 @@ export default function Home() {
       setSmartstoreInquiryImportMessage("");
       setSmartstoreInquiryImportError(
         "스마트스토어 연동 설정을 먼저 저장해 주세요.",
+      );
+      return;
+    }
+
+    if (smartstoreCredential.status !== "connected") {
+      setSmartstoreInquiryImportMessage("");
+      setSmartstoreInquiryImportError(
+        "스마트스토어 연결 테스트가 완료되면 실제 문의 가져오기를 사용할 수 있습니다.",
       );
       return;
     }
@@ -8579,8 +8652,15 @@ export default function Home() {
                   coupangCredential.access_key &&
                   coupangCredential.has_secret_key,
               );
+              const canTestSmartstoreConnection = Boolean(
+                smartstoreCredential?.vendor_id &&
+                  smartstoreCredential.access_key &&
+                  smartstoreCredential.has_secret_key,
+              );
               const isCoupangConnected =
                 coupangCredential?.status === "connected";
+              const isSmartstoreConnected =
+                smartstoreCredential?.status === "connected";
               const deliveryMockReviewPlatform =
                 isDeliveryMockReviewPlatform(platform.id) ? platform.id : null;
 
@@ -8602,14 +8682,19 @@ export default function Home() {
                         >
                           {platform.priorityLabel}
                         </span>
-                        {platform.id === "coupang" ? (
+                        {platform.id === "coupang" ||
+                        platform.id === "smartstore" ? (
                           <span
                             className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
-                              coupangCredential?.status,
+                              platform.id === "coupang"
+                                ? coupangCredential?.status
+                                : smartstoreCredential?.status,
                             )}`}
                           >
                             {getPlatformConnectionStatusLabel(
-                              coupangCredential?.status,
+                              platform.id === "coupang"
+                                ? coupangCredential?.status
+                                : smartstoreCredential?.status,
                             )}
                           </span>
                         ) : (
@@ -8950,6 +9035,77 @@ export default function Home() {
                         ) : null}
                       </div>
 
+                      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                              스마트스토어 연결 테스트
+                            </h4>
+                            <p className="mt-2 text-xs leading-5 text-emerald-900 dark:text-emerald-100">
+                              저장된 clientId/clientSecret/accountId로 인증 토큰
+                              발급과 상품 문의 조회 권한을 확인합니다.
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                              smartstoreCredential?.status,
+                            )}`}
+                          >
+                            {getPlatformConnectionStatusLabel(
+                              smartstoreCredential?.status,
+                            )}
+                          </span>
+                        </div>
+
+                        {smartstoreCredential?.last_tested_at ? (
+                          <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
+                            마지막 테스트{" "}
+                            {formatDate(smartstoreCredential.last_tested_at)}
+                          </p>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          disabled={
+                            !canTestSmartstoreConnection ||
+                            smartstoreCredentialsLoading ||
+                            smartstoreCredentialsSaving ||
+                            smartstoreConnectionTesting
+                          }
+                          onClick={() => void handleTestSmartstoreConnection()}
+                          className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                        >
+                          {smartstoreConnectionTesting
+                            ? "연결 확인 중..."
+                            : "연결 테스트"}
+                        </button>
+
+                        {!canTestSmartstoreConnection ? (
+                          <p className="mt-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                            clientId, clientSecret, accountId를 저장하면 연결
+                            테스트를 할 수 있습니다.
+                          </p>
+                        ) : null}
+
+                        {smartstoreConnectionTestMessage ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            role="status"
+                          >
+                            {smartstoreConnectionTestMessage}
+                          </p>
+                        ) : null}
+
+                        {smartstoreConnectionTestError ? (
+                          <p
+                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
+                            role="alert"
+                          >
+                            {smartstoreConnectionTestError}
+                          </p>
+                        ) : null}
+                      </div>
+
                       <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                         <h4 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
                           스마트스토어 문의 가져오기
@@ -8961,7 +9117,11 @@ export default function Home() {
                         </p>
                         <button
                           type="button"
-                          disabled={smartstoreInquiryImportLoading}
+                          disabled={
+                            !isPaidPlan ||
+                            !isSmartstoreConnected ||
+                            smartstoreInquiryImportLoading
+                          }
                           onClick={() =>
                             void handleImportSmartstoreInquiries()
                           }
@@ -8976,6 +9136,13 @@ export default function Home() {
                             현재 {billingPlanLabel} 상태입니다. 유료 플랜으로
                             전환되면 실제 스마트스토어 문의 가져오기를 사용할 수
                             있습니다.
+                          </p>
+                        ) : null}
+
+                        {isPaidPlan && !isSmartstoreConnected ? (
+                          <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                            스마트스토어 연결 테스트가 완료되면 실제 문의
+                            가져오기를 사용할 수 있습니다.
                           </p>
                         ) : null}
 
