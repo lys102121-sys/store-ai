@@ -42,6 +42,45 @@ type StartOnboardingProps = {
   paidAdoptionAction: StartPaidAdoptionAction;
 };
 
+const trustHighlights = [
+  {
+    label: "실패 방지",
+    title: "모르는 내용은 멈춥니다",
+    description:
+      "가격, 재고, 환불, 건강 이슈처럼 정확해야 하는 질문은 사장님 확인으로 넘깁니다.",
+  },
+  {
+    label: "학습",
+    title: "답변을 저장해 다시 씁니다",
+    description:
+      "사장님이 알려준 답변과 수정한 문장은 다음 비슷한 문의에 반영됩니다.",
+  },
+  {
+    label: "운영",
+    title: "처리함에서 한눈에 봅니다",
+    description:
+      "확인 필요, 승인 대기, 답변 완료를 업무판처럼 나눠 관리합니다.",
+  },
+] as const;
+
+const workflowPreviewCards = [
+  {
+    badge: "확인 필요",
+    title: "AI가 모르는 질문 발견",
+    body: "가게 지식에 없는 문의는 바로 답하지 않고 사장님에게 묻습니다.",
+  },
+  {
+    badge: "승인 대기",
+    title: "답변 초안 작성",
+    body: "등록된 상품, 정책, 말투를 참고해 복사하거나 승인할 답변을 만듭니다.",
+  },
+  {
+    badge: "답변 완료",
+    title: "처리 이력 저장",
+    body: "완료된 답변과 수정 내역은 다음 응대 품질을 높이는 데 사용됩니다.",
+  },
+] as const;
+
 export function StartOnboarding({
   isVisible,
   guideItems,
@@ -59,109 +98,186 @@ export function StartOnboarding({
 
   return (
     <section
-      className={`overflow-hidden rounded-[2rem] border border-white/75 bg-white/90 shadow-[0_35px_120px_-65px_rgba(15,23,42,0.75)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10 ${
+      className={`overflow-hidden rounded-[2rem] border border-white/75 bg-white shadow-[0_35px_120px_-65px_rgba(15,23,42,0.8)] ring-1 ring-slate-950/[0.04] dark:border-white/10 dark:bg-slate-950 dark:ring-white/10 ${
         isVisible ? "order-[10]" : "hidden"
       }`}
     >
-      <div className="relative overflow-hidden p-6 sm:p-8">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-200/60 blur-3xl dark:bg-indigo-600/20" />
-        <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-cyan-200/60 blur-3xl dark:bg-cyan-500/15" />
+      <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.2),transparent_34%),linear-gradient(135deg,#ffffff_0%,#f4fbff_50%,#eef2ff_100%)] p-5 dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_58%,#111827_100%)] sm:p-8">
+        <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full bg-cyan-300/35 blur-3xl dark:bg-cyan-500/15" />
+        <div className="pointer-events-none absolute bottom-[-10rem] left-1/4 h-80 w-80 rounded-full bg-emerald-300/35 blur-3xl dark:bg-emerald-500/15" />
 
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
-          <div className="flex min-h-full flex-col rounded-[1.5rem] border border-white/75 bg-white/65 p-5 shadow-sm ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/45 dark:ring-white/10 sm:p-6">
+        <div className="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.16)]" />
+            AI CS 직원 체험 준비 완료
+          </span>
+          <span>무료 체험 30건 · 샘플 데이터 무료 · 실제 연동은 유료 플랜</span>
+        </div>
+
+        <div className="relative mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
+          <div className="flex min-h-full flex-col justify-between rounded-[1.6rem] border border-white/80 bg-white/78 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55 sm:p-7">
             <div>
-              <p className="mb-4 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-200 dark:ring-indigo-900">
-                AI 운영 도우미
+              <p className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/55 dark:text-emerald-200 dark:ring-emerald-900">
+                AI CS Employee
               </p>
-              <h1 className="max-w-3xl text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-                사장님 옆에서 일하는
-                <span className="block bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                  AI CS 직원
+              <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
+                사장님이 자는 동안에도
+                <span className="block bg-gradient-to-r from-emerald-600 via-cyan-600 to-indigo-600 bg-clip-text text-transparent">
+                  고객 응대를 정리합니다
                 </span>
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
-                문의와 리뷰의 답변 초안을 만들고, 위험하거나 모르는 내용은
-                사장님에게 확인합니다. 알려준 정보는 다음 업무에 다시
-                사용합니다.
+                문의와 리뷰를 AI CS 처리함에 모으고, 답변 가능 여부와 위험도를
+                나눕니다. 사장님이 알려준 지식은 다음 문의에 다시 쓰입니다.
               </p>
             </div>
 
-            <div className="mt-7 rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/25">
-              <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                {recommendedAction.eyebrow} · 지금 할 일
-              </p>
-              <h2 className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
-                {recommendedAction.title}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {recommendedAction.description}
-              </p>
-              <button
-                type="button"
-                onClick={recommendedAction.onAction}
-                disabled={actionLoading}
-                className={buttonClass("primary", "lg", "mt-4 font-bold")}
-              >
-                {actionLoading ? "처리 중..." : recommendedAction.actionLabel}
-              </button>
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              {trustHighlights.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/55"
+                >
+                  <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    {item.label}
+                  </p>
+                  <h2 className="mt-2 text-sm font-bold text-slate-950 dark:text-white">
+                    {item.title}
+                  </h2>
+                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
             </div>
           </div>
 
-          <div className="relative rounded-[1.5rem] border border-white/75 bg-white/80 p-5 shadow-[0_24px_70px_-45px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10">
-            <div className="flex items-center justify-between gap-3">
+          <aside className="rounded-[1.6rem] border border-slate-200/90 bg-slate-950 p-5 text-white shadow-[0_24px_70px_-45px_rgba(15,23,42,0.9)] dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                  시작 준비
-                </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                  {completedCount}/{guideItems.length}단계 완료
-                </p>
+                <p className="text-xs font-bold text-emerald-300">지금 할 일</p>
+                <h2 className="mt-2 text-xl font-black leading-tight">
+                  {recommendedAction.title}
+                </h2>
               </div>
-              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950 dark:text-indigo-200 dark:ring-indigo-900">
-                {progressPercent}%
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200 ring-1 ring-white/15">
+                {recommendedAction.eyebrow}
               </span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400 transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
+            <p className="mt-4 text-sm leading-6 text-slate-300">
+              {recommendedAction.description}
+            </p>
+            <button
+              type="button"
+              onClick={recommendedAction.onAction}
+              disabled={actionLoading}
+              className={buttonClass(
+                "success",
+                "lg",
+                "mt-5 w-full rounded-xl font-black",
+              )}
+            >
+              {actionLoading ? "처리 중..." : recommendedAction.actionLabel}
+            </button>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-300">시작 준비</p>
+                <p className="text-xs font-bold text-emerald-300">
+                  {completedCount}/{guideItems.length} 완료
+                </p>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                다음 단계는 <span className="text-white">{nextItem.title}</span>
+                입니다.
+              </p>
             </div>
-            <ol className="mt-5 space-y-2">
+          </aside>
+        </div>
+
+        <div className="relative mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="rounded-[1.5rem] border border-slate-200/90 bg-white/82 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  How it works
+                </p>
+                <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                  AI CS 직원이 일하는 순서
+                </h2>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                사장님 승인 전까지 안전하게
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {workflowPreviewCards.map((card) => (
+                <article
+                  key={card.title}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/55"
+                >
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-emerald-300 dark:ring-slate-800">
+                    {card.badge}
+                  </span>
+                  <h3 className="mt-3 text-sm font-bold text-slate-950 dark:text-white">
+                    {card.title}
+                  </h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    {card.body}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-slate-200/90 bg-white/82 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Setup
+            </p>
+            <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+              시작 체크리스트
+            </h2>
+            <ol className="mt-4 space-y-2">
               {guideItems.map((item) => {
                 const isNextStep = !item.isComplete && nextItem.id === item.id;
 
                 return (
                   <li
                     key={item.id}
-                    className={`rounded-xl px-3 py-3 text-sm transition ${
+                    className={`rounded-xl border px-3 py-3 text-sm transition ${
                       isNextStep
-                        ? "bg-indigo-50 font-semibold text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-100"
-                        : "text-zinc-600 dark:text-zinc-300"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-100"
+                        : "border-slate-200 bg-white/70 text-slate-600 dark:border-slate-800 dark:bg-slate-950/35 dark:text-slate-300"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <span
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
                           item.isComplete
                             ? "bg-emerald-600 text-white"
                             : isNextStep
-                              ? "bg-indigo-700 text-white"
-                              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                              ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                         }`}
                       >
                         {item.isComplete ? "✓" : item.step}
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span>{item.title}</span>
+                          <span className="font-bold">{item.title}</span>
                           {isNextStep ? (
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/70 dark:text-indigo-200 dark:ring-indigo-900/70">
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/70 dark:text-emerald-200 dark:ring-emerald-900/70">
                               다음
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-xs leading-5 opacity-80">
                           {item.description}
                         </p>
                       </div>
@@ -184,20 +300,20 @@ export function StartOnboarding({
           </div>
         </div>
 
-        <div className="relative mt-5 rounded-[1.5rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-5 shadow-sm dark:border-emerald-900/60 dark:from-emerald-950/25 dark:via-slate-950/70 dark:to-cyan-950/20">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.75fr)_auto] lg:items-center">
+        <div className="relative mt-5 rounded-[1.5rem] border border-emerald-200 bg-white/82 p-5 shadow-sm backdrop-blur-xl dark:border-emerald-900/60 dark:bg-emerald-950/15">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.72fr)_auto] lg:items-center">
             <div>
-              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
                 유료 도입 상담
               </p>
-              <h2 className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
+              <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                 {paidAdoptionAction.title}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {paidAdoptionAction.description}
               </p>
             </div>
-            <ul className="grid gap-2 rounded-xl border border-white/80 bg-white/85 px-4 py-3 text-left text-xs leading-5 text-slate-600 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70 dark:text-slate-300">
+            <ul className="grid gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-3 text-left text-xs leading-5 text-slate-600 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60 dark:text-slate-300">
               {paidAdoptionAction.highlights.map((highlight) => (
                 <li key={highlight} className="flex gap-2">
                   <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
