@@ -304,8 +304,6 @@ type UpdateWorkflowItemResponse = {
   detail?: string;
 };
 
-type ManageSupportPanel = "store_knowledge" | "insights";
-
 type IntegrationPlatform =
   | "baemin"
   | "yogiyo"
@@ -1969,10 +1967,6 @@ export default function Home() {
   const [correctionPatternDrafts, setCorrectionPatternDrafts] = useState<
     Record<string, { question: string; answer: string }>
   >({});
-  const [isStoreKnowledgePanelOpen, setIsStoreKnowledgePanelOpen] =
-    useState(false);
-  const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
-
   const [insights, setInsights] = useState("");
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState("");
@@ -2014,13 +2008,10 @@ export default function Home() {
     useState<PlatformCredential | null>(null);
   const [coupangCredentialDraft, setCoupangCredentialDraft] =
     useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
-  const [isCoupangSettingsOpen, setIsCoupangSettingsOpen] = useState(true);
   const [smartstoreCredential, setSmartstoreCredential] =
     useState<PlatformCredential | null>(null);
   const [smartstoreCredentialDraft, setSmartstoreCredentialDraft] =
     useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
-  const [isSmartstoreSettingsOpen, setIsSmartstoreSettingsOpen] =
-    useState(true);
   const [coupangCredentialsLoading, setCoupangCredentialsLoading] =
     useState(false);
   const [coupangCredentialsSaving, setCoupangCredentialsSaving] =
@@ -2588,10 +2579,8 @@ export default function Home() {
         setSavingIntegrationPlatform(null);
         setCoupangCredential(null);
         setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
-        setIsCoupangSettingsOpen(true);
         setSmartstoreCredential(null);
         setSmartstoreCredentialDraft(createEmptyCoupangCredentialDraft());
-        setIsSmartstoreSettingsOpen(true);
         setCoupangCredentialsLoading(false);
         setCoupangCredentialsSaving(false);
         setCoupangCredentialsError("");
@@ -4188,7 +4177,6 @@ export default function Home() {
       }${suspectKnowledgeMessage}${suspectKnowledgeFailureMessage}`,
     );
     setSelectedStoreKnowledgeStatus("needs_review");
-    setIsStoreKnowledgePanelOpen(true);
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
     });
@@ -5541,31 +5529,9 @@ export default function Home() {
     });
   }
 
-  function toggleManageSupportPanel(panel: ManageSupportPanel) {
-    const targetId =
-      panel === "store_knowledge" ? "store-knowledge" : "ai-insights";
-    const isOpen =
-      panel === "store_knowledge"
-        ? isStoreKnowledgePanelOpen
-        : isInsightsPanelOpen;
-
-    if (panel === "store_knowledge") {
-      setIsStoreKnowledgePanelOpen((current) => !current);
-    } else {
-      setIsInsightsPanelOpen((current) => !current);
-    }
-
-    if (!isOpen) {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => scrollToSection(targetId));
-      });
-    }
-  }
-
   function openStoreKnowledgeReviewCandidates() {
     setActiveTab("manage");
     setSelectedStoreKnowledgeStatus("needs_review");
-    setIsStoreKnowledgePanelOpen(true);
     void loadStoreKnowledge();
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => scrollToSection("store-knowledge"));
@@ -6821,15 +6787,15 @@ export default function Home() {
               ))}
             </div>
 
-            <details className="order-[40] mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
-              <summary className="cursor-pointer list-none">
-                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="order-[40] mt-5 rounded-2xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-5">
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   성과와 학습 기록
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  오늘 할 일을 처리한 뒤 자동 완료, 절약 시간, 학습 품질이 궁금할 때 펼쳐보세요.
-                </span>
-              </summary>
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                  자동 완료, 절약 시간, 학습 품질을 한 번에 확인합니다.
+                </p>
+              </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 {aiCsWorkSummaryItems.map((item) => (
@@ -7012,7 +6978,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            </details>
+            </div>
 
             <div className="order-[20] mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
               <div className="mb-3">
@@ -7106,22 +7072,17 @@ export default function Home() {
               )}
             </div>
 
-            <details className="order-[30] mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
-              <summary className="cursor-pointer list-none">
-                <span className="flex items-center justify-between gap-3">
-                  <span>
-                    <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      AI 직원 일지
-                    </span>
-                    <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                      오늘 처리 기록
-                    </span>
-                  </span>
-                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                    펼쳐보기
-                  </span>
-                </span>
-              </summary>
+            <div className="order-[30] mt-5 rounded-xl border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    AI 직원 일지
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    오늘 처리 기록과 멈춘 이유를 짧게 정리합니다.
+                  </p>
+                </div>
+              </div>
 
               <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 <div className="mb-3 flex justify-end">
@@ -7254,10 +7215,10 @@ export default function Home() {
                       아직 기록이 없습니다. 문의를 처리하면 여기에 쌓입니다.
                     </p>
                   ) : (
-                    <details className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
-                      <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        최근 이력 자세히 보기
-                      </summary>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                      <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        최근 이력
+                      </h4>
                       <ol className="mt-3 space-y-3">
                         {recentAiActivityLogs.map((log) => (
                           <li
@@ -7319,12 +7280,12 @@ export default function Home() {
                           </li>
                         ))}
                       </ol>
-                    </details>
+                    </div>
                   )}
                 </div>
               )}
               </div>
-            </details>
+            </div>
           </section>
         ) : null}
 
@@ -7387,9 +7348,7 @@ export default function Home() {
         <section
           id="ai-insights"
           className={`${cardClass} scroll-mt-32 border-blue-200/60 dark:border-blue-900/50 ${
-            activeTab === "manage" && isInsightsPanelOpen
-              ? "order-[44]"
-              : "hidden"
+            activeTab === "manage" ? "order-[44]" : "hidden"
           }`}
         >
           <div className="mb-6 flex items-start justify-between gap-4">
@@ -8554,51 +8513,27 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-3 lg:grid-cols-3">
-            {[
-              {
-                step: "1",
-                title: "쿠팡 실제 연동",
-                description:
-                  "API 설정, 연결 테스트, 실제 문의 가져오기까지 이어지는 1순위 도입 흐름입니다.",
-                tone: "blue",
-              },
-              {
-                step: "2",
-                title: "스마트스토어 준비",
-                description:
-                  "샘플 문의로 처리함 흐름을 확인하고, 실제 연동 희망을 먼저 등록합니다.",
-                tone: "blue",
-              },
-              {
-                step: "3",
-                title: "배달앱 샘플/수요 확인",
-                description:
-                  "배민, 요기요, 쿠팡이츠는 샘플 리뷰로 데모하고 연동 수요를 모읍니다.",
-                tone: "blue",
-              },
-            ].map((item) => (
-              <article
-                key={item.title}
-                className={`rounded-2xl border p-4 ${
-                  item.tone === "blue"
-                    ? "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
-                    : item.tone === "blue"
-                      ? "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
-                      : "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
-                }`}
-              >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-black text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/10">
-                  {item.step}
-                </span>
-                <h3 className="mt-3 text-sm font-bold text-zinc-950 dark:text-zinc-50">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                  {item.description}
-                </p>
-              </article>
-            ))}
+          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+              연결 순서
+            </p>
+            <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+              {[
+                "쿠팡 실제 문의 연동",
+                "스마트스토어 연동 준비",
+                "배달앱 샘플 리뷰 체험",
+              ].map((item, index) => (
+                <div
+                  key={item}
+                  className="flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-zinc-700 ring-1 ring-blue-100 dark:bg-zinc-950/50 dark:text-zinc-200 dark:ring-blue-900/60"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <span className="font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {!authUser ? (
@@ -8699,27 +8634,21 @@ export default function Home() {
                     <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                       {platform.description}
                     </p>
-                    <span className="hidden">
-                      설정과 샘플 체험 보기
-                    </span>
-                    <span className="hidden">
-                      접기
-                    </span>
                   </div>
 
                   <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
 
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
                     <div>
                       <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                         연동 희망 등록
                       </span>
                       <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                        실제 연동이 준비되면 안내받고 싶을 때만 입력하세요.
+                        실제 연동 안내를 받고 싶을 때만 선택 입력하세요.
                       </span>
                     </div>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <label
                         htmlFor={`${platform.id}_store_url`}
@@ -8763,7 +8692,7 @@ export default function Home() {
                           )
                         }
                         placeholder="선택 입력"
-                        className={textareaClass}
+                        className={`${textareaClass} min-h-20`}
                       />
                     </div>
                     </div>
@@ -8785,16 +8714,15 @@ export default function Home() {
                   {deliveryMockReviewPlatform ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
                       <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                          데모 체험
-                        </p>
-                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
-                          샘플 리뷰로 흐름 확인
-                        </h4>
-                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
-                          샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
-                          CS 처리함 흐름을 체험하기 위한 데모용입니다.
-                        </p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
+                              샘플 리뷰로 처리함 체험
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-blue-900 dark:text-blue-100">
+                              실제 플랫폼 데이터가 아닌 데모용 샘플입니다.
+                            </p>
+                          </div>
                         <button
                           type="button"
                           disabled={mockReviewsLoadingPlatform !== null}
@@ -8811,6 +8739,7 @@ export default function Home() {
                             ? "샘플 리뷰 불러오는 중..."
                             : "샘플 리뷰 불러오기"}
                         </button>
+                        </div>
 
                         {mockReviewsMessages[
                           deliveryMockReviewPlatform
@@ -8873,20 +8802,6 @@ export default function Home() {
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setIsSmartstoreSettingsOpen((isOpen) => !isOpen)
-                          }
-                          className="hidden"
-                          aria-expanded={isSmartstoreSettingsOpen}
-                        >
-                          {isSmartstoreSettingsOpen
-                            ? "스마트스토어 설정 닫기"
-                            : "스마트스토어 설정 열기"}
-                        </button>
-
-                        {isSmartstoreSettingsOpen ? (
                           <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
                             <div className="space-y-4">
                               <div className="space-y-1.5">
@@ -9014,7 +8929,6 @@ export default function Home() {
                                 : "설정 저장"}
                             </button>
                           </div>
-                        ) : null}
                       </div>
 
                       <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
@@ -9148,45 +9062,46 @@ export default function Home() {
                       </div>
 
                       <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                          데모 체험
-                        </p>
-                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
-                          샘플 데이터로 스마트스토어 흐름 확인
-                        </h4>
-                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
-                          샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
-                          아니며, 상품 문의와 리뷰가 AI CS 처리함에 모이는
-                          흐름을 체험하기 위한 데모용입니다.
-                        </p>
-                        <button
-                          type="button"
-                          disabled={smartstoreMockInquiriesLoading}
-                          onClick={() =>
-                            void handleLoadSmartstoreMockInquiries()
-                          }
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
-                        >
-                          {smartstoreMockInquiriesLoading
-                            ? "샘플 문의 불러오는 중..."
-                            : "샘플 문의 불러오기"}
-                        </button>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <h4 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
+                              샘플 데이터로 처리함 체험
+                            </h4>
+                            <p className="mt-1 text-xs leading-5 text-blue-900 dark:text-blue-100">
+                              실제 스마트스토어 데이터가 아닌 데모용 샘플입니다.
+                            </p>
+                          </div>
+                          <div className="grid gap-2 sm:min-w-64 sm:grid-cols-2">
+                            <button
+                              type="button"
+                              disabled={smartstoreMockInquiriesLoading}
+                              onClick={() =>
+                                void handleLoadSmartstoreMockInquiries()
+                              }
+                              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
+                            >
+                              {smartstoreMockInquiriesLoading
+                                ? "불러오는 중..."
+                                : "샘플 문의"}
+                            </button>
 
-                        <button
-                          type="button"
-                          disabled={mockReviewsLoadingPlatform !== null}
-                          onClick={() =>
-                            void handleLoadPlatformMockReviews(
-                              "smartstore",
-                              platform.name,
-                            )
-                          }
-                          className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-300 dark:hover:bg-blue-950/40"
-                        >
-                          {mockReviewsLoadingPlatform === "smartstore"
-                            ? "샘플 리뷰 불러오는 중..."
-                            : "샘플 리뷰 불러오기"}
-                        </button>
+                            <button
+                              type="button"
+                              disabled={mockReviewsLoadingPlatform !== null}
+                              onClick={() =>
+                                void handleLoadPlatformMockReviews(
+                                  "smartstore",
+                                  platform.name,
+                                )
+                              }
+                              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                            >
+                              {mockReviewsLoadingPlatform === "smartstore"
+                                ? "불러오는 중..."
+                                : "샘플 리뷰"}
+                            </button>
+                          </div>
+                        </div>
 
                         {smartstoreMockInquiriesMessage ? (
                           <p
@@ -9229,71 +9144,37 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <details open className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
-                        <summary className="hidden">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                                고급 설정
-                              </p>
-                              <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                                쿠팡 실제 연동 설정
-                              </h4>
-                              <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                                쿠팡 Open API 키가 있을 때만 열어 설정합니다.
-                              </p>
-                            </div>
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
-                                coupangCredential?.status,
-                              )}`}
-                            >
-                              {getPlatformConnectionStatusLabel(
-                                coupangCredential?.status,
-                              )}
-                            </span>
-                          </div>
-                        </summary>
-
-                        <div className="mt-4">
-
-                        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <div className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                            쿠팡 Open API 연결 상태
-                          </p>
-                          {coupangCredential?.last_tested_at ? (
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                              마지막 테스트:{" "}
-                              {formatDate(coupangCredential.last_tested_at)}
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                              실제 연동
                             </p>
-                          ) : null}
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
-                            coupangCredential?.status,
-                          )}`}
-                        >
-                          {getPlatformConnectionStatusLabel(
-                            coupangCredential?.status,
-                          )}
-                        </span>
+                            <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                              쿠팡 Open API 설정
+                            </h4>
+                            <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+                              API 키가 있으면 설정 저장, 연결 테스트, 실제 문의
+                              가져오기를 순서대로 진행합니다.
+                            </p>
+                            {coupangCredential?.last_tested_at ? (
+                              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                마지막 테스트:{" "}
+                                {formatDate(coupangCredential.last_tested_at)}
+                              </p>
+                            ) : null}
+                          </div>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${connectionStatusBadgeClass(
+                              coupangCredential?.status,
+                            )}`}
+                          >
+                            {getPlatformConnectionStatusLabel(
+                              coupangCredential?.status,
+                            )}
+                          </span>
                         </div>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setIsCoupangSettingsOpen((isOpen) => !isOpen)
-                        }
-                        className="hidden"
-                        aria-expanded={isCoupangSettingsOpen}
-                      >
-                        {isCoupangSettingsOpen
-                          ? "연동 설정 닫기"
-                          : "연동 설정 열기"}
-                      </button>
-
-                      {isCoupangSettingsOpen ? (
                         <div className="mt-4 rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/70 dark:bg-zinc-950">
                           <h4 className="text-sm font-semibold">
                             쿠팡 연동 설정
@@ -9433,7 +9314,6 @@ export default function Home() {
                               : "설정 저장"}
                           </button>
                         </div>
-                      ) : null}
 
                       <button
                         type="button"
@@ -9528,7 +9408,6 @@ export default function Home() {
                         </p>
                       ) : null}
                       </div>
-                      </details>
 
                       <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
                         <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
@@ -9981,10 +9860,10 @@ export default function Home() {
         >
           <div className="mb-4">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-              더 보기
+              운영 보조 도구
             </h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              필요할 때만 지식과 분석을 열어보세요.
+              지식 점검과 운영 분석은 아래 섹션에서 바로 확인할 수 있습니다.
             </p>
           </div>
 
@@ -10001,12 +9880,11 @@ export default function Home() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => toggleManageSupportPanel("store_knowledge")}
+                  onClick={() => scrollToSection("store-knowledge")}
                   className={buttonClass("success", "sm", "rounded-lg")}
-                  aria-expanded={isStoreKnowledgePanelOpen}
                   aria-controls="store-knowledge"
                 >
-                  {isStoreKnowledgePanelOpen ? "접기" : "열기"}
+                  가게 지식으로 이동
                 </button>
               </div>
               <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -10037,12 +9915,11 @@ export default function Home() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => toggleManageSupportPanel("insights")}
+                  onClick={() => scrollToSection("ai-insights")}
                   className={buttonClass("primary", "sm", "rounded-lg")}
-                  aria-expanded={isInsightsPanelOpen}
                   aria-controls="ai-insights"
                 >
-                  {isInsightsPanelOpen ? "접기" : "열기"}
+                  분석으로 이동
                 </button>
               </div>
               <p className="mt-4 text-xs font-medium text-blue-800 dark:text-blue-200">
@@ -10059,9 +9936,7 @@ export default function Home() {
         <section
           id="store-knowledge"
           className={`${cardClass} scroll-mt-32 border-blue-200/70 dark:border-blue-900/50 ${
-            activeTab === "manage" && isStoreKnowledgePanelOpen
-              ? "order-[43]"
-              : "hidden"
+            activeTab === "manage" ? "order-[43]" : "hidden"
           }`}
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
