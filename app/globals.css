@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fb;
-  --foreground: #111827;
-  --brand-primary: #111827;
-  --brand-primary-dark: #030712;
-  --brand-blue: #2563eb;
-  --brand-soft-blue: #eff6ff;
+  --background: #f9fafb;
+  --foreground: #191f28;
+  --brand-primary: #191f28;
+  --brand-primary-dark: #111827;
+  --brand-blue: #3182f6;
+  --brand-blue-dark: #1b64da;
+  --brand-soft-blue: #e8f3ff;
   --brand-surface: #ffffff;
-  --brand-line: #e5e7eb;
+  --brand-line: #e5e8eb;
+  --brand-muted: #8b95a1;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-noto-sans-kr);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -25,9 +27,11 @@
     --brand-primary: #f8fafc;
     --brand-primary-dark: #ffffff;
     --brand-blue: #60a5fa;
+    --brand-blue-dark: #3b82f6;
     --brand-soft-blue: #0f172a;
     --brand-surface: #0b1220;
     --brand-line: #1f2937;
+    --brand-muted: #94a3b8;
   }
 }
 
@@ -37,24 +41,21 @@
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 34rem),
-    radial-gradient(circle at top right, rgba(148, 163, 184, 0.16), transparent 32rem),
-    linear-gradient(180deg, #ffffff 0%, var(--background) 48%, #f1f5f9 100%);
+    linear-gradient(180deg, #ffffff 0%, #ffffff 22rem, var(--background) 22rem);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-sans-kr), Arial, Helvetica, sans-serif;
+  word-break: keep-all;
   text-rendering: optimizeLegibility;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
     background:
-      radial-gradient(circle at top left, rgba(96, 165, 250, 0.14), transparent 34rem),
-      radial-gradient(circle at top right, rgba(148, 163, 184, 0.1), transparent 32rem),
       linear-gradient(180deg, #070a12 0%, #0b1220 58%, #030712 100%);
   }
 }
 
 ::selection {
-  background: #bfdbfe;
-  color: #0f172a;
+  background: var(--brand-soft-blue);
+  color: var(--brand-primary);
 }

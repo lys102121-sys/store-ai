@@ -1403,10 +1403,10 @@ function hasStoreDraftContent(draft: StoreDraft) {
 }
 
 const kpiCardClass =
-  "rounded-[1.45rem] border border-slate-200 bg-white/90 p-5 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:border-slate-800 dark:bg-slate-950/72 dark:ring-white/10";
+  "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition dark:border-slate-800 dark:bg-slate-950/80";
 
 const cardClass =
-  "rounded-[1.85rem] border border-slate-200 bg-white/92 p-6 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.34)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/76 dark:ring-white/10 sm:p-8";
+  "rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 sm:p-8";
 
 const inputClass =
   "h-11 w-full rounded-2xl border border-slate-200 bg-white/95 px-4 text-sm outline-none shadow-sm transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100/80 dark:border-slate-800 dark:bg-slate-950/80 dark:focus:border-blue-500 dark:focus:ring-blue-950/60";
@@ -2017,13 +2017,13 @@ export default function Home() {
     useState<PlatformCredential | null>(null);
   const [coupangCredentialDraft, setCoupangCredentialDraft] =
     useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
-  const [isCoupangSettingsOpen, setIsCoupangSettingsOpen] = useState(false);
+  const [isCoupangSettingsOpen, setIsCoupangSettingsOpen] = useState(true);
   const [smartstoreCredential, setSmartstoreCredential] =
     useState<PlatformCredential | null>(null);
   const [smartstoreCredentialDraft, setSmartstoreCredentialDraft] =
     useState<CoupangCredentialDraft>(createEmptyCoupangCredentialDraft);
   const [isSmartstoreSettingsOpen, setIsSmartstoreSettingsOpen] =
-    useState(false);
+    useState(true);
   const [coupangCredentialsLoading, setCoupangCredentialsLoading] =
     useState(false);
   const [coupangCredentialsSaving, setCoupangCredentialsSaving] =
@@ -2591,10 +2591,10 @@ export default function Home() {
         setSavingIntegrationPlatform(null);
         setCoupangCredential(null);
         setCoupangCredentialDraft(createEmptyCoupangCredentialDraft());
-        setIsCoupangSettingsOpen(false);
+        setIsCoupangSettingsOpen(true);
         setSmartstoreCredential(null);
         setSmartstoreCredentialDraft(createEmptyCoupangCredentialDraft());
-        setIsSmartstoreSettingsOpen(false);
+        setIsSmartstoreSettingsOpen(true);
         setCoupangCredentialsLoading(false);
         setCoupangCredentialsSaving(false);
         setCoupangCredentialsError("");
@@ -8658,11 +8658,11 @@ export default function Home() {
                 isDeliveryMockReviewPlatform(platform.id) ? platform.id : null;
 
               return (
-                <details
+                <article
                   key={platform.id}
-                  className="group rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 transition open:border-blue-200 open:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:open:border-blue-900/70 dark:open:bg-zinc-900"
+                  className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
                 >
-                  <summary className="cursor-pointer list-none">
+                  <div>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <h3 className="text-base font-semibold">
@@ -8706,25 +8706,25 @@ export default function Home() {
                     <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                       {platform.description}
                     </p>
-                    <span className="mt-3 inline-flex text-xs font-semibold text-blue-700 group-open:hidden dark:text-blue-300">
+                    <span className="hidden">
                       설정과 샘플 체험 보기
                     </span>
-                    <span className="mt-3 hidden text-xs font-semibold text-blue-700 group-open:inline-flex dark:text-blue-300">
+                    <span className="hidden">
                       접기
                     </span>
-                  </summary>
+                  </div>
 
                   <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
 
-                  <details className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-                    <summary className="cursor-pointer list-none">
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                    <div>
                       <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                         연동 희망 등록
                       </span>
                       <span className="mt-1 block text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                         실제 연동이 준비되면 안내받고 싶을 때만 입력하세요.
                       </span>
-                    </summary>
+                    </div>
 
                     <div className="mt-4 space-y-4">
                     <div className="space-y-1.5">
@@ -8787,7 +8787,7 @@ export default function Home() {
                           ? "등록 중..."
                           : "연동 희망 등록"}
                     </button>
-                  </details>
+                  </div>
 
                   {deliveryMockReviewPlatform ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
@@ -8885,11 +8885,7 @@ export default function Home() {
                           onClick={() =>
                             setIsSmartstoreSettingsOpen((isOpen) => !isOpen)
                           }
-                          className={buttonClass(
-                            "secondary",
-                            "md",
-                            "mt-4 w-full text-blue-700 dark:text-blue-300",
-                          )}
+                          className="hidden"
                           aria-expanded={isSmartstoreSettingsOpen}
                         >
                           {isSmartstoreSettingsOpen
@@ -9240,8 +9236,8 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <details className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
-                        <summary className="cursor-pointer list-none">
+                      <details open className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
+                        <summary className="hidden">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
@@ -9296,11 +9292,7 @@ export default function Home() {
                         onClick={() =>
                           setIsCoupangSettingsOpen((isOpen) => !isOpen)
                         }
-                        className={buttonClass(
-                          "secondary",
-                          "md",
-                          "w-full text-blue-700 dark:text-blue-300",
-                        )}
+                        className="hidden"
                         aria-expanded={isCoupangSettingsOpen}
                       >
                         {isCoupangSettingsOpen
@@ -9653,7 +9645,7 @@ export default function Home() {
                     </div>
                   ) : null}
                   </div>
-                </details>
+                </article>
               );
             })}
           </div>

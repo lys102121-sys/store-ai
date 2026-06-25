@@ -22,7 +22,7 @@ export function DashboardTabs({ activeTab, onChange }: DashboardTabsProps) {
   return (
     <nav
       aria-label="대시보드 탭"
-      className="sticky top-3 z-20 rounded-[1.2rem] border border-white/75 bg-white/85 p-1.5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80 dark:ring-white/10"
+      className="sticky top-3 z-20 rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/90"
     >
       <div
         role="tablist"
@@ -39,8 +39,8 @@ export function DashboardTabs({ activeTab, onChange }: DashboardTabsProps) {
               onClick={() => onChange(tab.id)}
               className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 sm:text-sm dark:focus-visible:ring-blue-950 ${
                 isSelected
-                  ? "bg-gradient-to-r from-blue-600 via-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25"
-                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
               }`}
               aria-selected={isSelected}
             >
