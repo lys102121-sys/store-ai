@@ -27,9 +27,9 @@ const semanticBadgeClasses: Record<SemanticTone, string> = {
   neutral:
     "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
   info:
-    "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-200 dark:ring-indigo-800",
+    "bg-blue-100 text-blue-800 ring-1 ring-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-800",
   success:
-    "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800",
+    "bg-blue-100 text-blue-800 ring-1 ring-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-800",
   warning:
     "bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800",
   danger:
@@ -107,9 +107,9 @@ export function workflowStatusTabClass(status: WorkflowStatus, isSelected: boole
       return "border-amber-400 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-200 dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-900";
     case "completed":
     case "answered":
-      return "border-emerald-400 bg-emerald-50 text-emerald-950 shadow-sm ring-1 ring-emerald-200 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-900";
+      return "border-blue-400 bg-blue-50 text-blue-950 shadow-sm ring-1 ring-blue-200 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-100 dark:ring-blue-900";
     default:
-      return "border-indigo-400 bg-indigo-50 text-indigo-950 shadow-sm ring-1 ring-indigo-200 dark:border-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-900";
+      return "border-blue-400 bg-blue-50 text-blue-950 shadow-sm ring-1 ring-blue-200 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-100 dark:ring-blue-900";
   }
 }
 

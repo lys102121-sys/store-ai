@@ -29,7 +29,7 @@ export function AppHeader({
     <header className="rounded-[1.5rem] border border-white/70 bg-white/80 p-3 shadow-[0_24px_90px_-55px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-400 text-sm font-black text-white shadow-lg shadow-indigo-500/20">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-400 text-sm font-black text-white shadow-lg shadow-blue-500/20">
             AI
           </div>
           <div className="min-w-0">
@@ -69,14 +69,14 @@ export function AppHeader({
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-200/70 pt-3 dark:border-white/10">
         <p className="min-w-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
-          <span className="mr-2 inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
+          <span className="mr-2 inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
             Beta
           </span>
           현재는 답변을 확인한 뒤 복사해 플랫폼에 등록합니다.
         </p>
         <a
           href={feedbackHref}
-          className="shrink-0 text-xs font-bold text-cyan-700 underline-offset-4 hover:underline dark:text-cyan-300"
+          className="shrink-0 text-xs font-bold text-blue-700 underline-offset-4 hover:underline dark:text-blue-300"
         >
           피드백
         </a>

@@ -218,7 +218,7 @@ export function AiCsWorkflowItemCard({
             {sourcePlatformLabel(item.sourcePlatform)}
           </span>
           {isDemoData ? (
-            <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-900">
+            <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:ring-blue-900">
               데모 데이터
             </span>
           ) : null}
@@ -355,7 +355,7 @@ export function AiCsWorkflowItemCard({
                 <textarea
                   value={editingReply}
                   onChange={(event) => onEditingReplyChange(event.target.value)}
-                  className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="min-h-32 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
                 />
               ) : (
                 <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
@@ -414,12 +414,12 @@ export function AiCsWorkflowItemCard({
                   </span>
                 </div>
                 {item.handlingType === "auto_ready" && !isCompleted ? (
-                  <p className="mt-2 text-emerald-700 dark:text-emerald-300">
+                  <p className="mt-2 text-blue-700 dark:text-blue-300">
                     바로 승인해도 되는 낮은 위험도 항목입니다.
                   </p>
                 ) : null}
                 {isAutoCompleted ? (
-                  <p className="mt-2 text-emerald-700 dark:text-emerald-300">
+                  <p className="mt-2 text-blue-700 dark:text-blue-300">
                     자동 완료 처리된 안전 항목입니다.
                   </p>
                 ) : null}
@@ -441,7 +441,7 @@ export function AiCsWorkflowItemCard({
 
             {item.aiReason ? (
               <div
-                className={`${workflowCardDetailClass} border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200`}
+                className={`${workflowCardDetailClass} border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200`}
               >
                 <p className="font-semibold">AI 판단 이유</p>
                 <p className="mt-1">{item.aiReason}</p>
@@ -452,7 +452,7 @@ export function AiCsWorkflowItemCard({
               className={`${workflowCardDetailClass} ${
                 item.usedKnowledgeItems.length > 0 ||
                 item.handlingType === "auto_ready"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+                  ? "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
                   : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
               }`}
             >
@@ -471,17 +471,17 @@ export function AiCsWorkflowItemCard({
                   {item.usedKnowledgeItems.slice(0, 3).map((knowledgeItem) => (
                     <li
                       key={`${item.key}-${knowledgeItem.id}`}
-                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
+                      className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:ring-blue-900/70"
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                           {storeKnowledgeCategoryLabel(knowledgeItem.category)}
                         </span>
                         <span className="font-medium">
                           {truncateSummaryText(knowledgeItem.question, 56)}
                         </span>
                       </div>
-                      <p className="text-emerald-800 dark:text-emerald-200">
+                      <p className="text-blue-800 dark:text-blue-200">
                         {truncateSummaryText(knowledgeItem.answer, 100)}
                       </p>
                     </li>
@@ -504,7 +504,7 @@ export function AiCsWorkflowItemCard({
 
             {isDemoData ? (
               <p
-                className={`${workflowCardDetailClass} border-violet-200 bg-violet-50 font-medium text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200`}
+                className={`${workflowCardDetailClass} border-blue-200 bg-blue-50 font-medium text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200`}
               >
                 {item.platformStatus === "posted"
                   ? "샘플 데이터가 등록 완료 상태로 처리됐습니다. 실제 등록은 연동 단계에서 연결됩니다."
@@ -578,7 +578,7 @@ export function AiCsWorkflowItemCard({
                   className={buttonClass(
                     "secondary",
                     "sm",
-                    "rounded-lg text-indigo-700 dark:text-indigo-300",
+                    "rounded-lg text-blue-700 dark:text-blue-300",
                   )}
                 >
                   수정하기

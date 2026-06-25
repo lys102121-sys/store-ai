@@ -66,7 +66,7 @@ export function ReviewReplyPanel({
         </button>
 
         {needsStoreInfo ? (
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
             먼저 우리 가게 정보를 등록해주세요
           </p>
         ) : null}

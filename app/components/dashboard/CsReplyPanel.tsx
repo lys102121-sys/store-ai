@@ -32,7 +32,7 @@ export function CsReplyPanel({
   return (
     <section
       id="cs-reply"
-      className={`scroll-mt-32 rounded-[1.75rem] border border-white/70 border-sky-200/70 bg-white/90 p-6 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-sky-900/50 dark:bg-slate-950/75 dark:ring-white/10 sm:p-8 ${
+      className={`scroll-mt-32 rounded-[1.75rem] border border-white/70 border-blue-200/70 bg-white/90 p-6 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-blue-900/50 dark:bg-slate-950/75 dark:ring-white/10 sm:p-8 ${
         isVisible ? "order-[30]" : "hidden"
       }`}
     >
@@ -64,7 +64,7 @@ export function CsReplyPanel({
               value={customerMessage}
               onChange={(event) => onMessageChange(event.target.value)}
               placeholder="예: 제주도 배송비 얼마예요? / 환불 가능한가요? / 오늘 출고되나요?"
-              className="min-h-36 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-sky-500 dark:border-zinc-700 dark:bg-zinc-950"
+              className="min-h-36 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
             />
           </div>
 
@@ -77,7 +77,7 @@ export function CsReplyPanel({
           </button>
 
           {needsStoreInfo ? (
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
               먼저 우리 가게 정보를 등록해주세요
             </p>
           ) : null}
@@ -104,7 +104,7 @@ export function CsReplyPanel({
                   </button>
                 ) : null}
                 {loading ? (
-                  <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                     작성 중
                   </span>
                 ) : null}

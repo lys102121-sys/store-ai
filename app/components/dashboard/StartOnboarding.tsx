@@ -103,12 +103,12 @@ export function StartOnboarding({
       }`}
     >
       <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.2),transparent_34%),linear-gradient(135deg,#ffffff_0%,#f4fbff_50%,#eef2ff_100%)] p-5 dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_58%,#111827_100%)] sm:p-8">
-        <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full bg-cyan-300/35 blur-3xl dark:bg-cyan-500/15" />
-        <div className="pointer-events-none absolute bottom-[-10rem] left-1/4 h-80 w-80 rounded-full bg-emerald-300/35 blur-3xl dark:bg-emerald-500/15" />
+        <div className="pointer-events-none absolute -right-28 -top-32 h-80 w-80 rounded-full bg-blue-300/35 blur-3xl dark:bg-blue-500/15" />
+        <div className="pointer-events-none absolute bottom-[-10rem] left-1/4 h-80 w-80 rounded-full bg-blue-300/35 blur-3xl dark:bg-blue-500/15" />
 
         <div className="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
           <span className="inline-flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.16)]" />
+            <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_4px_rgba(16,185,129,0.16)]" />
             AI CS 직원 체험 준비 완료
           </span>
           <span>무료 체험 30건 · 샘플 데이터 무료 · 실제 연동은 유료 플랜</span>
@@ -117,12 +117,12 @@ export function StartOnboarding({
         <div className="relative mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
           <div className="flex min-h-full flex-col justify-between rounded-[1.6rem] border border-white/80 bg-white/78 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/55 sm:p-7">
             <div>
-              <p className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/55 dark:text-emerald-200 dark:ring-emerald-900">
+              <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/55 dark:text-blue-200 dark:ring-blue-900">
                 AI CS Employee
               </p>
               <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
                 사장님이 자는 동안에도
-                <span className="block bg-gradient-to-r from-emerald-600 via-cyan-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
                   고객 응대를 정리합니다
                 </span>
               </h1>
@@ -138,7 +138,7 @@ export function StartOnboarding({
                   key={item.title}
                   className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/55"
                 >
-                  <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  <p className="text-[11px] font-black uppercase tracking-wide text-blue-700 dark:text-blue-300">
                     {item.label}
                   </p>
                   <h2 className="mt-2 text-sm font-bold text-slate-950 dark:text-white">
@@ -155,12 +155,12 @@ export function StartOnboarding({
           <aside className="rounded-[1.6rem] border border-slate-200/90 bg-slate-950 p-5 text-white shadow-[0_24px_70px_-45px_rgba(15,23,42,0.9)] dark:border-white/10 dark:bg-white/[0.04]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-emerald-300">지금 할 일</p>
+                <p className="text-xs font-bold text-blue-300">지금 할 일</p>
                 <h2 className="mt-2 text-xl font-black leading-tight">
                   {recommendedAction.title}
                 </h2>
               </div>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200 ring-1 ring-white/15">
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-200 ring-1 ring-white/15">
                 {recommendedAction.eyebrow}
               </span>
             </div>
@@ -183,13 +183,13 @@ export function StartOnboarding({
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold text-slate-300">시작 준비</p>
-                <p className="text-xs font-bold text-emerald-300">
+                <p className="text-xs font-bold text-blue-300">
                   {completedCount}/{guideItems.length} 완료
                 </p>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-300 transition-all"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -222,7 +222,7 @@ export function StartOnboarding({
                   key={card.title}
                   className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/55"
                 >
-                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-emerald-300 dark:ring-slate-800">
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-blue-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-blue-300 dark:ring-slate-800">
                     {card.badge}
                   </span>
                   <h3 className="mt-3 text-sm font-bold text-slate-950 dark:text-white">
@@ -252,7 +252,7 @@ export function StartOnboarding({
                     key={item.id}
                     className={`rounded-xl border px-3 py-3 text-sm transition ${
                       isNextStep
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-100"
+                        ? "border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/25 dark:text-blue-100"
                         : "border-slate-200 bg-white/70 text-slate-600 dark:border-slate-800 dark:bg-slate-950/35 dark:text-slate-300"
                     }`}
                   >
@@ -260,7 +260,7 @@ export function StartOnboarding({
                       <span
                         className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
                           item.isComplete
-                            ? "bg-emerald-600 text-white"
+                            ? "bg-blue-600 text-white"
                             : isNextStep
                               ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
                               : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
@@ -272,7 +272,7 @@ export function StartOnboarding({
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold">{item.title}</span>
                           {isNextStep ? (
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/70 dark:text-emerald-200 dark:ring-emerald-900/70">
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/70 dark:text-blue-200 dark:ring-blue-900/70">
                               다음
                             </span>
                           ) : null}
@@ -300,10 +300,10 @@ export function StartOnboarding({
           </div>
         </div>
 
-        <div className="relative mt-5 rounded-[1.5rem] border border-emerald-200 bg-white/82 p-5 shadow-sm backdrop-blur-xl dark:border-emerald-900/60 dark:bg-emerald-950/15">
+        <div className="relative mt-5 rounded-[1.5rem] border border-blue-200 bg-white/82 p-5 shadow-sm backdrop-blur-xl dark:border-blue-900/60 dark:bg-blue-950/15">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.72fr)_auto] lg:items-center">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <p className="text-xs font-black uppercase tracking-wide text-blue-700 dark:text-blue-300">
                 유료 도입 상담
               </p>
               <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
@@ -313,19 +313,19 @@ export function StartOnboarding({
                 {paidAdoptionAction.description}
               </p>
             </div>
-            <ul className="grid gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-3 text-left text-xs leading-5 text-slate-600 shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/60 dark:text-slate-300">
+            <ul className="grid gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-3 text-left text-xs leading-5 text-slate-600 shadow-sm dark:border-blue-900/60 dark:bg-slate-950/60 dark:text-slate-300">
               {paidAdoptionAction.highlights.map((highlight) => (
                 <li key={highlight} className="flex gap-2">
-                  <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                  <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
                   <span>{highlight}</span>
                 </li>
               ))}
             </ul>
             <div className="grid gap-3 lg:justify-self-end">
               {paidAdoptionAction.statusLabel ? (
-                <div className="rounded-2xl border border-emerald-200 bg-white/85 px-4 py-3 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-slate-950/70">
+                <div className="rounded-2xl border border-blue-200 bg-white/85 px-4 py-3 text-sm shadow-sm dark:border-blue-900/60 dark:bg-slate-950/70">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
                       {paidAdoptionAction.statusLabel}
                     </span>
                     {paidAdoptionAction.updatedAtLabel ? (
@@ -372,7 +372,7 @@ export function StartOnboarding({
               className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
                 paidAdoptionAction.error
                   ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                  : "border-emerald-200 bg-white/80 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-blue-200 bg-white/80 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
               }`}
               role="status"
             >

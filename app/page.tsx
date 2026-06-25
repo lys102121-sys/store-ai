@@ -662,14 +662,14 @@ function getPlatformConnectionStatusLabel(status?: string) {
 
 function integrationPriorityBadgeClass(tone: "ready" | "next" | "demo") {
   if (tone === "ready") {
-    return "bg-emerald-100 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-200 dark:ring-emerald-900";
+    return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-950/70 dark:text-blue-200 dark:ring-blue-900";
   }
 
   if (tone === "next") {
-    return "bg-sky-100 text-sky-800 ring-sky-200 dark:bg-sky-950/70 dark:text-sky-200 dark:ring-sky-900";
+    return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-950/70 dark:text-blue-200 dark:ring-blue-900";
   }
 
-  return "bg-violet-100 text-violet-800 ring-violet-200 dark:bg-violet-950/70 dark:text-violet-200 dark:ring-violet-900";
+  return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-950/70 dark:text-blue-200 dark:ring-blue-900";
 }
 
 function sentimentLabel(sentiment: string) {
@@ -686,7 +686,7 @@ function sentimentLabel(sentiment: string) {
 function sentimentCardClass(sentiment: string) {
   switch (sentiment) {
     case "positive":
-      return "border border-emerald-300/90 bg-emerald-50/90 shadow-sm ring-1 ring-emerald-100/80 dark:border-emerald-800 dark:bg-emerald-950/45 dark:ring-emerald-900/40";
+      return "border border-blue-300/90 bg-blue-50/90 shadow-sm ring-1 ring-blue-100/80 dark:border-blue-800 dark:bg-blue-950/45 dark:ring-blue-900/40";
     case "negative":
       return "border-2 border-red-400 bg-red-50 shadow-sm ring-1 ring-red-100 dark:border-red-500 dark:bg-red-950/55 dark:ring-red-900/50";
     default:
@@ -1405,16 +1405,16 @@ function hasStoreDraftContent(draft: StoreDraft) {
 }
 
 const kpiCardClass =
-  "rounded-[1.35rem] border border-white/70 bg-white/85 p-5 shadow-[0_22px_70px_-42px_rgba(79,70,229,0.55)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:border-white/10 dark:bg-slate-950/70 dark:ring-white/10";
+  "rounded-[1.45rem] border border-slate-200 bg-white/90 p-5 shadow-[0_22px_70px_-46px_rgba(15,23,42,0.32)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl transition dark:border-slate-800 dark:bg-slate-950/72 dark:ring-white/10";
 
 const cardClass =
-  "rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/[0.04] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:ring-white/10 sm:p-8";
+  "rounded-[1.85rem] border border-slate-200 bg-white/92 p-6 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.34)] ring-1 ring-slate-950/[0.03] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/76 dark:ring-white/10 sm:p-8";
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-slate-200 bg-white/90 px-4 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
+  "h-11 w-full rounded-2xl border border-slate-200 bg-white/95 px-4 text-sm outline-none shadow-sm transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100/80 dark:border-slate-800 dark:bg-slate-950/80 dark:focus:border-blue-500 dark:focus:ring-blue-950/60";
 
 const textareaClass =
-  "min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-sm outline-none shadow-sm transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/80 dark:border-white/10 dark:bg-slate-950/80 dark:focus:border-indigo-500 dark:focus:ring-indigo-950/60";
+  "min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 text-sm outline-none shadow-sm transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100/80 dark:border-slate-800 dark:bg-slate-950/80 dark:focus:border-blue-500 dark:focus:ring-blue-950/60";
 
 const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 
@@ -4843,8 +4843,8 @@ export default function Home() {
       ).length,
       description: "사장님 승인 후 완료할 답변",
       className:
-        "border-indigo-200 bg-indigo-50/80 text-indigo-950 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100",
-      valueClassName: "text-indigo-700 dark:text-indigo-300",
+        "border-blue-200 bg-blue-50/80 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100",
+      valueClassName: "text-blue-700 dark:text-blue-300",
     },
     {
       label: "위험도 높음",
@@ -4867,8 +4867,8 @@ export default function Home() {
       ).length,
       description: "낮은 위험도로 자동 완료된 항목",
       className:
-        "border-emerald-200 bg-emerald-50/80 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100",
-      valueClassName: "text-emerald-700 dark:text-emerald-300",
+        "border-blue-200 bg-blue-50/80 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100",
+      valueClassName: "text-blue-700 dark:text-blue-300",
     },
     {
       label: "플랫폼 연동",
@@ -4878,8 +4878,8 @@ export default function Home() {
       ).length,
       description: "외부 플랫폼 출처 항목",
       className:
-        "border-indigo-200 bg-indigo-50/80 text-indigo-950 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100",
-      valueClassName: "text-indigo-700 dark:text-indigo-300",
+        "border-blue-200 bg-blue-50/80 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100",
+      valueClassName: "text-blue-700 dark:text-blue-300",
     },
   ] as const;
 
@@ -4977,11 +4977,11 @@ export default function Home() {
       className:
         urgentWorkCount > 0
           ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
-          : "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100",
+          : "border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100",
       valueClassName:
         urgentWorkCount > 0
           ? "text-amber-700 dark:text-amber-300"
-          : "text-emerald-700 dark:text-emerald-300",
+          : "text-blue-700 dark:text-blue-300",
     },
     {
       label: "AI가 처리한 일",
@@ -4989,8 +4989,8 @@ export default function Home() {
       description: "답변 완료",
       targetStatus: "completed",
       className:
-        "border-emerald-200 bg-white text-emerald-950 dark:border-emerald-900/60 dark:bg-zinc-950 dark:text-emerald-100",
-      valueClassName: "text-emerald-700 dark:text-emerald-300",
+        "border-blue-200 bg-white text-blue-950 dark:border-blue-900/60 dark:bg-zinc-950 dark:text-blue-100",
+      valueClassName: "text-blue-700 dark:text-blue-300",
     },
     {
       label: "위험해서 멈춘 일",
@@ -5064,14 +5064,14 @@ export default function Home() {
       value: allSafePendingApprovalItems.length.toLocaleString("ko-KR"),
       description: "바로 답변 가능 + 위험도 낮음으로 일괄 승인 가능",
       className:
-        "border-emerald-200 bg-white text-emerald-950 dark:border-emerald-900/60 dark:bg-zinc-950 dark:text-emerald-100",
+        "border-blue-200 bg-white text-blue-950 dark:border-blue-900/60 dark:bg-zinc-950 dark:text-blue-100",
     },
     {
       label: "플랫폼 완료 표시",
       value: postedPlatformItems.length.toLocaleString("ko-KR"),
       description: "승인 후 플랫폼 등록 완료 상태로 관리된 항목",
       className:
-        "border-indigo-200 bg-white text-indigo-950 dark:border-indigo-900/60 dark:bg-zinc-950 dark:text-indigo-100",
+        "border-blue-200 bg-white text-blue-950 dark:border-blue-900/60 dark:bg-zinc-950 dark:text-blue-100",
     },
   ] as const;
 
@@ -5214,8 +5214,8 @@ export default function Home() {
       label: "긍정 리뷰",
       value: historyLoading ? "—" : stats.positive.toLocaleString("ko-KR"),
       hint: "positive",
-      valueClass: "text-emerald-600 dark:text-emerald-400",
-      accent: "bg-emerald-50 dark:bg-emerald-950/50",
+      valueClass: "text-blue-600 dark:text-blue-400",
+      accent: "bg-blue-50 dark:bg-blue-950/50",
     },
     {
       label: "부정 리뷰",
@@ -5228,8 +5228,8 @@ export default function Home() {
       label: "긍정률",
       value: historyLoading ? "—" : `${stats.positiveRate}%`,
       hint: "긍정 / 전체",
-      valueClass: "text-indigo-600 dark:text-indigo-400",
-      accent: "bg-indigo-50 dark:bg-indigo-950/50",
+      valueClass: "text-blue-600 dark:text-blue-400",
+      accent: "bg-blue-50 dark:bg-blue-950/50",
     },
   ] as const;
   const recentAiActivityLogs = aiActivityLogs.slice(0, 5);
@@ -5327,7 +5327,7 @@ export default function Home() {
   const isFoodPolicyHelper = interpretedBusinessType === "배달 음식점";
 
   const policyOptionButtonClass =
-    "inline-flex min-h-9 items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-indigo-950";
+    "inline-flex min-h-9 items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-blue-950";
 
   const onboardingWorkflowItems = workflowSummaryItems.filter(
     (item) => item.type !== "missing_info",
@@ -6423,11 +6423,11 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f7f8ff] px-4 py-4 text-slate-950 dark:bg-[#070817] dark:text-slate-100 sm:py-6">
+    <div className="relative min-h-screen overflow-hidden bg-[#f7f8fb] px-4 py-4 text-slate-950 dark:bg-[#070a12] dark:text-slate-100 sm:py-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-24 top-[-10rem] h-80 w-80 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-600/25" />
-        <div className="absolute right-[-8rem] top-20 h-96 w-96 rounded-full bg-cyan-200/55 blur-3xl dark:bg-cyan-500/15" />
-        <div className="absolute bottom-[-12rem] left-1/3 h-96 w-96 rounded-full bg-fuchsia-200/45 blur-3xl dark:bg-fuchsia-600/15" />
+        <div className="absolute -left-24 top-[-10rem] h-80 w-80 rounded-full bg-blue-300/40 blur-3xl dark:bg-blue-600/25" />
+        <div className="absolute right-[-8rem] top-20 h-96 w-96 rounded-full bg-blue-200/55 blur-3xl dark:bg-blue-500/15" />
+        <div className="absolute bottom-[-12rem] left-1/3 h-96 w-96 rounded-full bg-blue-200/45 blur-3xl dark:bg-blue-600/15" />
         <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0))] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.7),rgba(15,23,42,0))]" />
       </div>
 
@@ -6449,7 +6449,7 @@ export default function Home() {
             className={`rounded-xl border px-4 py-3 text-sm ${
               copyError
                 ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
             }`}
             role="status"
           >
@@ -6467,11 +6467,11 @@ export default function Home() {
 
         {activeTab === "start" ? (
           <section
-            className={`${cardClass} order-[11] border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/50 to-cyan-50/60 dark:border-emerald-900/50 dark:from-zinc-900 dark:via-emerald-950/20 dark:to-cyan-950/20`}
+            className={`${cardClass} order-[11] border-blue-200/70 bg-gradient-to-br from-white via-blue-50/50 to-blue-50/60 dark:border-blue-900/50 dark:from-zinc-900 dark:via-blue-950/20 dark:to-blue-950/20`}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                   {isPaidPlan ? "Paid Plan" : "Free Trial"}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
@@ -6485,28 +6485,28 @@ export default function Home() {
                     : "먼저 가게 정보를 알려주고, AI 답변 30건까지 실제 응대 흐름을 확인해보세요. 학습 입력과 샘플 데이터는 무료 카운트에서 제외됩니다."}
                 </p>
               </div>
-              <div className="rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-zinc-950/70 lg:min-w-72">
+              <div className="rounded-2xl border border-blue-200 bg-white/85 p-4 shadow-sm dark:border-blue-900/60 dark:bg-zinc-950/70 lg:min-w-72">
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       {isPaidPlan ? "AI 답변 생성" : "무료 AI 답변 생성"}
                     </p>
-                    <p className="mt-1 text-3xl font-black tracking-tight text-emerald-700 dark:text-emerald-300">
+                    <p className="mt-1 text-3xl font-black tracking-tight text-blue-700 dark:text-blue-300">
                       {isPaidPlan ? "무제한" : trialAiReplyRemainingCount}
                       <span className="ml-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                         {isPaidPlan ? "운영 중" : "건 남음"}
                       </span>
                     </p>
                   </div>
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
                     {isPaidPlan
                       ? "제한 해제"
                       : `${trialAiReplyUsedCount}/${FREE_TRIAL_AI_REPLY_LIMIT}`}
                   </span>
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950">
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-cyan-500 transition-all"
+                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-500 transition-all"
                     style={{
                       width: `${isPaidPlan ? 100 : trialAiReplyUsagePercent}%`,
                     }}
@@ -6527,7 +6527,7 @@ export default function Home() {
                   title: isPaidPlan
                     ? "가게 지식 최종 확인"
                     : "예시 가게를 준비합니다",
-                  tone: "emerald",
+                  tone: "blue",
                   description: isPaidPlan
                     ? "상품, 정책, 말투 학습이 실제 고객 응대에 맞게 들어갔는지 먼저 확인합니다."
                     : "가게 정보가 없으면 예시 상품과 정책을 자동으로 넣어 바로 체험합니다.",
@@ -6537,7 +6537,7 @@ export default function Home() {
                   title: isPaidPlan
                     ? "AI 답변 제한 없이 운영"
                     : "샘플 문의가 처리함에 생깁니다",
-                  tone: "sky",
+                  tone: "blue",
                   description: isPaidPlan
                     ? "문의 답변과 리뷰 답글을 계속 생성하고, 처리함에서 승인/수정까지 이어갈 수 있습니다."
                     : "AI가 샘플 문의의 답변 초안과 확인 필요 여부를 판단합니다.",
@@ -6554,15 +6554,15 @@ export default function Home() {
                 <article
                   key={step.title}
                   className={`rounded-2xl border p-4 ${
-                    step.tone === "emerald"
-                      ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/25"
-                      : step.tone === "sky"
-                        ? "border-sky-200 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/25"
+                    step.tone === "blue"
+                      ? "border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/25"
+                      : step.tone === "blue"
+                        ? "border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/25"
                         : "border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/25"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-emerald-700 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-emerald-300 dark:ring-white/10">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-blue-700 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-blue-300 dark:ring-white/10">
                       {step.step}
                     </span>
                     <div>
@@ -6579,10 +6579,10 @@ export default function Home() {
             </div>
 
             {isPaidPlan ? (
-              <div className="mt-5 rounded-2xl border border-indigo-200 bg-white/80 p-5 shadow-sm dark:border-indigo-900/60 dark:bg-zinc-950/65">
+              <div className="mt-5 rounded-2xl border border-blue-200 bg-white/80 p-5 shadow-sm dark:border-blue-900/60 dark:bg-zinc-950/65">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                    <p className="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                       Paid Onboarding
                     </p>
                     <h3 className="mt-1 text-lg font-bold text-zinc-950 dark:text-zinc-50">
@@ -6593,7 +6593,7 @@ export default function Home() {
                       필요한 설정부터 연결하면 바로 운영 흐름을 만들 수 있어요.
                     </p>
                   </div>
-                  <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                  <span className="w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
                     유료 기능 활성화
                   </span>
                 </div>
@@ -6726,7 +6726,7 @@ export default function Home() {
                 className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
                   threeMinuteDemoError
                     ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
                 }`}
                 role="status"
               >
@@ -6772,11 +6772,11 @@ export default function Home() {
 
         {activeTab === "manage" && authUser ? (
           <section
-            className={`${cardClass} order-[40] flex flex-col border-indigo-200/70 bg-gradient-to-br from-white via-white to-indigo-50/70 dark:border-indigo-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/25`}
+            className={`${cardClass} order-[40] flex flex-col border-blue-200/70 bg-gradient-to-br from-white via-white to-blue-50/70 dark:border-blue-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-blue-950/25`}
           >
             <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                   AI CS Priority
                 </p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
@@ -6805,7 +6805,7 @@ export default function Home() {
                     setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
                     scrollToSection("ai-cs-inbox");
                   }}
-                  className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 dark:focus-visible:ring-indigo-950 ${item.className}`}
+                  className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 dark:focus-visible:ring-blue-950 ${item.className}`}
                 >
                   <div className="flex items-end justify-between gap-3">
                     <div>
@@ -6871,10 +6871,10 @@ export default function Home() {
                 onRefresh={() => void loadCsLearningMetrics()}
               />
 
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25 sm:p-5">
+            <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25 sm:p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                     AI CS Impact
                   </p>
                 <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
@@ -6885,11 +6885,11 @@ export default function Home() {
                 </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[26rem]">
-                  <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4 text-left shadow-sm dark:border-emerald-900/70 dark:bg-zinc-950">
+                  <div className="rounded-2xl border border-blue-200 bg-white px-5 py-4 text-left shadow-sm dark:border-blue-900/70 dark:bg-zinc-950">
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       오늘 처리 시간 추정
                     </p>
-                    <p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-blue-700 dark:text-blue-300">
                       {workflowSummaryLoading
                         ? "—"
                         : formatEstimatedMinutes(todayEstimatedSavedMinutes)}
@@ -6901,11 +6901,11 @@ export default function Home() {
                         : formatEstimatedCurrency(todayEstimatedSavedValueKrw)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-cyan-200 bg-white px-5 py-4 text-left shadow-sm dark:border-cyan-900/70 dark:bg-zinc-950">
+                  <div className="rounded-2xl border border-blue-200 bg-white px-5 py-4 text-left shadow-sm dark:border-blue-900/70 dark:bg-zinc-950">
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       최근 30일 처리 시간
                     </p>
-                    <p className="mt-1 text-3xl font-semibold tracking-tight text-cyan-700 dark:text-cyan-300">
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-blue-700 dark:text-blue-300">
                       {workflowSummaryLoading
                         ? "—"
                         : formatEstimatedMinutes(recent30EstimatedSavedMinutes)}
@@ -6925,7 +6925,7 @@ export default function Home() {
                 {aiCsValueSummaryItems.map((item) => (
                   <article
                     key={item.label}
-                    className="rounded-xl border border-emerald-100 bg-white/85 p-4 dark:border-emerald-900/50 dark:bg-zinc-950/70"
+                    className="rounded-xl border border-blue-100 bg-white/85 p-4 dark:border-blue-900/50 dark:bg-zinc-950/70"
                   >
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       {item.label}
@@ -7039,7 +7039,7 @@ export default function Home() {
                   AI CS 업무 요약을 불러오는 중...
                 </p>
               ) : workflowAttentionItems.length === 0 ? (
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-5 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <p className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-5 text-sm font-medium text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300">
                   지금 바로 볼 위험 항목은 없습니다.
                 </p>
               ) : (
@@ -7127,7 +7127,7 @@ export default function Home() {
                       오늘 처리 기록
                     </span>
                   </span>
-                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
                     펼쳐보기
                   </span>
                 </span>
@@ -7159,18 +7159,18 @@ export default function Home() {
                 </p>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25">
-                    <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
+                    <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                       {aiStaffDiarySentence}
                     </p>
-                    <p className="mt-2 text-xs leading-5 text-indigo-800 dark:text-indigo-200">
+                    <p className="mt-2 text-xs leading-5 text-blue-800 dark:text-blue-200">
                       {aiStaffDiaryNextAction}
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       {aiStaffDiarySummaryItems.map((item) => (
                         <article
                           key={item.label}
-                          className="rounded-lg border border-white/80 bg-white/85 p-3 dark:border-indigo-900/50 dark:bg-zinc-950/70"
+                          className="rounded-lg border border-white/80 bg-white/85 p-3 dark:border-blue-900/50 dark:bg-zinc-950/70"
                         >
                           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                             {item.label}
@@ -7216,12 +7216,12 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
-                      <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
+                      <h4 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                         사장님 개입 패턴
                       </h4>
                       {ownerInterventionLogs.length === 0 ? (
-                        <p className="mt-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                        <p className="mt-2 text-xs leading-5 text-blue-800 dark:text-blue-200">
                           오늘은 수정, 승인, 학습 반영 기록이 아직 없습니다.
                         </p>
                       ) : (
@@ -7229,13 +7229,13 @@ export default function Home() {
                           {ownerInterventionLogs.map((log) => (
                             <li
                               key={log.id}
-                              className="rounded-lg border border-emerald-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-emerald-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
+                              className="rounded-lg border border-blue-200 bg-white/85 p-3 text-xs leading-5 text-zinc-700 dark:border-blue-900/60 dark:bg-zinc-950/70 dark:text-zinc-300"
                             >
                               <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                                 {truncateSummaryText(log.title, 58)}
                               </p>
                               {isStoreKnowledgeCandidateLog(log) ? (
-                                <p className="mt-1 text-emerald-700 dark:text-emerald-300">
+                                <p className="mt-1 text-blue-700 dark:text-blue-300">
                                   확인하면 다음 비슷한 문의에 사용할 수 있는 학습
                                   후보입니다.
                                 </p>
@@ -7247,7 +7247,7 @@ export default function Home() {
                                 <button
                                   type="button"
                                   onClick={openStoreKnowledgeReviewCandidates}
-                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-blue-700 px-3 text-xs font-medium text-white transition hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
                                 >
                                   검토 필요 지식 보기
                                 </button>
@@ -7313,14 +7313,14 @@ export default function Home() {
                               ) : null}
                             </div>
                             {isStoreKnowledgeCandidateLog(log) ? (
-                              <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
                                 <p>
                                   확인 후 다시 사용으로 바꾸면 다음 문의에 참고합니다.
                                 </p>
                                 <button
                                   type="button"
                                   onClick={openStoreKnowledgeReviewCandidates}
-                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-emerald-700 px-3 text-xs font-medium text-white transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                                  className="mt-2 inline-flex h-8 items-center justify-center rounded-lg bg-blue-700 px-3 text-xs font-medium text-white transition hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
                                 >
                                   검토 필요 지식 보기
                                 </button>
@@ -7396,7 +7396,7 @@ export default function Home() {
 
         <section
           id="ai-insights"
-          className={`${cardClass} scroll-mt-32 border-indigo-200/60 dark:border-indigo-900/50 ${
+          className={`${cardClass} scroll-mt-32 border-blue-200/60 dark:border-blue-900/50 ${
             activeTab === "manage" && isInsightsPanelOpen
               ? "order-[44]"
               : "hidden"
@@ -7404,7 +7404,7 @@ export default function Home() {
         >
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-400">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/80 dark:text-blue-400">
                 <InsightsIcon className="h-5 w-5" />
               </div>
               <div>
@@ -7420,7 +7420,7 @@ export default function Home() {
               type="button"
               onClick={() => void loadInsights()}
               disabled={insightsLoading}
-              className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-950"
+              className="shrink-0 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-950"
             >
               {insightsLoading ? "분석 중..." : "다시 분석"}
             </button>
@@ -7432,11 +7432,11 @@ export default function Home() {
               aria-busy="true"
               aria-label="인사이트 로딩"
             >
-              <div className="h-4 w-3/4 animate-pulse rounded-md bg-indigo-100 dark:bg-indigo-950/60" />
+              <div className="h-4 w-3/4 animate-pulse rounded-md bg-blue-100 dark:bg-blue-950/60" />
               <div className="h-4 w-full animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />
               <div className="h-4 w-5/6 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />
               <div className="h-4 w-2/3 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />
-              <p className="pt-2 text-xs text-indigo-600/80 dark:text-indigo-400/80">
+              <p className="pt-2 text-xs text-blue-600/80 dark:text-blue-400/80">
                 AI가 리뷰를 분석하고 있습니다...
               </p>
             </div>
@@ -7445,7 +7445,7 @@ export default function Home() {
               {insightsError}
             </div>
           ) : (
-            <div className="rounded-xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/50 via-white to-zinc-50 px-5 py-4 dark:border-indigo-900/40 dark:from-indigo-950/20 dark:via-zinc-900 dark:to-zinc-900">
+            <div className="rounded-xl border border-blue-100/80 bg-gradient-to-br from-blue-50/50 via-white to-zinc-50 px-5 py-4 dark:border-blue-900/40 dark:from-blue-950/20 dark:via-zinc-900 dark:to-zinc-900">
               <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-zinc-700 dark:text-zinc-300">
                 {insights}
               </pre>
@@ -7480,17 +7480,17 @@ export default function Home() {
           </div>
 
           {hasStore ? (
-            <p className="-mt-4 mb-6 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            <p className="-mt-4 mb-6 text-sm font-medium text-blue-700 dark:text-blue-300">
               현재 등록된 가게 정보를 수정할 수 있습니다
             </p>
           ) : null}
 
           {isExamplePickerOpen ? (
-            <section className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
-              <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+            <section className="mb-6 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
+              <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                 체험할 업종을 선택해 주세요
               </h3>
-              <p className="mt-1 text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+              <p className="mt-1 text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                 선택한 예시 정보는 폼에만 입력됩니다. 확인하거나 수정한 뒤
                 저장할 수 있습니다.
               </p>
@@ -7500,7 +7500,7 @@ export default function Home() {
                     key={preset.label}
                     type="button"
                     onClick={() => handleUseExampleStore(preset)}
-                    className="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-100 dark:hover:bg-emerald-950/60"
+                    className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-900 transition hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-100 dark:hover:bg-blue-950/60"
                   >
                     {preset.label}
                   </button>
@@ -7511,7 +7511,7 @@ export default function Home() {
 
           {storeExampleMessage ? (
             <p
-              className="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200"
+              className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200"
               role="status"
             >
               {storeExampleMessage}
@@ -7519,7 +7519,7 @@ export default function Home() {
           ) : null}
 
           <form onSubmit={handleStoreSubmit} className="space-y-5">
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
               <div className="mb-4">
                 <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
                   기본 정보
@@ -7587,15 +7587,15 @@ export default function Home() {
                 </details>
               )}
 
-              <details className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/25">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+              <details className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/50 dark:bg-blue-950/25">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-blue-950 dark:text-blue-100">
                   업종별 입력 가이드 보기
                 </summary>
                 <div className="mt-3">
-                  <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                     이 업종은 이런 정보를 입력하면 좋아요
                   </p>
-                  <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                  <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">
                     아래 정보를 채워두면 AI가 고객 문의에 더 정확하게 답변할 수 있어요.
                   </p>
                 </div>
@@ -7603,7 +7603,7 @@ export default function Home() {
                   {businessTypeGuideItems.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 dark:border-emerald-800 dark:bg-zinc-950 dark:text-emerald-100"
+                      className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-900 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-100"
                     >
                       {item}
                     </span>
@@ -7734,23 +7734,23 @@ export default function Home() {
 
             <details
               id="auto-processing-settings"
-              className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-900/50 dark:bg-violet-950/20"
+              className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20"
             >
               <summary className="cursor-pointer list-none">
-                <span className="block text-sm font-semibold text-violet-950 dark:text-violet-100">
+                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   AI 자동 처리 설정
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                   낮은 위험도의 문의와 긍정 리뷰를 자동 완료할지 정합니다.
                   처음에는 나중에 설정해도 괜찮아요.
                 </span>
               </summary>
               <div className="space-y-4">
                 <div className="mt-4">
-                  <h3 className="text-sm font-semibold text-violet-950 dark:text-violet-100">
+                  <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                     자동 처리 범위
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-violet-800/90 dark:text-violet-200/80">
+                  <p className="mt-1 text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                     AI가 바로 답변 가능하다고 판단한 낮은 위험도의 문의나
                     긍정 리뷰를 자동으로 답변 완료 처리할 수 있습니다. 근무
                     모드를 정하면 부재중에도 어디까지 맡길지 조절할 수 있어요.
@@ -7763,7 +7763,7 @@ export default function Home() {
                   ) : null}
                 </div>
 
-                <div className="rounded-xl border border-violet-100 bg-white p-3 dark:border-violet-900/60 dark:bg-zinc-950">
+                <div className="rounded-xl border border-blue-100 bg-white p-3 dark:border-blue-900/60 dark:bg-zinc-950">
                   <label
                     htmlFor="ai_work_mode"
                     className="text-sm font-medium text-zinc-900 dark:text-zinc-100"
@@ -7821,14 +7821,14 @@ export default function Home() {
                   ) : null}
                 </div>
 
-                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                <label className="flex gap-3 rounded-xl border border-blue-100 bg-white p-3 text-sm text-zinc-800 dark:border-blue-900/60 dark:bg-zinc-950 dark:text-zinc-100">
                   <input
                     type="checkbox"
                     checked={autoCompleteLowRiskCs}
                     onChange={(event) =>
                       setAutoCompleteLowRiskCs(event.target.checked)
                     }
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-blue-700 focus:ring-blue-500"
                   />
                   <span>
                     위험도 낮고 바로 답변 가능한 고객 문의는 자동으로 답변 완료
@@ -7836,14 +7836,14 @@ export default function Home() {
                   </span>
                 </label>
 
-                <label className="flex gap-3 rounded-xl border border-violet-100 bg-white p-3 text-sm text-zinc-800 dark:border-violet-900/60 dark:bg-zinc-950 dark:text-zinc-100">
+                <label className="flex gap-3 rounded-xl border border-blue-100 bg-white p-3 text-sm text-zinc-800 dark:border-blue-900/60 dark:bg-zinc-950 dark:text-zinc-100">
                   <input
                     type="checkbox"
                     checked={autoCompletePositiveReviews}
                     onChange={(event) =>
                       setAutoCompletePositiveReviews(event.target.checked)
                     }
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-violet-700 focus:ring-violet-500"
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-blue-700 focus:ring-blue-500"
                   />
                   <span>단순 긍정 리뷰는 자동으로 답변 완료 처리</span>
                 </label>
@@ -7862,12 +7862,12 @@ export default function Home() {
               </summary>
 
               <div className="mt-4 space-y-4">
-            <details className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+            <details className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
               <summary className="cursor-pointer list-none">
-                <span className="block text-sm font-semibold text-sky-950 dark:text-sky-100">
+                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   상품 목록 학습
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                   여러 상품이 있을 때 열어서 상품별 구성, 가격, 옵션, 주의사항을
                   입력합니다.
                 </span>
@@ -7879,15 +7879,15 @@ export default function Home() {
                 >
                   상품 목록 학습
                 </label>
-                <div className="rounded-lg border border-sky-200 bg-white/80 p-3 dark:border-sky-900/70 dark:bg-zinc-950/60">
-                  <p className="text-xs font-semibold text-sky-950 dark:text-sky-100">
+                <div className="rounded-lg border border-blue-200 bg-white/80 p-3 dark:border-blue-900/70 dark:bg-zinc-950/60">
+                  <p className="text-xs font-semibold text-blue-950 dark:text-blue-100">
                     추천 입력 형식
                   </p>
                   <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
                     상품명은 [ ] 안에 적고, 상품 정보는 - 로 줄마다 나눠 적으면
                     AI가 더 정확하게 답변할 수 있어요.
                   </p>
-                  <pre className="mt-3 rounded-md bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-950 dark:bg-sky-950/40 dark:text-sky-100">
+                  <pre className="mt-3 rounded-md bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-950 dark:bg-blue-950/40 dark:text-blue-100">
                     {"[상품명]\n- 구성/용량\n- 옵션/가격\n- 보관법\n- 알레르기/주의사항"}
                   </pre>
                   <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
@@ -7917,17 +7917,17 @@ export default function Home() {
                     "- 예약 주문 필요",
                     "- 파손 우려로 택배 불가, 픽업 권장",
                   ].join("\n")}
-                  className="min-h-64 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
+                  className="min-h-64 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
                 />
               </div>
             </details>
 
-            <details className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+            <details className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
               <summary className="cursor-pointer list-none">
-                <span className="block text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">
                   사장님 말투 학습
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+                <span className="mt-1 block text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                   리뷰 답글과 CS 응대 예시를 넣으면 AI가 사장님 말투를 더 잘
                   따라갑니다.
                 </span>
@@ -7936,11 +7936,11 @@ export default function Home() {
               <div className="mt-4 space-y-2">
                 <label
                   htmlFor="owner_reply_examples"
-                  className="text-sm font-semibold text-emerald-950 dark:text-emerald-100"
+                  className="text-sm font-semibold text-blue-950 dark:text-blue-100"
                 >
                   사장님 리뷰 말투 학습
                 </label>
-                <p className="text-xs leading-5 text-emerald-800/90 dark:text-emerald-200/80">
+                <p className="text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                   평소 직접 쓰셨던 리뷰 답글을 3개 이상 붙여넣어 주세요. AI가
                   문장 길이, 말투, 이모지 사용, 감사/사과 표현을 참고해 리뷰
                   답글을 작성합니다.
@@ -7959,7 +7959,7 @@ export default function Home() {
                     "",
                     "솔직한 후기 남겨주셔서 감사합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
                   ].join("\n")}
-                  className="min-h-40 w-full resize-y rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-500 dark:border-emerald-900/70 dark:bg-zinc-950"
+                  className="min-h-40 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
                 />
               </div>
 
@@ -7969,15 +7969,15 @@ export default function Home() {
                 따라갑니다.
               </p>
 
-              <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
                 <div className="space-y-2">
                   <label
                     htmlFor="owner_cs_examples"
-                    className="text-sm font-semibold text-sky-950 dark:text-sky-100"
+                    className="text-sm font-semibold text-blue-950 dark:text-blue-100"
                   >
                     CS 응대 말투 학습
                   </label>
-                  <p className="text-xs leading-5 text-sky-800/90 dark:text-sky-200/80">
+                  <p className="text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
                     평소 고객 문의에 답변하실 때 쓰는 문장을 3개 이상 붙여넣어
                     주세요. AI가 문장 길이, 안내 방식, 마무리 표현을 참고해 문의
                     답변을 작성합니다.
@@ -7994,7 +7994,7 @@ export default function Home() {
                       "",
                       "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
                     ].join("\n")}
-                    className="min-h-40 w-full resize-y rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-sky-900/70 dark:bg-zinc-950"
+                    className="min-h-40 w-full resize-y rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 dark:border-blue-900/70 dark:bg-zinc-950"
                   />
                 </div>
               </div>
@@ -8091,7 +8091,7 @@ export default function Home() {
                           onClick={() => setSameDayShipping(option)}
                           className={`${policyOptionButtonClass} ${
                             sameDayShipping === option
-                              ? "border-sky-600 bg-sky-600 text-white"
+                              ? "border-blue-600 bg-blue-600 text-white"
                               : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                           }`}
                           aria-pressed={sameDayShipping === option}
@@ -8213,7 +8213,7 @@ export default function Home() {
                             }
                             className={`${policyOptionButtonClass} ${
                               cafeCancelBeforeProduction === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={
@@ -8240,7 +8240,7 @@ export default function Home() {
                             }
                             className={`${policyOptionButtonClass} ${
                               cafeCancelAfterProduction === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={
@@ -8265,7 +8265,7 @@ export default function Home() {
                             onClick={() => setCafeRefundAfterPickup(option)}
                             className={`${policyOptionButtonClass} ${
                               cafeRefundAfterPickup === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={cafeRefundAfterPickup === option}
@@ -8328,7 +8328,7 @@ export default function Home() {
                             onClick={() => setFoodCancelBeforeCooking(option)}
                             className={`${policyOptionButtonClass} ${
                               foodCancelBeforeCooking === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={foodCancelBeforeCooking === option}
@@ -8351,7 +8351,7 @@ export default function Home() {
                             onClick={() => setFoodCancelAfterCooking(option)}
                             className={`${policyOptionButtonClass} ${
                               foodCancelAfterCooking === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={foodCancelAfterCooking === option}
@@ -8433,7 +8433,7 @@ export default function Home() {
                             onClick={() => setChangeOfMindRefund(option)}
                             className={`${policyOptionButtonClass} ${
                               changeOfMindRefund === option
-                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white"
                                 : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                             }`}
                             aria-pressed={changeOfMindRefund === option}
@@ -8506,18 +8506,18 @@ export default function Home() {
 
           {storeSuccessMessage ? (
             <div
-              className="mt-6 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-5 text-sm text-emerald-900 shadow-sm dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-zinc-950 dark:to-cyan-950/20 dark:text-emerald-100"
+              className="mt-6 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-blue-50 p-5 text-sm text-blue-900 shadow-sm dark:border-blue-900/60 dark:from-blue-950/30 dark:via-zinc-950 dark:to-blue-950/20 dark:text-blue-100"
               role="status"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  <p className="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                     다음 행동
                   </p>
                   <h3 className="mt-1 text-lg font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
                     첫 AI 답변을 바로 만들어보세요
                   </h3>
-                  <p className="mt-2 max-w-2xl leading-6 text-emerald-800/90 dark:text-emerald-100/80">
+                  <p className="mt-2 max-w-2xl leading-6 text-blue-800/90 dark:text-blue-100/80">
                     {storeSuccessMessage} 지금 문의 하나를 입력하면 AI가
                     방금 저장한 가게 정보를 어떻게 참고하는지 바로 확인할 수
                     있습니다.
@@ -8575,31 +8575,31 @@ export default function Home() {
                 title: "쿠팡 실제 연동",
                 description:
                   "API 설정, 연결 테스트, 실제 문의 가져오기까지 이어지는 1순위 도입 흐름입니다.",
-                tone: "emerald",
+                tone: "blue",
               },
               {
                 step: "2",
                 title: "스마트스토어 준비",
                 description:
                   "샘플 문의로 처리함 흐름을 확인하고, 실제 연동 희망을 먼저 등록합니다.",
-                tone: "sky",
+                tone: "blue",
               },
               {
                 step: "3",
                 title: "배달앱 샘플/수요 확인",
                 description:
                   "배민, 요기요, 쿠팡이츠는 샘플 리뷰로 데모하고 연동 수요를 모읍니다.",
-                tone: "violet",
+                tone: "blue",
               },
             ].map((item) => (
               <article
                 key={item.title}
                 className={`rounded-2xl border p-4 ${
-                  item.tone === "emerald"
-                    ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/60 dark:bg-emerald-950/25"
-                    : item.tone === "sky"
-                      ? "border-sky-200 bg-sky-50/80 dark:border-sky-900/60 dark:bg-sky-950/25"
-                      : "border-violet-200 bg-violet-50/80 dark:border-violet-900/60 dark:bg-violet-950/25"
+                  item.tone === "blue"
+                    ? "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
+                    : item.tone === "blue"
+                      ? "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
+                      : "border-blue-200 bg-blue-50/80 dark:border-blue-900/60 dark:bg-blue-950/25"
                 }`}
               >
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-black text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-white/10">
@@ -8623,7 +8623,7 @@ export default function Home() {
 
           {integrationsMessage ? (
             <div
-              className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+              className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
               role="status"
             >
               {integrationsMessage}
@@ -8667,7 +8667,7 @@ export default function Home() {
               return (
                 <details
                   key={platform.id}
-                  className="group rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 transition open:border-indigo-200 open:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:open:border-indigo-900/70 dark:open:bg-zinc-900"
+                  className="group rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 transition open:border-blue-200 open:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:open:border-blue-900/70 dark:open:bg-zinc-900"
                 >
                   <summary className="cursor-pointer list-none">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -8704,7 +8704,7 @@ export default function Home() {
                         )}
                       </div>
                       {isRegistered ? (
-                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                           희망 등록됨
                         </span>
                       ) : null}
@@ -8713,10 +8713,10 @@ export default function Home() {
                     <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                       {platform.description}
                     </p>
-                    <span className="mt-3 inline-flex text-xs font-semibold text-indigo-700 group-open:hidden dark:text-indigo-300">
+                    <span className="mt-3 inline-flex text-xs font-semibold text-blue-700 group-open:hidden dark:text-blue-300">
                       설정과 샘플 체험 보기
                     </span>
-                    <span className="mt-3 hidden text-xs font-semibold text-indigo-700 group-open:inline-flex dark:text-indigo-300">
+                    <span className="mt-3 hidden text-xs font-semibold text-blue-700 group-open:inline-flex dark:text-blue-300">
                       접기
                     </span>
                   </summary>
@@ -8786,7 +8786,7 @@ export default function Home() {
                       type="button"
                       disabled={isRegistered || isSaving || integrationsLoading}
                       onClick={() => void handleRequestIntegration(platform.id)}
-                      className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                      className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                       {isRegistered
                         ? "등록 완료"
@@ -8798,14 +8798,14 @@ export default function Home() {
 
                   {deliveryMockReviewPlatform ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <div className="rounded-xl border border-violet-200 bg-violet-50/80 p-4 dark:border-violet-900/60 dark:bg-violet-950/30">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                      <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                           데모 체험
                         </p>
-                        <h4 className="mt-1 text-sm font-semibold text-violet-950 dark:text-violet-100">
+                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
                           샘플 리뷰로 흐름 확인
                         </h4>
-                        <p className="mt-2 text-xs leading-5 text-violet-900 dark:text-violet-100">
+                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
                           샘플 데이터는 실제 플랫폼에서 가져온 데이터가 아니며, AI
                           CS 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
@@ -8818,7 +8818,7 @@ export default function Home() {
                               platform.name,
                             )
                           }
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
                           {deliveryMockReviewsLoadingPlatform ===
                           deliveryMockReviewPlatform
@@ -8830,7 +8830,7 @@ export default function Home() {
                           deliveryMockReviewPlatform
                         ] ? (
                           <p
-                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                             role="status"
                           >
                             {
@@ -8861,10 +8861,10 @@ export default function Home() {
 
                   {platform.id === "smartstore" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <div className="rounded-xl border border-sky-200 bg-white p-4 dark:border-sky-900/60 dark:bg-zinc-950">
+                      <div className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                               연동 준비
                             </p>
                             <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
@@ -8895,7 +8895,7 @@ export default function Home() {
                           className={buttonClass(
                             "secondary",
                             "md",
-                            "mt-4 w-full text-sky-700 dark:text-sky-300",
+                            "mt-4 w-full text-blue-700 dark:text-blue-300",
                           )}
                           aria-expanded={isSmartstoreSettingsOpen}
                         >
@@ -8905,7 +8905,7 @@ export default function Home() {
                         </button>
 
                         {isSmartstoreSettingsOpen ? (
-                          <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/25">
+                          <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
                             <div className="space-y-4">
                               <div className="space-y-1.5">
                                 <label
@@ -9000,7 +9000,7 @@ export default function Home() {
 
                             {smartstoreCredentialsMessage ? (
                               <p
-                                className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                className="mt-4 text-sm font-medium text-blue-700 dark:text-blue-300"
                                 role="status"
                               >
                                 {smartstoreCredentialsMessage}
@@ -9025,7 +9025,7 @@ export default function Home() {
                               onClick={() =>
                                 void handleSaveSmartstoreCredentials()
                               }
-                              className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                              className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                             >
                               {smartstoreCredentialsSaving
                                 ? "저장 중..."
@@ -9035,13 +9035,13 @@ export default function Home() {
                         ) : null}
                       </div>
 
-                      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <h4 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                            <h4 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                               스마트스토어 연결 테스트
                             </h4>
-                            <p className="mt-2 text-xs leading-5 text-emerald-900 dark:text-emerald-100">
+                            <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
                               저장된 clientId/clientSecret/accountId로 인증 토큰
                               발급과 상품 문의 조회 권한을 확인합니다.
                             </p>
@@ -9058,7 +9058,7 @@ export default function Home() {
                         </div>
 
                         {smartstoreCredential?.last_tested_at ? (
-                          <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
+                          <p className="mt-3 text-xs text-blue-800 dark:text-blue-200">
                             마지막 테스트{" "}
                             {formatDate(smartstoreCredential.last_tested_at)}
                           </p>
@@ -9073,7 +9073,7 @@ export default function Home() {
                             smartstoreConnectionTesting
                           }
                           onClick={() => void handleTestSmartstoreConnection()}
-                          className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                          className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
                           {smartstoreConnectionTesting
                             ? "연결 확인 중..."
@@ -9081,7 +9081,7 @@ export default function Home() {
                         </button>
 
                         {!canTestSmartstoreConnection ? (
-                          <p className="mt-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                          <p className="mt-2 text-xs leading-5 text-blue-800 dark:text-blue-200">
                             clientId, clientSecret, accountId를 저장하면 연결
                             테스트를 할 수 있습니다.
                           </p>
@@ -9089,7 +9089,7 @@ export default function Home() {
 
                         {smartstoreConnectionTestMessage ? (
                           <p
-                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                             role="status"
                           >
                             {smartstoreConnectionTestMessage}
@@ -9148,7 +9148,7 @@ export default function Home() {
 
                         {smartstoreInquiryImportMessage ? (
                           <p
-                            className="mt-3 text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                             role="status"
                           >
                             {smartstoreInquiryImportMessage}
@@ -9165,14 +9165,14 @@ export default function Home() {
                         ) : null}
                       </div>
 
-                      <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900/60 dark:bg-sky-950/30">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                           데모 체험
                         </p>
-                        <h4 className="mt-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
+                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
                           샘플 문의로 흐름 확인
                         </h4>
-                        <p className="mt-2 text-xs leading-5 text-sky-900 dark:text-sky-100">
+                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
                           샘플 데이터는 실제 스마트스토어에서 가져온 데이터가
                           아니며, 상품 문의가 AI CS 처리함에 모이는 흐름을
                           체험하기 위한 데모용입니다.
@@ -9183,7 +9183,7 @@ export default function Home() {
                           onClick={() =>
                             void handleLoadSmartstoreMockInquiries()
                           }
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                         >
                           {smartstoreMockInquiriesLoading
                             ? "샘플 문의 불러오는 중..."
@@ -9192,7 +9192,7 @@ export default function Home() {
 
                         {smartstoreMockInquiriesMessage ? (
                           <p
-                            className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                             role="status"
                           >
                             {smartstoreMockInquiriesMessage}
@@ -9213,11 +9213,11 @@ export default function Home() {
 
                   {platform.id === "coupang" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <details className="rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/60 dark:bg-zinc-950">
+                      <details className="rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/60 dark:bg-zinc-950">
                         <summary className="cursor-pointer list-none">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                                 고급 설정
                               </p>
                               <h4 className="mt-1 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
@@ -9272,7 +9272,7 @@ export default function Home() {
                         className={buttonClass(
                           "secondary",
                           "md",
-                          "w-full text-indigo-700 dark:text-indigo-300",
+                          "w-full text-blue-700 dark:text-blue-300",
                         )}
                         aria-expanded={isCoupangSettingsOpen}
                       >
@@ -9282,7 +9282,7 @@ export default function Home() {
                       </button>
 
                       {isCoupangSettingsOpen ? (
-                        <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-900/70 dark:bg-zinc-950">
+                        <div className="mt-4 rounded-xl border border-blue-200 bg-white p-4 dark:border-blue-900/70 dark:bg-zinc-950">
                           <h4 className="text-sm font-semibold">
                             쿠팡 연동 설정
                           </h4>
@@ -9360,7 +9360,7 @@ export default function Home() {
                                 className={inputClass}
                               />
                               {coupangCredential?.has_secret_key ? (
-                                <p className="text-xs leading-5 text-emerald-700 dark:text-emerald-300">
+                                <p className="text-xs leading-5 text-blue-700 dark:text-blue-300">
                                   저장된 secretKey가 있습니다. 변경하려면 새로
                                   입력하세요.
                                 </p>
@@ -9391,7 +9391,7 @@ export default function Home() {
 
                           {coupangCredentialsMessage ? (
                             <p
-                              className="mt-4 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                              className="mt-4 text-sm font-medium text-blue-700 dark:text-blue-300"
                               role="status"
                             >
                               {coupangCredentialsMessage}
@@ -9414,7 +9414,7 @@ export default function Home() {
                               coupangCredentialsSaving
                             }
                             onClick={() => void handleSaveCoupangCredentials()}
-                            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                           >
                             {coupangCredentialsSaving
                               ? "저장 중..."
@@ -9432,7 +9432,7 @@ export default function Home() {
                           coupangConnectionTesting
                         }
                         onClick={() => void handleTestCoupangConnection()}
-                        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                       >
                         {coupangConnectionTesting
                           ? "연결 테스트 중..."
@@ -9448,7 +9448,7 @@ export default function Home() {
 
                       {coupangConnectionTestMessage ? (
                         <p
-                          className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                          className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                           role="status"
                         >
                           {coupangConnectionTestMessage}
@@ -9500,7 +9500,7 @@ export default function Home() {
 
                       {coupangInquiryImportMessage ? (
                         <p
-                          className="mt-3 text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                          className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                           role="status"
                         >
                           {coupangInquiryImportMessage}
@@ -9518,24 +9518,24 @@ export default function Home() {
                       </div>
                       </details>
 
-                      <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-900/60 dark:bg-violet-950/25">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                           데모 체험
                         </p>
-                        <h4 className="mt-1 text-sm font-semibold text-violet-950 dark:text-violet-100">
+                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
                           샘플 데이터로 AI CS 처리함 흐름 확인
                         </h4>
-                        <p className="mt-2 text-xs leading-5 text-violet-900 dark:text-violet-100">
+                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
                           샘플 데이터는 실제 쿠팡에서 가져온 데이터가 아니며, 실제
                           API 키가 없어도 처리함 흐름을 체험하기 위한 데모용입니다.
                         </p>
 
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-xl border border-sky-200 bg-white/80 p-4 dark:border-sky-900/60 dark:bg-zinc-950/50">
-                            <p className="text-xs font-semibold text-sky-900 dark:text-sky-100">
+                          <div className="rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-900/60 dark:bg-zinc-950/50">
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
                               샘플 문의
                             </p>
-                            <p className="mt-1 text-xs leading-5 text-sky-800 dark:text-sky-200">
+                            <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
                               쿠팡 상품 문의 3개를 AI 답변 초안과 함께 처리함에
                               추가합니다.
                             </p>
@@ -9545,7 +9545,7 @@ export default function Home() {
                               onClick={() =>
                                 void handleLoadCoupangMockInquiries()
                               }
-                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500"
+                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                             >
                               {coupangMockInquiriesLoading
                                 ? "샘플 문의 불러오는 중..."
@@ -9554,7 +9554,7 @@ export default function Home() {
 
                             {coupangMockInquiriesMessage ? (
                               <p
-                                className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                                 role="status"
                               >
                                 {coupangMockInquiriesMessage}
@@ -9572,12 +9572,12 @@ export default function Home() {
                           </div>
 
                           <div
-                            className="rounded-xl border border-violet-200 bg-white/80 p-4 dark:border-violet-900/60 dark:bg-zinc-950/50"
+                            className="rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-900/60 dark:bg-zinc-950/50"
                           >
-                            <p className="text-xs font-semibold text-violet-900 dark:text-violet-100">
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
                               샘플 리뷰
                             </p>
-                            <p className="mt-1 text-xs leading-5 text-violet-800 dark:text-violet-200">
+                            <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
                               쿠팡 리뷰 3개를 AI 답글 초안과 함께 처리함에
                               추가합니다.
                             </p>
@@ -9585,7 +9585,7 @@ export default function Home() {
                               type="button"
                               disabled={coupangMockReviewsLoading}
                               onClick={() => void handleLoadCoupangMockReviews()}
-                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
+                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                             >
                               {coupangMockReviewsLoading
                                 ? "샘플 리뷰 불러오는 중..."
@@ -9594,7 +9594,7 @@ export default function Home() {
 
                             {coupangMockReviewsMessage ? (
                               <p
-                                className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300"
+                                className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
                                 role="status"
                               >
                                 {coupangMockReviewsMessage}
@@ -9638,9 +9638,9 @@ export default function Home() {
         </section>
 
         {activeTab === "answer" && needsStoreInfo ? (
-          <section className="order-[29] rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
+          <section className="order-[29] rounded-2xl border border-blue-200 bg-blue-50/90 p-5 shadow-sm dark:border-blue-900/60 dark:bg-blue-950/25">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
                 먼저 가게 설정을 완료하면 AI 답변을 더 정확하게 만들 수 있어요
               </p>
               <button
@@ -9732,13 +9732,13 @@ export default function Home() {
 
         <section
           id="ai-cs-inbox"
-          className={`${cardClass} scroll-mt-32 border-indigo-200/70 dark:border-indigo-900/50 ${
+          className={`${cardClass} scroll-mt-32 border-blue-200/70 dark:border-blue-900/50 ${
             activeTab === "manage" ? "order-[41]" : "hidden"
           }`}
         >
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-900">
+              <p className="mb-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900">
                 AI CS 직원
               </p>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -9805,7 +9805,7 @@ export default function Home() {
               className={`mb-5 rounded-xl border px-4 py-3 text-sm ${
                 workflowBulkApprovalResult.hasFailures
                   ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
               }`}
               role="status"
             >
@@ -9820,7 +9820,7 @@ export default function Home() {
           ) : null}
 
           {missingInfoResolveMessage ? (
-            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
               {missingInfoResolveMessage}
             </div>
           ) : null}
@@ -9949,7 +9949,7 @@ export default function Home() {
                         className={buttonClass(
                           "secondary",
                           "md",
-                          "text-indigo-700 dark:text-indigo-300",
+                          "text-blue-700 dark:text-blue-300",
                         )}
                       >
                         더 보기
@@ -9987,13 +9987,13 @@ export default function Home() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <article className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+            <article className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                     가게 지식
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                  <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
                     AI가 답변에 사용하는 정보를 점검합니다.
                   </p>
                 </div>
@@ -10023,13 +10023,13 @@ export default function Home() {
               </div>
             </article>
 
-            <article className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25">
+            <article className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
+                  <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                     AI 운영 분석
                   </h3>
-                  <p className="mt-1 text-xs leading-5 text-indigo-800 dark:text-indigo-200">
+                  <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
                     최근 리뷰에서 운영 신호를 찾습니다.
                   </p>
                 </div>
@@ -10043,7 +10043,7 @@ export default function Home() {
                   {isInsightsPanelOpen ? "접기" : "열기"}
                 </button>
               </div>
-              <p className="mt-4 text-xs font-medium text-indigo-800 dark:text-indigo-200">
+              <p className="mt-4 text-xs font-medium text-blue-800 dark:text-blue-200">
                 {insightsLoading
                   ? "불러오는 중"
                   : insightsError
@@ -10056,7 +10056,7 @@ export default function Home() {
 
         <section
           id="store-knowledge"
-          className={`${cardClass} scroll-mt-32 border-emerald-200/70 dark:border-emerald-900/50 ${
+          className={`${cardClass} scroll-mt-32 border-blue-200/70 dark:border-blue-900/50 ${
             activeTab === "manage" && isStoreKnowledgePanelOpen
               ? "order-[43]"
               : "hidden"
@@ -10064,7 +10064,7 @@ export default function Home() {
         >
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="mb-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+              <p className="mb-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900">
                 AI Memory
               </p>
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -10086,7 +10086,7 @@ export default function Home() {
           </div>
 
           {storeKnowledgeMessage ? (
-            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
               {storeKnowledgeMessage}
             </div>
           ) : null}
@@ -10242,13 +10242,13 @@ export default function Home() {
           ) : null}
 
           {!storeKnowledgeLoading && storeKnowledgeItems.length > 0 ? (
-            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+            <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
                     지식 품질 점검
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                  <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
                     비슷한 질문에 다른 답변이 있거나 오래 업데이트되지 않은
                     지식을 찾아 정리할 수 있습니다.
                   </p>
@@ -10274,12 +10274,12 @@ export default function Home() {
                   ].map((metric) => (
                     <div
                       key={metric.label}
-                      className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-emerald-100 dark:bg-zinc-950/40 dark:ring-emerald-900/70"
+                      className="rounded-lg bg-white/80 px-3 py-2 text-center ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:ring-blue-900/70"
                     >
-                      <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                      <p className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
                         {metric.label}
                       </p>
-                      <p className="mt-0.5 text-lg font-semibold text-emerald-950 dark:text-emerald-100">
+                      <p className="mt-0.5 text-lg font-semibold text-blue-950 dark:text-blue-100">
                         {metric.value.toLocaleString("ko-KR")}
                       </p>
                     </div>
@@ -10330,7 +10330,7 @@ export default function Home() {
                       onClick={() => setSelectedStoreKnowledgeStatus(filter.id)}
                       className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
                         isSelected
-                          ? "bg-emerald-700 text-white shadow-sm dark:bg-emerald-500 dark:text-emerald-950"
+                          ? "bg-blue-700 text-white shadow-sm dark:bg-blue-500 dark:text-blue-950"
                           : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                       }`}
                     >
@@ -10338,7 +10338,7 @@ export default function Home() {
                       <span
                         className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
                           isSelected
-                            ? "bg-white/20 text-white dark:bg-emerald-950/20 dark:text-emerald-950"
+                            ? "bg-white/20 text-white dark:bg-blue-950/20 dark:text-blue-950"
                             : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
                         }`}
                       >
@@ -10353,7 +10353,7 @@ export default function Home() {
 
           {storeKnowledgeLoading ? (
             <div className="space-y-3" aria-busy="true">
-              <div className="h-24 animate-pulse rounded-xl bg-emerald-50 dark:bg-emerald-950/30" />
+              <div className="h-24 animate-pulse rounded-xl bg-blue-50 dark:bg-blue-950/30" />
               <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
             </div>
           ) : storeKnowledgeItems.length === 0 ? (
@@ -10410,7 +10410,7 @@ export default function Home() {
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900">
+                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-900">
                           {storeKnowledgeCategoryLabel(item.category)}
                         </span>
                         <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700">
@@ -10431,7 +10431,7 @@ export default function Home() {
                           </span>
                         ) : null}
                         {quality.duplicateCount > 0 ? (
-                          <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900">
+                          <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:ring-blue-900">
                             중복 가능
                           </span>
                         ) : null}
@@ -10460,7 +10460,7 @@ export default function Home() {
                                 event.target.value,
                               )
                             }
-                            className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-950"
+                            className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
                           />
                         </label>
                         <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
@@ -10470,7 +10470,7 @@ export default function Home() {
                             onChange={(event) =>
                               setEditingStoreKnowledgeAnswer(event.target.value)
                             }
-                            className="mt-1 min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-950"
+                            className="mt-1 min-h-28 w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
                           />
                         </label>
                       </div>
@@ -10632,12 +10632,12 @@ export default function Home() {
                             ) : null}
                           </div>
                         ) : null}
-                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-5 text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100">
+                        <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs leading-5 text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="font-semibold">
                               최근 이 지식이 사용된 답변
                             </p>
-                            <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70">
+                            <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:ring-blue-900/70">
                               {recentKnowledgeUsages.length.toLocaleString(
                                 "ko-KR",
                               )}
@@ -10649,34 +10649,34 @@ export default function Home() {
                               {recentKnowledgeUsages.map((usage) => (
                                 <li
                                   key={`${item.id}-${usage.id}`}
-                                  className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-indigo-100 dark:bg-zinc-950/40 dark:ring-indigo-900/70"
+                                  className="rounded-md bg-white/70 px-2.5 py-2 ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:ring-blue-900/70"
                                 >
                                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100">
+                                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                                       {sourcePlatformLabel(
                                         usage.sourcePlatform,
                                       )}
                                     </span>
-                                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-100 dark:bg-zinc-900 dark:text-indigo-200 dark:ring-indigo-900">
+                                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-zinc-900 dark:text-blue-200 dark:ring-blue-900">
                                       {workflowStatusLabel(
                                         normalizeWorkflowStatus(usage.status),
                                       )}
                                     </span>
                                     <time
                                       dateTime={usage.createdAt}
-                                      className="text-[11px] text-indigo-700/80 dark:text-indigo-200/80"
+                                      className="text-[11px] text-blue-700/80 dark:text-blue-200/80"
                                     >
                                       {formatDate(usage.createdAt)}
                                     </time>
                                   </div>
-                                  <p className="font-medium text-indigo-950 dark:text-indigo-100">
+                                  <p className="font-medium text-blue-950 dark:text-blue-100">
                                     문의:{" "}
                                     {truncateSummaryText(
                                       usage.customerMessage,
                                       72,
                                     )}
                                   </p>
-                                  <p className="mt-1 text-indigo-800 dark:text-indigo-200">
+                                  <p className="mt-1 text-blue-800 dark:text-blue-200">
                                     답변:{" "}
                                     {truncateSummaryText(usage.reply, 96)}
                                   </p>
@@ -10684,7 +10684,7 @@ export default function Home() {
                               ))}
                             </ul>
                           ) : (
-                            <p className="mt-2 text-indigo-800 dark:text-indigo-200">
+                            <p className="mt-2 text-blue-800 dark:text-blue-200">
                               아직 최근 CS 답변에서 사용된 기록이 없습니다. 비슷한
                               문의가 들어오면 이곳에 사용 이력이 쌓입니다.
                             </p>
@@ -10725,7 +10725,7 @@ export default function Home() {
                                   handleStartStoreKnowledgeEdit(item)
                                 }
                                 disabled={isDeleting || isSaving}
-                                className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                                className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-zinc-900 dark:text-blue-300 dark:hover:bg-blue-950/30"
                               >
                                 수정하기
                               </button>
@@ -10753,7 +10753,7 @@ export default function Home() {
                                     )
                                   }
                                   disabled={isDeleting || isSaving}
-                                  className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-900/60 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                                  className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-zinc-900 dark:text-blue-300 dark:hover:bg-blue-950/30"
                                 >
                                   {isSaving ? "처리 중..." : "다시 사용"}
                                 </button>
@@ -10847,7 +10847,7 @@ export default function Home() {
               {recentCsMessages.map((item) => (
                 <li
                   key={item.id}
-                  className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25"
+                  className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/25"
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <button
@@ -10868,7 +10868,7 @@ export default function Home() {
 
                   <div className="space-y-4 text-sm">
                     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <p className="mb-1 font-medium text-sky-700 dark:text-sky-300">
+                      <p className="mb-1 font-medium text-blue-700 dark:text-blue-300">
                         문의
                       </p>
                       <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
@@ -10877,7 +10877,7 @@ export default function Home() {
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <div className="mb-1 flex items-center justify-between gap-3">
-                        <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                        <p className="font-medium text-blue-700 dark:text-blue-300">
                           답변
                         </p>
                         <button
@@ -10940,7 +10940,7 @@ export default function Home() {
           ) : null}
 
           {missingInfoResolveMessage ? (
-            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
               {missingInfoResolveMessage}
             </div>
           ) : null}
@@ -10992,7 +10992,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <p className="mb-1 font-medium text-sky-700 dark:text-sky-300">
+                      <p className="mb-1 font-medium text-blue-700 dark:text-blue-300">
                         원래 고객 문의
                       </p>
                       <p className="whitespace-pre-wrap leading-6 text-zinc-700 dark:text-zinc-300">
@@ -11249,7 +11249,7 @@ export default function Home() {
                   "맛은 좋았는데 양이 조금 아쉬웠어요.",
                   "상품은 예쁜데 배송이 조금 늦었어요.",
                 ].join("\n")}
-                className="min-h-40 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-950"
+                className="min-h-40 w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none ring-0 transition focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
               />
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 빈 줄은 자동으로 무시되며, 한 번에 최대 10개까지 생성할 수
@@ -11266,7 +11266,7 @@ export default function Home() {
             </button>
 
             {needsStoreInfo ? (
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 먼저 우리 가게 정보를 등록해주세요
               </p>
             ) : null}
@@ -11296,14 +11296,14 @@ export default function Home() {
                   return (
                     <li
                       key={`${item.review}-${index}`}
-                      className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/20"
+                      className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20"
                     >
                       {copyStatus ? (
                         <div
                           className={`mb-3 rounded-lg border px-3 py-2 text-xs font-medium ${
                             copyStatus.type === "error"
                               ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
                           }`}
                           role="status"
                         >
@@ -11330,7 +11330,7 @@ export default function Home() {
                         </div>
                         <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
                           <div className="mb-1 flex items-center justify-between gap-3">
-                            <p className="font-medium text-indigo-700 dark:text-indigo-300">
+                            <p className="font-medium text-blue-700 dark:text-blue-300">
                               AI 답글
                             </p>
                             <button

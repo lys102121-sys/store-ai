@@ -29,9 +29,9 @@ function trendLabel(trend: CsLearningTrend) {
 function trendBadgeClass(trend: CsLearningTrend) {
   switch (trend) {
     case "improving":
-      return "bg-emerald-100 text-emerald-800 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:ring-emerald-800";
+      return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-800";
     case "stable":
-      return "bg-indigo-100 text-indigo-800 ring-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-200 dark:ring-indigo-800";
+      return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:ring-blue-800";
     case "needs_attention":
       return "bg-amber-100 text-amber-800 ring-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:ring-amber-800";
     default:
@@ -71,7 +71,7 @@ export function CsLearningQualityCard({
     : [];
 
   return (
-    <div className="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/25 sm:p-5">
+    <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/25 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -104,7 +104,7 @@ export function CsLearningQualityCard({
       </div>
 
       {loading ? (
-        <p className="mt-4 rounded-xl border border-indigo-100 bg-white/80 px-4 py-5 text-sm text-zinc-500 dark:border-indigo-900/50 dark:bg-zinc-950/70 dark:text-zinc-400">
+        <p className="mt-4 rounded-xl border border-blue-100 bg-white/80 px-4 py-5 text-sm text-zinc-500 dark:border-blue-900/50 dark:bg-zinc-950/70 dark:text-zinc-400">
           수정 학습 기록을 확인하고 있습니다.
         </p>
       ) : error ? (
@@ -112,7 +112,7 @@ export function CsLearningQualityCard({
           {error}
         </p>
       ) : !metrics || metrics.generatedReplies30d === 0 ? (
-        <p className="mt-4 rounded-xl border border-indigo-100 bg-white/80 px-4 py-5 text-sm text-zinc-600 dark:border-indigo-900/50 dark:bg-zinc-950/70 dark:text-zinc-300">
+        <p className="mt-4 rounded-xl border border-blue-100 bg-white/80 px-4 py-5 text-sm text-zinc-600 dark:border-blue-900/50 dark:bg-zinc-950/70 dark:text-zinc-300">
           아직 학습 품질을 계산할 답변이 없습니다. AI 답변을 만들고 필요한
           부분을 수정하면 개선 추세가 쌓입니다.
         </p>
@@ -122,7 +122,7 @@ export function CsLearningQualityCard({
             {summaryItems.map((item) => (
               <article
                 key={item.label}
-                className="rounded-xl border border-white/80 bg-white/90 p-4 dark:border-indigo-900/50 dark:bg-zinc-950/70"
+                className="rounded-xl border border-white/80 bg-white/90 p-4 dark:border-blue-900/50 dark:bg-zinc-950/70"
               >
                 <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   {item.label}

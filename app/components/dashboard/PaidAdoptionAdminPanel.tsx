@@ -124,10 +124,10 @@ export function PaidAdoptionAdminPanel({
   }));
 
   return (
-    <section className="order-[39] rounded-[1.5rem] border border-violet-200/80 bg-gradient-to-br from-white via-violet-50/70 to-cyan-50/60 p-5 shadow-sm dark:border-violet-900/60 dark:from-zinc-900 dark:via-violet-950/25 dark:to-cyan-950/20 sm:p-6">
+    <section className="order-[39] rounded-[1.5rem] border border-blue-200/80 bg-gradient-to-br from-white via-blue-50/70 to-blue-50/60 p-5 shadow-sm dark:border-blue-900/60 dark:from-zinc-900 dark:via-blue-950/25 dark:to-blue-950/20 sm:p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
             Internal Sales Inbox
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
@@ -157,7 +157,7 @@ export function PaidAdoptionAdminPanel({
           className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
             error
               ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+              : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
           }`}
           role="status"
         >
@@ -182,15 +182,15 @@ export function PaidAdoptionAdminPanel({
               </div>
             ))}
           </div>
-          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 p-4 text-sm shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
-            <p className="font-bold text-emerald-900 dark:text-emerald-100">
+          <div className="rounded-2xl border border-blue-200/80 bg-blue-50/80 p-4 text-sm shadow-sm dark:border-blue-900/60 dark:bg-blue-950/30">
+            <p className="font-bold text-blue-900 dark:text-blue-100">
               유료 전환 시 열리는 기능
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {paidFeatureItems.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100 dark:bg-zinc-950/50 dark:text-emerald-200 dark:ring-emerald-900"
+                  className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-zinc-950/50 dark:text-blue-200 dark:ring-blue-900"
                 >
                   {item}
                 </span>
@@ -225,10 +225,10 @@ export function PaidAdoptionAdminPanel({
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 ring-1 ring-violet-100 dark:bg-violet-950 dark:text-violet-200 dark:ring-violet-900">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
                       {statusLabel(request.status)}
                     </span>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
                       {adoptionPriorityLabel(request)}
                     </span>
                     <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -246,7 +246,7 @@ export function PaidAdoptionAdminPanel({
                       {request.memo}
                     </p>
                   ) : null}
-                  <p className="mt-3 rounded-xl border border-violet-100 bg-violet-50/80 px-3 py-2 text-sm leading-6 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/25 dark:text-violet-200">
+                  <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50/80 px-3 py-2 text-sm leading-6 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/25 dark:text-blue-200">
                     다음 처리: {adoptionNextAction(request.status)}
                   </p>
                 </div>
@@ -258,7 +258,7 @@ export function PaidAdoptionAdminPanel({
                       onStatusChange(request.id, event.currentTarget.value)
                     }
                     disabled={isUpdating}
-                    className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-violet-950"
+                    className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-blue-950"
                   >
                     {statusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
