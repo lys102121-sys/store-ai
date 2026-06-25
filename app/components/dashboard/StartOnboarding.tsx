@@ -44,40 +44,40 @@ type StartOnboardingProps = {
 
 const trustHighlights = [
   {
-    label: "실패 방지",
-    title: "모르는 내용은 멈춥니다",
+    label: "안전",
+    title: "모르면 멈추고 물어봅니다",
     description:
-      "가격, 재고, 환불, 건강 이슈처럼 정확해야 하는 질문은 사장님 확인으로 넘깁니다.",
+      "가격, 재고, 환불, 건강 이슈처럼 정확해야 하는 질문은 바로 답하지 않습니다.",
   },
   {
     label: "학습",
-    title: "답변을 저장해 다시 씁니다",
+    title: "사장님 답변을 배웁니다",
     description:
-      "사장님이 알려준 답변과 수정한 문장은 다음 비슷한 문의에 반영됩니다.",
+      "사장님이 알려준 답과 수정한 문장을 다음 비슷한 문의에 다시 씁니다.",
   },
   {
     label: "운영",
-    title: "처리함에서 한눈에 봅니다",
+    title: "할 일을 처리함에 모읍니다",
     description:
-      "확인 필요, 승인 대기, 답변 완료를 업무판처럼 나눠 관리합니다.",
+      "확인 필요, 승인 대기, 답변 완료를 업무판처럼 나눠 보여줍니다.",
   },
 ] as const;
 
 const workflowPreviewCards = [
   {
-    badge: "확인 필요",
-    title: "AI가 모르는 질문 발견",
-    body: "가게 지식에 없는 문의는 바로 답하지 않고 사장님에게 묻습니다.",
+    badge: "1단계",
+    title: "샘플 문의를 만듭니다",
+    body: "가게 정보를 다 채우지 않아도 예시 데이터로 바로 체험할 수 있습니다.",
   },
   {
-    badge: "승인 대기",
-    title: "답변 초안 작성",
-    body: "등록된 상품, 정책, 말투를 참고해 복사하거나 승인할 답변을 만듭니다.",
+    badge: "2단계",
+    title: "AI가 초안을 씁니다",
+    body: "답변 가능 여부, 위험도, 판단 이유까지 함께 정리합니다.",
   },
   {
-    badge: "답변 완료",
-    title: "처리 이력 저장",
-    body: "완료된 답변과 수정 내역은 다음 응대 품질을 높이는 데 사용됩니다.",
+    badge: "3단계",
+    title: "사장님이 승인합니다",
+    body: "수정하거나 승인하면 처리 이력이 남고 다음 응대 품질이 좋아집니다.",
   },
 ] as const;
 
@@ -109,9 +109,9 @@ export function StartOnboarding({
         <div className="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
           <span className="inline-flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_4px_rgba(16,185,129,0.16)]" />
-            AI CS 직원 체험 준비 완료
+            처음이라도 3분 안에 체험할 수 있어요
           </span>
-          <span>무료 체험 30건 · 샘플 데이터 무료 · 실제 연동은 유료 플랜</span>
+          <span>샘플 문의 무료 · 답변 생성 30건 · 실제 플랫폼 연동은 유료 플랜</span>
         </div>
 
         <div className="relative mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
@@ -121,14 +121,15 @@ export function StartOnboarding({
                 AI CS Employee
               </p>
               <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
-                사장님이 자는 동안에도
+                가게 정보를 다 넣기 전에
                 <span className="block bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
-                  고객 응대를 정리합니다
+                  AI CS 직원을 먼저 체험하세요
                 </span>
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
-                문의와 리뷰를 AI CS 처리함에 모으고, 답변 가능 여부와 위험도를
-                나눕니다. 사장님이 알려준 지식은 다음 문의에 다시 쓰입니다.
+                샘플 문의를 만들고, AI가 답변 초안과 위험도를 판단하고, 사장님이
+                승인하는 흐름까지 바로 확인할 수 있습니다. 마음에 들면 그때 가게
+                정보를 채우면 됩니다.
               </p>
             </div>
 
@@ -209,11 +210,11 @@ export function StartOnboarding({
                   How it works
                 </p>
                 <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-                  AI CS 직원이 일하는 순서
+                  처음 사용자는 이렇게만 해보면 됩니다
                 </h2>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                사장님 승인 전까지 안전하게
+                샘플로 먼저 확인하고, 실제 운영은 천천히
               </span>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -241,7 +242,7 @@ export function StartOnboarding({
               Setup
             </p>
             <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-              시작 체크리스트
+              오늘 할 일
             </h2>
             <ol className="mt-4 space-y-2">
               {guideItems.map((item) => {
@@ -304,7 +305,7 @@ export function StartOnboarding({
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.72fr)_auto] lg:items-center">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                유료 도입 상담
+                유료 운영 상담
               </p>
               <h2 className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                 {paidAdoptionAction.title}
