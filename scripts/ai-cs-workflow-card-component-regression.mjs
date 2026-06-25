@@ -45,9 +45,14 @@ assert.match(workflowCardSource, /export function AiCsWorkflowItemCard/);
 assert.match(workflowCardSource, /storeKnowledgeCategoryLabel/);
 assert.match(workflowCardSource, /workflowEvidenceTitle/);
 assert.match(workflowCardSource, /workflowEvidenceMessage/);
+assert.match(workflowCardSource, /workflowNextActionMessage/);
+assert.match(workflowCardSource, /지금 할 일:/);
+assert.match(workflowCardSource, /판단 요약/);
+assert.match(workflowCardSource, /AI 판단 이유:/);
 assert.match(workflowCardSource, /onResolveMissingInfo/);
 assert.match(workflowCardSource, /onDeleteItem/);
 assert.doesNotMatch(workflowCardSource, /function storeKnowledgeCategoryLabel/);
+assert.doesNotMatch(workflowCardSource, /<p className="font-semibold">AI 판단 이유<\/p>/);
 
 assert.match(workflowControlsSource, /export function AiCsWorkflowInboxControls/);
 assert.match(workflowControlsSource, /workflowStatusTabClass/);

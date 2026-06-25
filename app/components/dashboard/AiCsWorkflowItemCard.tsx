@@ -154,10 +154,46 @@ function workflowEvidenceMessage(item: AiCsWorkflowItemCardItem) {
   return "저장된 가게 정보를 참고해 초안을 만들었습니다.";
 }
 
+function workflowNextActionMessage(
+  item: AiCsWorkflowItemCardItem,
+  isCompleted: boolean,
+  isAutoCompleted: boolean,
+) {
+  if (item.type === "missing_info") {
+    return "답을 입력하면 가게 지식에 저장하고 관련 문의 답변에 반영합니다.";
+  }
+
+  if (isAutoCompleted) {
+    return "AI가 안전하다고 판단해 자동 완료한 항목입니다.";
+  }
+
+  if (isCompleted) {
+    return "처리가 끝난 답변입니다. 필요하면 복사하거나 수정하세요.";
+  }
+
+  if (item.riskLevel === "high") {
+    return "위험도가 높습니다. 답변 전 내용을 꼭 확인하세요.";
+  }
+
+  if (item.handlingType === "needs_approval") {
+    return "승인 필수 항목입니다. 초안을 확인한 뒤 승인하세요.";
+  }
+
+  if (item.handlingType === "needs_review") {
+    return "정보 확인이 필요합니다. 부족한 기준이 없는지 먼저 보세요.";
+  }
+
+  if (item.handlingType === "auto_ready" && item.riskLevel === "low") {
+    return "바로 답변 가능한 낮은 위험도 항목입니다.";
+  }
+
+  return "초안을 확인한 뒤 승인하거나 수정하세요.";
+}
+
 const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 
 const workflowCardSectionClass =
-  "rounded-xl border border-slate-200/80 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5";
+  "rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/5";
 
 const workflowCardDetailClass =
   "rounded-xl border px-4 py-3 text-xs leading-5";
@@ -192,10 +228,14 @@ export function AiCsWorkflowItemCard({
     item.handlingType,
     item.riskLevel,
   );
-  const needsAttention = attentionTone !== null;
   const isDemoData = isDemoExternalId(item.externalId);
   const evidenceTitle = workflowEvidenceTitle(item);
   const evidenceMessage = workflowEvidenceMessage(item);
+  const nextActionMessage = workflowNextActionMessage(
+    item,
+    isCompleted,
+    isAutoCompleted,
+  );
   const primaryUsedKnowledgeItem = item.usedKnowledgeItems[0] ?? null;
   const canApproveWorkflowItem =
     !isCompleted && item.canMutate && item.type !== "missing_info";
@@ -206,39 +246,52 @@ export function AiCsWorkflowItemCard({
         attentionTone,
       )}`}
     >
-      <div className="mb-4 flex flex-col gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10">
-            {item.typeLabel}
-          </span>
-          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
-            {sourcePlatformLabel(item.sourcePlatform)}
-          </span>
-          {isDemoData ? (
-            <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:ring-blue-900">
-              데모 데이터
+      <div className="mb-4 flex flex-col gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10">
+              {item.typeLabel}
             </span>
-          ) : null}
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
-              item.status,
-            )}`}
+            <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
+              {sourcePlatformLabel(item.sourcePlatform)}
+            </span>
+            {isDemoData ? (
+              <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:ring-blue-900">
+                데모 데이터
+              </span>
+            ) : null}
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
+                item.status,
+              )}`}
+            >
+              {workflowStatusLabel(item.status)}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-bold ${platformStatusBadgeClass(
+                item.platformStatus,
+              )}`}
+            >
+              {platformStatusLabel(item.platformStatus)}
+            </span>
+          </div>
+          <time
+            dateTime={item.createdAt}
+            className="shrink-0 text-xs leading-6 text-slate-500 dark:text-slate-400"
           >
-            {workflowStatusLabel(item.status)}
-          </span>
+            {formatDate(item.createdAt)}
+          </time>
         </div>
-        <time
-          dateTime={item.createdAt}
-          className="shrink-0 text-xs leading-6 text-slate-500 dark:text-slate-400"
-        >
-          {formatDate(item.createdAt)}
-        </time>
+        <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm leading-6 text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100">
+          <span className="font-semibold">지금 할 일: </span>
+          {nextActionMessage}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="space-y-4 text-sm">
+        <div className="space-y-3 text-sm">
           <div className={workflowCardSectionClass}>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               원문
             </p>
             <p className="whitespace-pre-wrap leading-6 text-slate-700 dark:text-slate-200">
@@ -335,7 +388,7 @@ export function AiCsWorkflowItemCard({
             </>
           ) : (
             <div className={workflowCardSectionClass}>
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   AI 답변 초안
                 </p>
@@ -364,100 +417,61 @@ export function AiCsWorkflowItemCard({
         </div>
 
         {item.type !== "missing_info" ? (
-          <div className="mt-4 space-y-3 border-t border-slate-200/70 pt-4 dark:border-white/10">
+          <div className="mt-3 space-y-3 border-t border-slate-200/70 pt-3 dark:border-white/10">
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 text-xs leading-5 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${handlingTypeBadgeClass(
-                      item.handlingType,
-                    )}`}
-                  >
-                    {handlingTypeLabel(item.handlingType)}
-                  </span>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${riskLevelBadgeClass(
-                      item.riskLevel,
-                    )}`}
-                  >
-                    위험도: {riskLevelLabel(item.riskLevel)}
-                  </span>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${platformStatusBadgeClass(
-                      item.platformStatus,
-                    )}`}
-                  >
-                    {platformStatusLabel(item.platformStatus)}
-                  </span>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400">
-                  {evidenceTitle}
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${handlingTypeBadgeClass(
+                    item.handlingType,
+                  )}`}
+                >
+                  {handlingTypeLabel(item.handlingType)}
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${riskLevelBadgeClass(
+                    item.riskLevel,
+                  )}`}
+                >
+                  위험도: {riskLevelLabel(item.riskLevel)}
+                </span>
+              </div>
+              <div className="mt-3 rounded-lg bg-white/80 px-3 py-2 ring-1 ring-slate-200 dark:bg-slate-950/50 dark:ring-white/10">
+                <p className="font-semibold text-slate-900 dark:text-slate-100">
+                  판단 요약
                 </p>
-              </div>
-                {item.handlingType === "auto_ready" && !isCompleted ? (
-                  <p className="mt-2 text-blue-700 dark:text-blue-300">
-                    바로 승인해도 되는 낮은 위험도 항목입니다.
+                <p className="mt-1">
+                  <span className="font-semibold">AI 판단 이유: </span>
+                  {item.aiReason || evidenceMessage}
+                </p>
+                {item.aiReason ? (
+                  <p className="mt-1 text-slate-500 dark:text-slate-400">
+                    {evidenceMessage}
                   </p>
                 ) : null}
-                {isAutoCompleted ? (
-                  <p className="mt-2 text-blue-700 dark:text-blue-300">
-                    자동 완료 처리된 안전 항목입니다.
-                  </p>
-                ) : null}
-                {needsAttention ? (
-                  <p
-                    className={`mt-2 ${
-                      attentionTone === "danger"
-                        ? "text-red-700 dark:text-red-300"
-                        : "text-amber-700 dark:text-amber-300"
-                    }`}
-                  >
-                    {attentionTone === "danger"
-                      ? "고위험 항목입니다. 승인 전 꼭 확인하세요."
-                      : "확인이 필요한 항목입니다. 답변과 정책을 한 번 더 보세요."}
-                  </p>
-                ) : null}
-            </div>
-
-            {item.aiReason ? (
-              <div
-                className={`${workflowCardDetailClass} border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200`}
-              >
-                <p className="font-semibold">AI 판단 이유</p>
-                <p className="mt-1">{item.aiReason}</p>
-              </div>
-            ) : null}
-
-            <div
-              className={`${workflowCardDetailClass} ${
-                item.usedKnowledgeItems.length > 0 ||
-                item.handlingType === "auto_ready"
-                  ? "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
-                  : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">{evidenceTitle}</p>
                 {item.usedKnowledgeItems.length > 0 ? (
-                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold ring-1 ring-current/10 dark:bg-zinc-950/40">
-                    참고 근거{" "}
-                    {item.usedKnowledgeItems.length.toLocaleString("ko-KR")}개
-                  </span>
+                  <p className="mt-2 text-slate-500 dark:text-slate-400">
+                    {evidenceTitle} ·{" "}
+                    <span className="font-semibold">
+                      참고 근거{" "}
+                      {item.usedKnowledgeItems.length.toLocaleString("ko-KR")}개
+                    </span>
+                  </p>
+                ) : null}
+                {primaryUsedKnowledgeItem ? (
+                  <p className="mt-2 rounded-lg bg-blue-50 px-2.5 py-2 text-blue-800 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-200 dark:ring-blue-900/70">
+                    <span className="font-semibold">
+                      {storeKnowledgeCategoryLabel(
+                        primaryUsedKnowledgeItem.category,
+                      )}
+                    </span>
+                    {" · "}
+                    {truncateSummaryText(primaryUsedKnowledgeItem.question, 48)}
+                    {item.usedKnowledgeItems.length > 1
+                      ? ` 외 ${item.usedKnowledgeItems.length - 1}개`
+                      : ""}
+                  </p>
                 ) : null}
               </div>
-              <p className="mt-2">{evidenceMessage}</p>
-              {primaryUsedKnowledgeItem ? (
-                <p className="mt-2 rounded-lg bg-white/70 px-2.5 py-2 text-blue-800 ring-1 ring-blue-100 dark:bg-zinc-950/40 dark:text-blue-200 dark:ring-blue-900/70">
-                  <span className="font-semibold">
-                    {storeKnowledgeCategoryLabel(primaryUsedKnowledgeItem.category)}
-                  </span>
-                  {" · "}
-                  {truncateSummaryText(primaryUsedKnowledgeItem.question, 48)}
-                  {item.usedKnowledgeItems.length > 1
-                    ? ` 외 ${item.usedKnowledgeItems.length - 1}개`
-                    : ""}
-                </p>
-              ) : null}
             </div>
 
             {isDemoData ? (
