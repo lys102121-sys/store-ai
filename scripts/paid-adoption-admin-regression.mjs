@@ -51,9 +51,10 @@ assert.match(adminPanelSource, /유료 전환/);
 assert.match(adminPanelSource, /상담 중/);
 assert.match(adminPanelSource, /요청 접수 → 상담 중 → 유료 전환/);
 assert.match(adminPanelSource, /유료 전환 시 열리는 기능/);
-assert.match(adminPanelSource, /무료 답변 한도 해제/);
+assert.match(adminPanelSource, /AI 답변 생성 기능 활성화/);
 assert.match(adminPanelSource, /실제 플랫폼 문의 가져오기/);
 assert.match(adminPanelSource, /전환 우선/);
+assert.match(adminPanelSource, /도입 의사가 있는/);
 assert.match(adminPanelSource, /다음 처리:/);
 assert.match(adminPanelSource, /시작하기 화면에서 사용자가 도입 상담/);
 

@@ -95,10 +95,6 @@ function isStoreInfoEvidenceItem(item: UsedKnowledgeItem) {
   return item.id.startsWith("store:");
 }
 
-function isDemoExternalId(value?: string | null) {
-  return value?.startsWith("mock-") ?? false;
-}
-
 function truncateSummaryText(value: string, maxLength = 64) {
   const normalizedValue = value.trim().replace(/\s+/g, " ");
 
@@ -195,9 +191,6 @@ const copyButtonClass = buttonClass("secondary", "sm", "rounded-lg");
 const workflowCardSectionClass =
   "rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/5";
 
-const workflowCardDetailClass =
-  "rounded-xl border px-4 py-3 text-xs leading-5";
-
 export function AiCsWorkflowItemCard({
   item,
   isEditing,
@@ -228,7 +221,6 @@ export function AiCsWorkflowItemCard({
     item.handlingType,
     item.riskLevel,
   );
-  const isDemoData = isDemoExternalId(item.externalId);
   const evidenceTitle = workflowEvidenceTitle(item);
   const evidenceMessage = workflowEvidenceMessage(item);
   const nextActionMessage = workflowNextActionMessage(
@@ -255,11 +247,6 @@ export function AiCsWorkflowItemCard({
             <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-200 dark:ring-white/10">
               {sourcePlatformLabel(item.sourcePlatform)}
             </span>
-            {isDemoData ? (
-              <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:ring-blue-900">
-                데모 데이터
-              </span>
-            ) : null}
             <span
               className={`rounded-full px-2.5 py-1 text-xs font-bold ${workflowStatusBadgeClass(
                 item.status,
@@ -474,18 +461,7 @@ export function AiCsWorkflowItemCard({
               </div>
             </div>
 
-            {isDemoData ? (
-              <p
-                className={`${workflowCardDetailClass} border-blue-200 bg-blue-50 font-medium text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200`}
-              >
-                {item.platformStatus === "posted"
-                  ? "샘플 데이터가 등록 완료 상태로 처리됐습니다. 실제 등록은 연동 단계에서 연결됩니다."
-                  : "실제 플랫폼 데이터가 아닌 체험용 샘플입니다."}
-              </p>
-            ) : null}
-
-            {!isDemoData &&
-            item.sourcePlatform !== "manual" &&
+            {item.sourcePlatform !== "manual" &&
             item.platformStatus === "posted" ? (
               <p className="px-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                 플랫폼 등록 완료 상태입니다. 실제 등록 API는 연동 단계에서 연결됩니다.

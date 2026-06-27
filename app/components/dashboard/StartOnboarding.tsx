@@ -66,18 +66,18 @@ const trustHighlights = [
 const workflowPreviewCards = [
   {
     badge: "1단계",
-    title: "샘플 문의를 만듭니다",
-    body: "가게 정보를 다 채우지 않아도 예시 데이터로 바로 체험할 수 있습니다.",
+    title: "도입 상담을 요청합니다",
+    body: "우리 가게 플랫폼과 문의량에 맞춰 어떤 일을 AI가 맡을지 먼저 정합니다.",
   },
   {
     badge: "2단계",
-    title: "AI가 초안을 씁니다",
-    body: "답변 가능 여부, 위험도, 판단 이유까지 함께 정리합니다.",
+    title: "가게 지식을 연결합니다",
+    body: "상품, 정책, 말투, 확인 필요 답변을 실제 고객 응대 기준으로 저장합니다.",
   },
   {
     badge: "3단계",
-    title: "사장님이 승인합니다",
-    body: "수정하거나 승인하면 처리 이력이 남고 다음 응대 품질이 좋아집니다.",
+    title: "AI CS 처리함으로 운영합니다",
+    body: "문의와 리뷰를 모아 답변 가능 여부, 위험도, 승인 상태까지 관리합니다.",
   },
 ] as const;
 
@@ -109,9 +109,9 @@ export function StartOnboarding({
         <div className="relative flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
           <span className="inline-flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_4px_rgba(16,185,129,0.16)]" />
-            처음이라도 3분 안에 체험할 수 있어요
+            처음부터 실제 운영 연결을 전제로 시작합니다
           </span>
-          <span>샘플 문의 무료 · 답변 생성 30건 · 실제 플랫폼 연동은 유료 플랜</span>
+          <span>도입 상담 · 가게 지식 세팅 · 플랫폼 연동 준비</span>
         </div>
 
         <div className="relative mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch">
@@ -121,15 +121,15 @@ export function StartOnboarding({
                 AI CS Employee
               </p>
               <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-[-0.04em] text-slate-950 dark:text-white sm:text-5xl">
-                가게 정보를 다 넣기 전에
+                고객 응대 일을 줄이는
                 <span className="block bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
-                  AI CS 직원을 먼저 체험하세요
+                  AI CS 직원을 도입하세요
                 </span>
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
-                샘플 문의를 만들고, AI가 답변 초안과 위험도를 판단하고, 사장님이
-                승인하는 흐름까지 바로 확인할 수 있습니다. 마음에 들면 그때 가게
-                정보를 채우면 됩니다.
+                둘러보기용 도구가 아니라, 실제 문의와 리뷰를 줄이기
+                위한 운영 시스템으로 시작합니다. 가게 정보와 플랫폼을 연결하면
+                AI가 답변 초안, 위험도, 확인 필요 업무를 처리함에 정리합니다.
               </p>
             </div>
 
@@ -214,7 +214,7 @@ export function StartOnboarding({
                 </h2>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                샘플로 먼저 확인하고, 실제 운영은 천천히
+                실제 운영 기준으로 바로 준비
               </span>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">

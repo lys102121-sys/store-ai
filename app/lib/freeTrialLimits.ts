@@ -1,4 +1,9 @@
-export const FREE_TRIAL_AI_REPLY_LIMIT = 30;
-export const FREE_TRIAL_BATCH_REVIEW_LIMIT = 10;
-export const FREE_TRIAL_LIMIT_REACHED_MESSAGE =
-  "무료 AI 답변 생성 30건을 모두 사용했습니다. 가게 지식 학습은 계속 가능하고, 계속 자동 응대를 쓰려면 도입 상담을 요청해 주세요.";
+export const UNPAID_AI_REPLY_LIMIT = 0;
+export const UNPAID_BATCH_REVIEW_LIMIT = 0;
+export const PAID_PLAN_REQUIRED_MESSAGE =
+  "AI 답변 생성과 실제 플랫폼 연동은 유료 도입 후 사용할 수 있습니다. 도입 상담을 요청해 주세요.";
+
+// Backward-compatible aliases for existing billing helpers.
+export const FREE_TRIAL_AI_REPLY_LIMIT = UNPAID_AI_REPLY_LIMIT;
+export const FREE_TRIAL_BATCH_REVIEW_LIMIT = UNPAID_BATCH_REVIEW_LIMIT;
+export const FREE_TRIAL_LIMIT_REACHED_MESSAGE = PAID_PLAN_REQUIRED_MESSAGE;

@@ -38,7 +38,7 @@ const statusOptions = [
 ] as const;
 
 const paidFeatureItems = [
-  "무료 답변 한도 해제",
+  "AI 답변 생성 기능 활성화",
   "실제 플랫폼 문의 가져오기",
   "AI 답변 등록/승인 운영",
   "자동 완료와 안전 항목 일괄 승인",
@@ -82,7 +82,7 @@ function adoptionPriorityLabel(request: AdminPaidAdoptionRequest) {
 
   if (score >= 30) return "전환 우선";
   if (score >= 10) return "상담 우선";
-  if (score > 0) return "체험 진행 중";
+  if (score > 0) return "도입 검토 중";
   return "초기 문의";
 }
 
@@ -138,8 +138,8 @@ export function PaidAdoptionAdminPanel({
             끝난 요청을 유료 전환으로 바꾸면 해당 계정의 유료 기능이 열립니다.
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-            요청 접수 → 상담 중 → 유료 전환 순서로 관리하면 무료 체험 사용자를
-            실제 결제 고객으로 넘기기 쉽습니다.
+            요청 접수 → 상담 중 → 유료 전환 순서로 관리하면 도입 의사가 있는
+            사용자를 실제 결제 고객으로 넘기기 쉽습니다.
           </p>
         </div>
         <button

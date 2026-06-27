@@ -333,8 +333,8 @@ export async function POST(request: Request) {
   if (!plan.isPaid) {
     return Response.json(
       {
-        error:
-          "스마트스토어 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트해 주세요.",
+          error:
+            "스마트스토어 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 도입 상담을 요청해 연동 범위를 확정해 주세요.",
         paid_plan_required: true,
       },
       { status: 402 },

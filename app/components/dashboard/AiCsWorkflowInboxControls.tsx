@@ -128,7 +128,7 @@ export function AiCsWorkflowInboxControls({
               <p className="mt-2 text-xs font-medium text-blue-700 dark:text-blue-300">
                 {isPaidPlan
                   ? "반복 문의를 빠르게 정리할 수 있습니다."
-                  : "유료 플랜에서 반복 문의를 한 번에 정리할 수 있습니다. 개별 승인은 무료 체험에서도 가능합니다."}
+                  : "유료 도입 후 반복 문의를 한 번에 정리할 수 있습니다."}
               </p>
             </div>
             <button

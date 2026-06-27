@@ -25,8 +25,7 @@ import {
 } from "@/app/components/dashboard/PaidAdoptionAdminPanel";
 import type { CsLearningMetrics } from "@/app/lib/csLearningMetrics";
 import {
-  FREE_TRIAL_AI_REPLY_LIMIT,
-  FREE_TRIAL_LIMIT_REACHED_MESSAGE,
+  PAID_PLAN_REQUIRED_MESSAGE,
 } from "@/app/lib/freeTrialLimits";
 import {
   buildStoreKnowledgeQualityReport,
@@ -311,10 +310,6 @@ type IntegrationPlatform =
   | "smartstore"
   | "coupang";
 
-type DeliveryMockReviewPlatform = "baemin" | "yogiyo" | "coupangeats";
-
-type MockReviewPlatform = DeliveryMockReviewPlatform | "smartstore";
-
 type PlatformIntegrationRequest = {
   id: string;
   user_id: string;
@@ -437,20 +432,6 @@ type SmartstoreConnectionTestApiResponse = CoupangConnectionTestApiResponse;
 type CoupangInquiryImportApiResponse = {
   imported?: number;
   skipped?: number;
-  message?: string;
-  error?: string;
-  detail?: string;
-};
-
-type CoupangMockInquiriesApiResponse = {
-  inserted?: number;
-  message?: string;
-  error?: string;
-  detail?: string;
-};
-
-type MockReviewsApiResponse = {
-  inserted?: number;
   message?: string;
   error?: string;
   detail?: string;
@@ -800,10 +781,6 @@ function isStoreKnowledgeCandidateLog(log: AiActivityLogItem) {
     log.event_type === "store_knowledge_candidate_created" ||
     (log.related_type === "store_knowledge" && log.status === "needs_review")
   );
-}
-
-function isDemoExternalId(value?: string | null) {
-  return value?.startsWith("mock-") ?? false;
 }
 
 function connectionStatusBadgeClass(value?: string | null) {
@@ -1442,24 +1419,24 @@ const integrationPlatforms: ReadonlyArray<{
     name: "배민",
     description:
       "배민 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
-    priorityLabel: "샘플 리뷰 체험",
-    priorityTone: "demo",
+    priorityLabel: "연동 상담 대상",
+    priorityTone: "next",
   },
   {
     id: "yogiyo",
     name: "요기요",
     description:
       "요기요 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
-    priorityLabel: "샘플 리뷰 체험",
-    priorityTone: "demo",
+    priorityLabel: "연동 상담 대상",
+    priorityTone: "next",
   },
   {
     id: "coupangeats",
     name: "쿠팡이츠",
     description:
       "쿠팡이츠 리뷰와 고객 응대를 AI CS 처리함에서 관리할 수 있도록 준비 중입니다.",
-    priorityLabel: "샘플 리뷰 체험",
-    priorityTone: "demo",
+    priorityLabel: "연동 상담 대상",
+    priorityTone: "next",
   },
 ];
 
@@ -1484,12 +1461,6 @@ function createEmptyCoupangCredentialDraft(): CoupangCredentialDraft {
 
 function isIntegrationPlatform(value: string): value is IntegrationPlatform {
   return integrationPlatforms.some((platform) => platform.id === value);
-}
-
-function isDeliveryMockReviewPlatform(
-  value: IntegrationPlatform,
-): value is DeliveryMockReviewPlatform {
-  return value === "baemin" || value === "yogiyo" || value === "coupangeats";
 }
 
 const businessTypeInputGuides = {
@@ -1537,161 +1508,6 @@ const businessTypeInputGuides = {
     "주의사항",
   ],
 } as const;
-
-type ExampleStorePreset = {
-  label: string;
-  storeName: string;
-  businessType: string;
-  productName: string;
-  productDescription: string;
-  productDetails: string;
-  productCaution: string;
-  productCatalog: string;
-  extraFaq: string;
-  shippingPolicy: string;
-  refundPolicy: string;
-  ownerReplyExamples: string;
-  ownerCsExamples: string;
-};
-
-const exampleStorePresets: readonly ExampleStorePreset[] = [
-  {
-    label: "디저트/카페",
-    storeName: "모아 디저트",
-    businessType: "디저트/카페",
-    productName: "딸기 생크림 케이크",
-    productDescription:
-      "제철 딸기와 부드러운 생크림으로 준비하는 예약 케이크입니다.",
-    productDetails: "1호(2~3인용), 우유/계란/밀 포함, 레터링 문구 가능",
-    productCaution: "수령 후 냉장 보관해 주세요. 당일 섭취를 권장합니다.",
-    productCatalog: [
-      "[딸기 생크림 케이크]",
-      "- 1호, 2~3인용",
-      "- 우유, 계란, 밀 포함",
-      "- 냉장 보관, 당일 섭취 권장",
-      "- 레터링 문구 가능",
-      "",
-      "[레터링 쿠키]",
-      "- 6개 세트",
-      "- 예약 주문 필요",
-      "- 실온 보관, 수령 후 3일 이내 섭취 권장",
-    ].join("\n"),
-    extraFaq:
-      "선물 포장 가능합니다. 케이크 레터링 문구는 주문 요청사항에 남겨주세요.",
-    shippingPolicy:
-      "픽업 하루 전 오후 6시까지 예약해 주시면 매장 픽업으로 준비합니다. 케이크는 택배 배송을 제공하지 않습니다.",
-    refundPolicy:
-      "제작 시작 전에는 취소 가능합니다. 제작 시작 후에는 취소 및 환불이 어렵습니다. 수령한 제품에 문제가 있는 경우 바로 문의해 주세요.",
-    ownerReplyExamples: [
-      "맛있게 드셔주셔서 감사합니다 :) 다음에도 예쁘고 맛있게 준비해드릴게요.",
-      "선물용으로 골라주셨는데 만족하셨다니 정말 다행이에요. 감사합니다.",
-      "기대하셨을 텐데 아쉬움을 드려 죄송합니다. 말씀해주신 부분은 꼭 확인해보겠습니다.",
-    ].join("\n\n"),
-    ownerCsExamples: [
-      "안녕하세요, 모아 디저트입니다. 케이크는 픽업 하루 전 오후 6시까지 예약해 주시면 준비 가능합니다.",
-      "선물 포장 가능합니다. 주문 시 요청사항에 남겨주시면 확인 후 준비해드리겠습니다.",
-      "해당 내용은 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
-    ].join("\n\n"),
-  },
-  {
-    label: "배달 음식점",
-    storeName: "해담 반찬",
-    businessType: "배달 음식점",
-    productName: "오늘의 집밥 반찬 세트",
-    productDescription:
-      "매일 준비하는 메인 반찬 1종과 곁들임 반찬 3종 구성입니다.",
-    productDetails: "2인 기준, 메뉴는 당일 구성에 따라 달라질 수 있음",
-    productCaution:
-      "수령 후 바로 냉장 보관해 주세요. 조리 당일 섭취를 권장합니다.",
-    productCatalog: [
-      "[오늘의 집밥 반찬 세트]",
-      "- 메인 반찬 1종, 곁들임 반찬 3종",
-      "- 2인 기준",
-      "- 수령 후 냉장 보관, 조리 당일 섭취 권장",
-      "",
-      "[소불고기 도시락]",
-      "- 밥, 소불고기, 기본 반찬 구성",
-      "- 주문 당일 조리",
-    ].join("\n"),
-    extraFaq:
-      "일회용 수저가 필요하시면 주문 요청사항에 남겨주세요. 알레르기 관련 문의는 주문 전 확인해 주세요.",
-    shippingPolicy:
-      "오후 5시 이전 접수된 주문은 당일 배달 가능합니다. 주문량과 배달 지역에 따라 도착 시간이 달라질 수 있습니다.",
-    refundPolicy:
-      "조리 시작 전에는 취소 가능합니다. 조리 시작 후에는 취소가 어렵습니다. 누락이나 오배송, 음식 상태 문제가 있는 경우 주문 정보와 함께 문의해 주세요.",
-    ownerReplyExamples: [
-      "맛있게 드셔주셔서 감사합니다 :) 다음에도 든든하게 챙겨드릴게요.",
-      "반찬 구성을 좋게 봐주셔서 감사합니다. 맛있게 드셨다니 다행이에요.",
-      "배달이 늦어 기다리셨을 텐데 죄송합니다. 다음에는 준비 과정을 더 꼼꼼히 챙기겠습니다.",
-    ].join("\n\n"),
-    ownerCsExamples: [
-      "안녕하세요, 해담 반찬입니다. 오후 5시 이전 주문은 당일 배달 가능합니다.",
-      "누락된 메뉴가 있다면 주문 정보와 함께 알려주시면 확인 후 안내드리겠습니다.",
-      "정확한 안내를 위해 주문 상태를 확인한 뒤 다시 말씀드리겠습니다.",
-    ].join("\n\n"),
-  },
-  {
-    label: "스마트스토어/생활용품",
-    storeName: "하루살림",
-    businessType: "생활용품",
-    productName: "실리콘 밀폐용기 3종 세트",
-    productDescription:
-      "주방에서 간편하게 사용하는 접이식 실리콘 밀폐용기 세트입니다.",
-    productDetails: "소/중/대 3종 구성, BPA FREE 실리콘 소재",
-    productCaution:
-      "첫 사용 전 세척해 주세요. 화기 근처나 날카로운 도구 사용은 피해주세요.",
-    productCatalog: [
-      "[실리콘 밀폐용기 3종 세트]",
-      "- 소/중/대 3종 구성",
-      "- BPA FREE 실리콘 소재",
-      "- 전자레인지 사용 시 뚜껑을 열고 사용",
-      "",
-      "[대나무 키친타월 홀더]",
-      "- 원목 소재",
-      "- 물기에 장시간 노출되지 않도록 주의",
-    ].join("\n"),
-    extraFaq:
-      "선물 포장 가능합니다. 묶음 구매 관련 문의는 주문 전에 남겨주세요.",
-    shippingPolicy:
-      "평일 오후 2시 이전 주문은 당일 출고됩니다. 제주/도서산간 지역은 추가 배송비 3,000원이 발생합니다.",
-    refundPolicy:
-      "사용 흔적이 없는 상품은 수령 후 7일 이내 교환 및 반품 문의가 가능합니다. 단순 변심 반품 배송비는 고객 부담입니다.",
-    ownerReplyExamples: [
-      "일상에서 편하게 사용하고 계시다니 기뻐요. 후기 남겨주셔서 감사합니다 :)",
-      "깔끔하게 받아보셨다니 다행입니다. 다음에도 꼼꼼히 보내드릴게요.",
-      "사용하시며 불편을 드려 죄송합니다. 말씀해주신 부분은 확인해보겠습니다.",
-    ].join("\n\n"),
-    ownerCsExamples: [
-      "안녕하세요, 하루살림입니다. 평일 오후 2시 이전 주문은 당일 출고됩니다.",
-      "사용 흔적이 없는 상품은 수령 후 7일 이내 교환 및 반품 문의가 가능합니다.",
-      "해당 사용 가능 여부는 정확한 안내를 위해 확인 후 다시 말씀드리겠습니다.",
-    ].join("\n\n"),
-  },
-];
-
-function createStoreSavePayloadFromPreset(
-  preset: ExampleStorePreset,
-): StoreSavePayload {
-  return {
-    store_name: preset.storeName,
-    business_type: preset.businessType,
-    shipping_policy: preset.shippingPolicy,
-    refund_policy: preset.refundPolicy,
-    product_name: preset.productName,
-    product_description: preset.productDescription,
-    product_details: preset.productDetails,
-    product_caution: preset.productCaution,
-    product_catalog: preset.productCatalog,
-    extra_faq: preset.extraFaq,
-    owner_reply_examples: preset.ownerReplyExamples,
-    owner_cs_examples: preset.ownerCsExamples,
-    auto_complete_low_risk_cs: false,
-    auto_complete_positive_reviews: false,
-    ai_work_mode: "safe_auto",
-    ai_work_start_time: "09:00",
-    ai_work_end_time: "22:00",
-  };
-}
 
 type InterpretedBusinessType = keyof typeof businessTypeInputGuides;
 
@@ -1873,13 +1689,8 @@ export default function Home() {
   const [foodConditionIssueStandard, setFoodConditionIssueStandard] =
     useState("");
   const [storeError, setStoreError] = useState("");
-  const [storeExampleMessage, setStoreExampleMessage] = useState("");
   const [storeSuccessMessage, setStoreSuccessMessage] = useState("");
-  const [isExamplePickerOpen, setIsExamplePickerOpen] = useState(false);
   const [storeSaving, setStoreSaving] = useState(false);
-  const [threeMinuteDemoLoading, setThreeMinuteDemoLoading] = useState(false);
-  const [threeMinuteDemoMessage, setThreeMinuteDemoMessage] = useState("");
-  const [threeMinuteDemoError, setThreeMinuteDemoError] = useState("");
   const [hasStore, setHasStore] = useState(false);
   const [storeStatusLoading, setStoreStatusLoading] = useState(true);
   const [storeDraftReady, setStoreDraftReady] = useState(false);
@@ -2001,7 +1812,7 @@ export default function Home() {
     useState<string | null>(null);
   const [billingPlan, setBillingPlan] = useState<BillingPlanStatus | null>(null);
   const [billingStatusLoading, setBillingStatusLoading] = useState(false);
-  const [billingStatusError, setBillingStatusError] = useState("");
+  const [, setBillingStatusError] = useState("");
   const [savingIntegrationPlatform, setSavingIntegrationPlatform] =
     useState<IntegrationPlatform | null>(null);
   const [coupangCredential, setCoupangCredential] =
@@ -2051,33 +1862,6 @@ export default function Home() {
     useState("");
   const [coupangInquiryImportMessage, setCoupangInquiryImportMessage] =
     useState("");
-  const [coupangMockInquiriesLoading, setCoupangMockInquiriesLoading] =
-    useState(false);
-  const [coupangMockInquiriesError, setCoupangMockInquiriesError] =
-    useState("");
-  const [coupangMockInquiriesMessage, setCoupangMockInquiriesMessage] =
-    useState("");
-  const [coupangMockReviewsLoading, setCoupangMockReviewsLoading] =
-    useState(false);
-  const [coupangMockReviewsError, setCoupangMockReviewsError] = useState("");
-  const [coupangMockReviewsMessage, setCoupangMockReviewsMessage] =
-    useState("");
-  const [smartstoreMockInquiriesLoading, setSmartstoreMockInquiriesLoading] =
-    useState(false);
-  const [smartstoreMockInquiriesError, setSmartstoreMockInquiriesError] =
-    useState("");
-  const [smartstoreMockInquiriesMessage, setSmartstoreMockInquiriesMessage] =
-    useState("");
-  const [
-    mockReviewsLoadingPlatform,
-    setMockReviewsLoadingPlatform,
-  ] = useState<MockReviewPlatform | null>(null);
-  const [mockReviewsErrors, setMockReviewsErrors] = useState<
-    Partial<Record<MockReviewPlatform, string>>
-  >({});
-  const [mockReviewsMessages, setMockReviewsMessages] = useState<
-    Partial<Record<MockReviewPlatform, string>>
-  >({});
 
   const storeDraft = useMemo<StoreDraft>(
     () => ({
@@ -2122,8 +1906,6 @@ export default function Home() {
 
   const applyStoreToForm = useCallback((store: StoreSettings | null) => {
     setHasStore(Boolean(store));
-    setStoreExampleMessage("");
-    setIsExamplePickerOpen(false);
 
     if (store) {
       setStoreName(store.store_name ?? "");
@@ -2601,18 +2383,6 @@ export default function Home() {
         setCoupangInquiryImportLoading(false);
         setCoupangInquiryImportError("");
         setCoupangInquiryImportMessage("");
-        setCoupangMockInquiriesLoading(false);
-        setCoupangMockInquiriesError("");
-        setCoupangMockInquiriesMessage("");
-        setCoupangMockReviewsLoading(false);
-        setCoupangMockReviewsError("");
-        setCoupangMockReviewsMessage("");
-        setSmartstoreMockInquiriesLoading(false);
-        setSmartstoreMockInquiriesError("");
-        setSmartstoreMockInquiriesMessage("");
-        setMockReviewsLoadingPlatform(null);
-        setMockReviewsErrors({});
-        setMockReviewsMessages({});
       });
 
       return () => {
@@ -2677,8 +2447,6 @@ export default function Home() {
         setAiWorkMode("safe_auto");
         setAiWorkStartTime("09:00");
         setAiWorkEndTime("22:00");
-        setStoreExampleMessage("");
-        setIsExamplePickerOpen(false);
         setCsMessages([]);
         setCsMessagesError("");
         setCsMessagesLoading(false);
@@ -2965,8 +2733,8 @@ export default function Home() {
       return;
     }
 
-    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
-      setError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
+    if (!isPaidPlan) {
+      setError(PAID_PLAN_REQUIRED_MESSAGE);
       setReply("");
       return;
     }
@@ -3025,18 +2793,6 @@ export default function Home() {
       return;
     }
 
-    if (!isPaidPlan && reviews.length > trialAiReplyRemainingCount) {
-      setBatchReviewError(
-        `무료 체험 남은 AI 답변 생성 ${trialAiReplyRemainingCount.toLocaleString(
-          "ko-KR",
-        )}건으로는 ${reviews.length.toLocaleString(
-          "ko-KR",
-        )}개 리뷰를 일괄 생성할 수 없습니다. 도입 상담을 요청해 주세요.`,
-      );
-      setBatchReviewResults([]);
-      return;
-    }
-
     const tooLongReview = reviews.find((item) => item.length > 1000);
 
     if (tooLongReview) {
@@ -3059,8 +2815,8 @@ export default function Home() {
       return;
     }
 
-    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
-      setBatchReviewError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
+    if (!isPaidPlan) {
+      setBatchReviewError(PAID_PLAN_REQUIRED_MESSAGE);
       setBatchReviewResults([]);
       return;
     }
@@ -3128,8 +2884,8 @@ export default function Home() {
       return;
     }
 
-    if (!isPaidPlan && freeTrialAiReplyLimitReached) {
-      setCsError(FREE_TRIAL_LIMIT_REACHED_MESSAGE);
+    if (!isPaidPlan) {
+      setCsError(PAID_PLAN_REQUIRED_MESSAGE);
       setCsReply("");
       return;
     }
@@ -3166,36 +2922,6 @@ export default function Home() {
     } finally {
       setCsLoading(false);
     }
-  }
-
-  function applyExampleStorePresetToForm(preset: ExampleStorePreset) {
-    setStoreName(preset.storeName);
-    setBusinessType(preset.businessType);
-    setProductName(preset.productName);
-    setProductDescription(preset.productDescription);
-    setProductDetails(preset.productDetails);
-    setProductCaution(preset.productCaution);
-    setProductCatalog(preset.productCatalog);
-    setExtraFaq(preset.extraFaq);
-    setShippingPolicy(preset.shippingPolicy);
-    setRefundPolicy(preset.refundPolicy);
-    setOwnerReplyExamples(preset.ownerReplyExamples);
-    setOwnerCsExamples(preset.ownerCsExamples);
-    setAutoCompleteLowRiskCs(false);
-    setAutoCompletePositiveReviews(false);
-    setAiWorkMode("safe_auto");
-    setAiWorkStartTime("09:00");
-    setAiWorkEndTime("22:00");
-    setStoreError("");
-    setStoreSuccessMessage("");
-  }
-
-  function handleUseExampleStore(preset: ExampleStorePreset) {
-    applyExampleStorePresetToForm(preset);
-    setStoreExampleMessage(
-      "예시 정보가 입력되었습니다. 내용을 수정하거나 바로 저장한 뒤 AI 답변을 테스트해보세요.",
-    );
-    setIsExamplePickerOpen(false);
   }
 
   async function saveStorePayload(payload: StoreSavePayload) {
@@ -3256,7 +2982,6 @@ export default function Home() {
 
       setHasStore(true);
       removeStoreDraft(authUser.id);
-      setStoreExampleMessage("");
       setStoreSuccessMessage(
         "가게 정보가 저장되었습니다.",
       );
@@ -3264,89 +2989,6 @@ export default function Home() {
       setStoreError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setStoreSaving(false);
-    }
-  }
-
-  async function handleStartThreeMinuteDemo() {
-    if (!authUser) {
-      setThreeMinuteDemoMessage("");
-      setThreeMinuteDemoError("카카오 로그인 후 3분 체험을 시작할 수 있습니다.");
-      void handleKakaoLogin();
-      return;
-    }
-
-    if (storeStatusLoading) {
-      setThreeMinuteDemoMessage("");
-      setThreeMinuteDemoError(
-        "가게 정보 상태를 확인 중입니다. 잠시 후 다시 눌러주세요.",
-      );
-      return;
-    }
-
-    setThreeMinuteDemoLoading(true);
-    setThreeMinuteDemoMessage("");
-    setThreeMinuteDemoError("");
-    setCopyError("");
-    setCopyMessage("");
-
-    try {
-      if (!hasStore) {
-        const preset =
-          exampleStorePresets.find(
-            (item) => item.label === "스마트스토어/생활용품",
-          ) ?? exampleStorePresets[0];
-
-        applyExampleStorePresetToForm(preset);
-        await saveStorePayload(createStoreSavePayloadFromPreset(preset));
-        setHasStore(true);
-        removeStoreDraft(authUser.id);
-        setStoreExampleMessage("");
-        setStoreSuccessMessage(
-          "3분 체험을 위해 예시 가게 정보가 저장되었습니다.",
-        );
-      }
-
-      const response = await fetch(
-        "/api/integrations/smartstore/mock-inquiries",
-        {
-          method: "POST",
-          headers: await getAuthenticatedRequestHeaders(),
-        },
-      );
-      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
-
-      if (!response.ok || !data.inserted) {
-        throw new Error(
-          data.error ?? "샘플 문의를 AI CS 처리함에 추가하지 못했습니다.",
-        );
-      }
-
-      await Promise.all([
-        loadCsMessages(),
-        loadMissingInfos(),
-        loadInsights(),
-        loadAiActivityLogs(),
-        loadBillingStatus(),
-      ]);
-
-      setSelectedWorkflowPlatform("smartstore");
-      setSelectedWorkflowStatus("pending");
-      setVisibleWorkflowCount(WORKFLOW_PAGE_SIZE);
-      setThreeMinuteDemoMessage(
-        "샘플 문의가 준비되었습니다. AI CS 처리함에서 승인 완료를 눌러보세요.",
-      );
-      setCopyMessage(
-        "3분 체험이 준비되었습니다. 승인 대기 카드에서 AI 답변 초안을 확인해보세요.",
-      );
-      goToTabSection("manage", "ai-cs-inbox");
-    } catch (error) {
-      setThreeMinuteDemoError(
-        error instanceof Error
-          ? error.message
-          : "3분 체험을 준비하지 못했습니다.",
-      );
-    } finally {
-      setThreeMinuteDemoLoading(false);
     }
   }
 
@@ -4751,40 +4393,11 @@ export default function Home() {
         )
       ),
   );
-  const trialCountedWorkflowItems = workflowSummaryItems.filter(
-    (item) =>
-      item.type !== "missing_info" &&
-      Boolean(item.reply.trim()) &&
-      !isDemoExternalId(item.externalId),
-  );
-  const trialAiReplyUsedCount = trialCountedWorkflowItems.length;
-  const trialAiReplyRemainingCount = Math.max(
-    0,
-    FREE_TRIAL_AI_REPLY_LIMIT - trialAiReplyUsedCount,
-  );
-  const trialAiReplyUsagePercent = Math.min(
-    100,
-    Math.round((trialAiReplyUsedCount / FREE_TRIAL_AI_REPLY_LIMIT) * 100),
-  );
   const isPaidPlan = Boolean(billingPlan?.isPaid);
-  const billingPlanLabel = isPaidPlan ? "유료 플랜" : "무료 체험";
-  const freeTrialAiReplyLimitReached =
-    !isPaidPlan &&
-    !billingStatusLoading &&
-    trialAiReplyUsedCount >= FREE_TRIAL_AI_REPLY_LIMIT;
-  const freeTrialAiReplyNearlyUsed =
-    !isPaidPlan &&
-    !billingStatusLoading &&
-    !freeTrialAiReplyLimitReached &&
-    trialAiReplyUsedCount > 0 &&
-    trialAiReplyRemainingCount <= 5;
-  const freeTrialNearlyUsedTitle = `무료 답변 ${trialAiReplyRemainingCount.toLocaleString(
-    "ko-KR",
-  )}건 남음`;
-  const freeTrialNearlyUsedDescription =
-    "운영을 계속하려면 지금 도입 상담을 요청하세요. 연동 범위와 유료 전환을 같이 정리해드립니다.";
+  const billingPlanLabel = isPaidPlan ? "유료 플랜" : "도입 전";
+  const paidPlanRequired = !isPaidPlan && !billingStatusLoading;
   const answerGenerationBlocked =
-    aiGenerationBlocked || freeTrialAiReplyLimitReached;
+    aiGenerationBlocked || paidPlanRequired;
   const activeWorkflowSummaryItems = workflowSummaryItems.filter(
     (item) => item.status !== "completed" && item.status !== "answered",
   );
@@ -5086,7 +4699,7 @@ export default function Home() {
     needs_review: {
       title: "지금 확인할 항목이 없습니다",
       description:
-        "샘플 데이터로 처리함 흐름을 보거나, 실제 문의를 하나 입력해보세요.",
+        "실제 문의와 리뷰가 연결되면 AI가 확인이 필요한 항목만 이곳에 모읍니다.",
     },
     pending: {
       title: "승인할 답변이 없습니다",
@@ -5128,32 +4741,32 @@ export default function Home() {
         }
       : selectedWorkflowColumn.status === "needs_review"
         ? workflowPendingItems.length > 0
-          ? {
-              actionLabel: "승인 대기 보기",
-              onAction: () => openWorkflowStatus("pending"),
-              secondaryActionLabel: "샘플 데이터로 체험",
-              onSecondaryAction: () =>
-                goToTabSection("integrations", "platform-integrations"),
-            }
-          : {
-              actionLabel: "샘플 데이터로 체험",
-              onAction: () =>
-                goToTabSection("integrations", "platform-integrations"),
-              secondaryActionLabel: "문의 답변 테스트",
-              onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
-            }
+        ? {
+            actionLabel: "승인 대기 보기",
+            onAction: () => openWorkflowStatus("pending"),
+            secondaryActionLabel: "플랫폼 연동 설정",
+            onSecondaryAction: () =>
+              goToTabSection("integrations", "platform-integrations"),
+          }
+        : {
+            actionLabel: "플랫폼 연동 설정",
+            onAction: () =>
+              goToTabSection("integrations", "platform-integrations"),
+            secondaryActionLabel: "문의 답변 작성",
+            onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
+          }
         : selectedWorkflowColumn.status === "pending"
           ? workflowNeedsReviewItems.length > 0
             ? {
                 actionLabel: "확인 필요 보기",
                 onAction: () => openWorkflowStatus("needs_review"),
-                secondaryActionLabel: "문의 답변 테스트",
+                secondaryActionLabel: "문의 답변 작성",
                 onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
               }
             : {
-                actionLabel: "문의 답변 테스트",
+                actionLabel: "문의 답변 작성",
                 onAction: () => goToTabSection("answer", "cs-reply"),
-                secondaryActionLabel: "샘플 데이터로 체험",
+                secondaryActionLabel: "플랫폼 연동 설정",
                 onSecondaryAction: () =>
                   goToTabSection("integrations", "platform-integrations"),
               }
@@ -5161,22 +4774,22 @@ export default function Home() {
             ? {
                 actionLabel: "승인 대기 보기",
                 onAction: () => openWorkflowStatus("pending"),
-                secondaryActionLabel: "문의 답변 테스트",
+                secondaryActionLabel: "문의 답변 작성",
                 onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
               }
             : workflowNeedsReviewItems.length > 0
               ? {
                   actionLabel: "확인 필요 보기",
                   onAction: () => openWorkflowStatus("needs_review"),
-                  secondaryActionLabel: "샘플 데이터로 체험",
+                  secondaryActionLabel: "플랫폼 연동 설정",
                   onSecondaryAction: () =>
                     goToTabSection("integrations", "platform-integrations"),
                 }
               : {
-                  actionLabel: "샘플 데이터로 체험",
+                  actionLabel: "플랫폼 연동 설정",
                   onAction: () =>
                     goToTabSection("integrations", "platform-integrations"),
-                  secondaryActionLabel: "문의 답변 테스트",
+                  secondaryActionLabel: "문의 답변 작성",
                   onSecondaryAction: () => goToTabSection("answer", "cs-reply"),
                 };
 
@@ -5268,7 +4881,7 @@ export default function Home() {
       : `초안 ${todayGeneratedActivityCount}건, 완료 ${todayCompletedActivityCount}건, 확인 필요 ${todayStoppedActivityLogs.length}건입니다.`;
   const aiStaffDiaryNextAction =
     todayAiActivityLogs.length === 0
-      ? "샘플 문의나 실제 문의를 처리하면 여기에 쌓입니다."
+      ? "실제 문의나 리뷰가 처리되면 여기에 쌓입니다."
       : todayStoppedActivityLogs.length > 0
         ? "먼저 멈춘 항목을 확인해 주세요. 알려준 답은 다음 문의에 다시 씁니다."
         : todayGeneratedActivityCount > todayCompletedActivityCount
@@ -5313,8 +4926,8 @@ export default function Home() {
   const onboardingPendingWorkflowItems = onboardingWorkflowItems.filter(
     (item) => item.status === "pending",
   );
-  const hasOnboardingWorkflowItem =
-    onboardingWorkflowItems.length > 0 || pendingMissingInfoCount > 0;
+  const hasIntegrationRequest =
+    integrationRequests.length > 0 || paidAdoptionRequest !== null;
   const hasOnboardingCompletedItem = onboardingWorkflowItems.some(
     (item) => item.status === "completed" || item.status === "answered",
   );
@@ -5341,21 +4954,21 @@ export default function Home() {
       onAction: () => goToTabSection("store", "store-info"),
     },
     {
-      id: "sample",
+      id: "integration",
       step: "3",
-      title: "3분 체험 시작",
+      title: "플랫폼 연동 신청",
       description:
-        "예시 가게와 샘플 문의로 AI 직원이 초안을 만드는 장면을 봅니다.",
-      isComplete: hasOnboardingWorkflowItem,
-      actionLabel: threeMinuteDemoLoading ? "준비 중..." : "3분 체험 시작",
-      onAction: () => void handleStartThreeMinuteDemo(),
+        "연동할 플랫폼을 등록하면 실제 문의와 리뷰를 AI CS 처리함에 연결할 수 있습니다.",
+      isComplete: hasIntegrationRequest,
+      actionLabel: "플랫폼 연동 열기",
+      onAction: () => goToTabSection("integrations", "platform-integrations"),
     },
     {
       id: "complete",
       step: "4",
-      title: "첫 답변 처리 완료",
+      title: "AI CS 처리함 운영",
       description:
-        "승인하거나 수정해 답변 하나가 완료되는 과정을 확인합니다.",
+        "실제 문의와 리뷰를 승인 대기, 확인 필요, 답변 완료로 관리합니다.",
       isComplete: hasOnboardingCompletedItem,
       actionLabel: "처리함에서 확인",
       onAction: () => {
@@ -5387,13 +5000,11 @@ export default function Home() {
       : !hasStore
         ? {
             eyebrow: "추천 시작",
-            title: "AI CS 직원 3분 체험하기",
+            title: "가게 정보를 먼저 등록하세요",
             description:
-              "예시 가게 정보를 자동으로 넣고 샘플 문의를 만들어 AI CS 처리함까지 바로 보여드립니다.",
-            actionLabel: threeMinuteDemoLoading
-              ? "체험 준비 중..."
-              : "AI CS 직원 3분 체험하기",
-            onAction: () => void handleStartThreeMinuteDemo(),
+              "상품, 정책, 말투를 저장해야 AI가 실제 고객 문의에 맞춰 답변할 수 있습니다.",
+            actionLabel: "가게 정보 입력",
+            onAction: () => goToTabSection("store", "store-info"),
           }
         : pendingMissingInfoCount > 0
           ? {
@@ -5429,14 +5040,13 @@ export default function Home() {
                   onAction: () => goToTabSection("manage", "ai-cs-inbox"),
                 }
               : {
-                eyebrow: "다음 테스트",
-                title: "AI CS 직원 3분 체험하기",
+                eyebrow: "다음 단계",
+                title: "실제 플랫폼 연동을 준비하세요",
                 description:
-                  "샘플 문의를 AI CS 처리함에 넣고, 답변 초안을 확인한 뒤 승인 완료까지 눌러보세요.",
-                actionLabel: threeMinuteDemoLoading
-                  ? "체험 준비 중..."
-                  : "AI CS 직원 3분 체험하기",
-                onAction: () => void handleStartThreeMinuteDemo(),
+                  "연동할 플랫폼을 등록하면 실제 고객 문의와 리뷰를 AI CS 처리함으로 모을 수 있습니다.",
+                actionLabel: "플랫폼 연동 열기",
+                onAction: () =>
+                  goToTabSection("integrations", "platform-integrations"),
               };
   const startPaidAdoptionAction = {
     title: "AI CS 직원을 우리 가게에 도입하고 싶다면",
@@ -5482,29 +5092,6 @@ export default function Home() {
               ? () => void handleRequestPaidAdoption()
               : undefined,
   };
-  const freeTrialPrimaryAction = !authUser
-    ? {
-        label: "카카오로 무료 체험 시작",
-        onAction: () => void handleKakaoLogin(),
-      }
-    : !hasStore
-      ? {
-          label: threeMinuteDemoLoading
-            ? "체험 준비 중..."
-            : "AI CS 직원 3분 체험하기",
-          onAction: () => void handleStartThreeMinuteDemo(),
-        }
-      : {
-          label: isPaidPlan
-            ? "AI 답변 작성하기"
-            : threeMinuteDemoLoading
-              ? "체험 준비 중..."
-              : "AI CS 직원 3분 체험하기",
-          onAction: isPaidPlan
-            ? () => goToTabSection("answer", "cs-reply")
-            : () => void handleStartThreeMinuteDemo(),
-        };
-
   function scrollToSection(targetId: string) {
     document.getElementById(targetId)?.scrollIntoView({
       behavior: "smooth",
@@ -5981,7 +5568,7 @@ export default function Home() {
     if (!isPaidPlan) {
       setCoupangInquiryImportMessage("");
       setCoupangInquiryImportError(
-        "쿠팡 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트하거나 도입 상담을 요청해 주세요.",
+        "쿠팡 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 도입 상담을 요청해 연동 범위를 확정해 주세요.",
       );
       return;
     }
@@ -6036,7 +5623,7 @@ export default function Home() {
     if (!isPaidPlan) {
       setSmartstoreInquiryImportMessage("");
       setSmartstoreInquiryImportError(
-        "스마트스토어 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 샘플 문의로 먼저 흐름을 테스트하거나 도입 상담을 요청해 주세요.",
+        "스마트스토어 실제 문의 가져오기는 유료 플랜에서 사용할 수 있습니다. 도입 상담을 요청해 연동 범위를 확정해 주세요.",
       );
       return;
     }
@@ -6096,176 +5683,6 @@ export default function Home() {
       await loadPlatformCredentials();
     } finally {
       setSmartstoreInquiryImportLoading(false);
-    }
-  }
-
-  async function handleLoadCoupangMockInquiries() {
-    if (!authUser) {
-      setCoupangMockInquiriesMessage("");
-      setCoupangMockInquiriesError("로그인이 필요합니다");
-      return;
-    }
-
-    setCoupangMockInquiriesLoading(true);
-    setCoupangMockInquiriesMessage("");
-    setCoupangMockInquiriesError("");
-
-    try {
-      const response = await fetch("/api/integrations/coupang/mock-inquiries", {
-        method: "POST",
-        headers: await getAuthenticatedRequestHeaders(),
-      });
-      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
-
-      if (!response.ok || !data.inserted) {
-        setCoupangMockInquiriesError(
-          "쿠팡 샘플 문의 불러오기에 실패했습니다.",
-        );
-        return;
-      }
-
-      setCoupangMockInquiriesMessage(
-        "쿠팡 샘플 문의가 AI CS 처리함에 추가되었습니다.",
-      );
-      await Promise.all([loadCsMessages(), loadMissingInfos()]);
-    } catch {
-      setCoupangMockInquiriesError("쿠팡 샘플 문의 불러오기에 실패했습니다.");
-    } finally {
-      setCoupangMockInquiriesLoading(false);
-    }
-  }
-
-  async function handleLoadCoupangMockReviews() {
-    if (!authUser) {
-      setCoupangMockReviewsMessage("");
-      setCoupangMockReviewsError("로그인이 필요합니다");
-      return;
-    }
-
-    setCoupangMockReviewsLoading(true);
-    setCoupangMockReviewsMessage("");
-    setCoupangMockReviewsError("");
-
-    try {
-      const response = await fetch("/api/integrations/coupang/mock-reviews", {
-        method: "POST",
-        headers: await getAuthenticatedRequestHeaders(),
-      });
-      const data = (await response.json()) as MockReviewsApiResponse;
-
-      if (!response.ok || !data.inserted) {
-        setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
-        return;
-      }
-
-      setCoupangMockReviewsMessage(
-        "쿠팡 샘플 리뷰가 AI CS 처리함에 추가되었습니다.",
-      );
-      await Promise.all([loadHistory(), loadInsights()]);
-    } catch {
-      setCoupangMockReviewsError("쿠팡 샘플 리뷰 불러오기에 실패했습니다.");
-    } finally {
-      setCoupangMockReviewsLoading(false);
-    }
-  }
-
-  async function handleLoadSmartstoreMockInquiries() {
-    if (!authUser) {
-      setSmartstoreMockInquiriesMessage("");
-      setSmartstoreMockInquiriesError("로그인이 필요합니다");
-      return;
-    }
-
-    setSmartstoreMockInquiriesLoading(true);
-    setSmartstoreMockInquiriesMessage("");
-    setSmartstoreMockInquiriesError("");
-
-    try {
-      const response = await fetch(
-        "/api/integrations/smartstore/mock-inquiries",
-        {
-          method: "POST",
-          headers: await getAuthenticatedRequestHeaders(),
-        },
-      );
-      const data = (await response.json()) as CoupangMockInquiriesApiResponse;
-
-      if (!response.ok || !data.inserted) {
-        setSmartstoreMockInquiriesError(
-          "스마트스토어 샘플 문의 불러오기에 실패했습니다.",
-        );
-        return;
-      }
-
-      setSmartstoreMockInquiriesMessage(
-        "스마트스토어 샘플 문의가 AI CS 처리함에 추가되었습니다.",
-      );
-      await Promise.all([loadCsMessages(), loadMissingInfos(), loadInsights()]);
-    } catch {
-      setSmartstoreMockInquiriesError(
-        "스마트스토어 샘플 문의 불러오기에 실패했습니다.",
-      );
-    } finally {
-      setSmartstoreMockInquiriesLoading(false);
-    }
-  }
-
-  async function handleLoadPlatformMockReviews(
-    platform: MockReviewPlatform,
-    platformName: string,
-  ) {
-    if (!authUser) {
-      setMockReviewsMessages((current) => ({
-        ...current,
-        [platform]: "",
-      }));
-      setMockReviewsErrors((current) => ({
-        ...current,
-        [platform]: "로그인이 필요합니다",
-      }));
-      return;
-    }
-
-    setMockReviewsLoadingPlatform(platform);
-    setMockReviewsMessages((current) => ({
-      ...current,
-      [platform]: "",
-    }));
-    setMockReviewsErrors((current) => ({
-      ...current,
-      [platform]: "",
-    }));
-
-    try {
-      const response = await fetch(
-        `/api/integrations/${platform}/mock-reviews`,
-        {
-          method: "POST",
-          headers: await getAuthenticatedRequestHeaders(),
-        },
-      );
-      const data = (await response.json()) as MockReviewsApiResponse;
-
-      if (!response.ok || !data.inserted) {
-        setMockReviewsErrors((current) => ({
-          ...current,
-          [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
-        }));
-        return;
-      }
-
-      setMockReviewsMessages((current) => ({
-        ...current,
-        [platform]: `${platformName} 샘플 리뷰가 AI CS 처리함에 추가되었습니다.`,
-      }));
-      await Promise.all([loadHistory(), loadInsights()]);
-    } catch {
-      setMockReviewsErrors((current) => ({
-        ...current,
-        [platform]: `${platformName} 샘플 리뷰 불러오기에 실패했습니다.`,
-      }));
-    } finally {
-      setMockReviewsLoadingPlatform(null);
     }
   }
 
@@ -6417,297 +5834,9 @@ export default function Home() {
           isVisible={activeTab === "start"}
           guideItems={startGuideItems}
           recommendedAction={startRecommendedAction}
-          actionLoading={authActionLoading || threeMinuteDemoLoading}
+          actionLoading={authActionLoading}
           paidAdoptionAction={startPaidAdoptionAction}
         />
-
-        {activeTab === "start" ? (
-          <section
-            className={`${cardClass} order-[11] border-blue-200/70 bg-gradient-to-br from-white via-blue-50/50 to-blue-50/60 dark:border-blue-900/50 dark:from-zinc-900 dark:via-blue-950/20 dark:to-blue-950/20`}
-          >
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                  {isPaidPlan ? "Paid Plan" : "Free Trial"}
-                </p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-                  {isPaidPlan
-                    ? "유료 플랜으로 AI CS 직원을 운영 중입니다"
-                    : "무료 체험은 이렇게 진행됩니다"}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  {isPaidPlan
-                    ? "답변 생성 제한 없이 실제 고객 응대 흐름을 운영할 수 있습니다. 플랫폼 연동, 자동 완료, 일괄 승인 기능을 순차적으로 연결해보세요."
-                    : "먼저 가게 정보를 알려주고, AI 답변 30건까지 실제 응대 흐름을 확인해보세요. 학습 입력과 샘플 데이터는 무료 카운트에서 제외됩니다."}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-blue-200 bg-white/85 p-4 shadow-sm dark:border-blue-900/60 dark:bg-zinc-950/70 lg:min-w-72">
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      {isPaidPlan ? "AI 답변 생성" : "무료 AI 답변 생성"}
-                    </p>
-                    <p className="mt-1 text-3xl font-black tracking-tight text-blue-700 dark:text-blue-300">
-                      {isPaidPlan ? "무제한" : trialAiReplyRemainingCount}
-                      <span className="ml-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-                        {isPaidPlan ? "운영 중" : "건 남음"}
-                      </span>
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
-                    {isPaidPlan
-                      ? "제한 해제"
-                      : `${trialAiReplyUsedCount}/${FREE_TRIAL_AI_REPLY_LIMIT}`}
-                  </span>
-                </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-500 transition-all"
-                    style={{
-                      width: `${isPaidPlan ? 100 : trialAiReplyUsagePercent}%`,
-                    }}
-                  />
-                </div>
-                <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  {isPaidPlan
-                    ? "유료 플랜에서는 실제 답변 생성 제한이 해제됩니다."
-                    : "샘플 데이터와 가게 지식 학습은 이 카운트에서 제외합니다."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 lg:grid-cols-3">
-              {[
-                {
-                  step: "1",
-                  title: isPaidPlan
-                    ? "가게 지식 최종 확인"
-                    : "예시 가게를 준비합니다",
-                  tone: "blue",
-                  description: isPaidPlan
-                    ? "상품, 정책, 말투 학습이 실제 고객 응대에 맞게 들어갔는지 먼저 확인합니다."
-                    : "가게 정보가 없으면 예시 상품과 정책을 자동으로 넣어 바로 체험합니다.",
-                },
-                {
-                  step: "2",
-                  title: isPaidPlan
-                    ? "AI 답변 제한 없이 운영"
-                    : "샘플 문의가 처리함에 생깁니다",
-                  tone: "blue",
-                  description: isPaidPlan
-                    ? "문의 답변과 리뷰 답글을 계속 생성하고, 처리함에서 승인/수정까지 이어갈 수 있습니다."
-                    : "AI가 샘플 문의의 답변 초안과 확인 필요 여부를 판단합니다.",
-                },
-                {
-                  step: "3",
-                  title: isPaidPlan ? "연동 기능 연결하기" : "승인 완료를 눌러봅니다",
-                  tone: "amber",
-                  description: isPaidPlan
-                    ? "플랫폼 문의 가져오기, 자동 완료, 안전 항목 일괄 승인을 실제 운영에 맞춰 사용할 수 있습니다."
-                    : "답변 하나를 완료 처리하면 운영 관리에서 AI 직원이 한 일이 보입니다.",
-                },
-              ].map((step) => (
-                <article
-                  key={step.title}
-                  className={`rounded-2xl border p-4 ${
-                    step.tone === "blue"
-                      ? "border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/25"
-                      : step.tone === "blue"
-                        ? "border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/25"
-                        : "border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/25"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-blue-700 shadow-sm ring-1 ring-black/5 dark:bg-zinc-950 dark:text-blue-300 dark:ring-white/10">
-                      {step.step}
-                    </span>
-                    <div>
-                      <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
-                        {step.title}
-                      </h3>
-                      <p className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {isPaidPlan ? (
-              <div className="mt-5 rounded-2xl border border-blue-200 bg-white/80 p-5 shadow-sm dark:border-blue-900/60 dark:bg-zinc-950/65">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                      Paid Onboarding
-                    </p>
-                    <h3 className="mt-1 text-lg font-bold text-zinc-950 dark:text-zinc-50">
-                      유료 플랜 운영 시작 체크리스트
-                    </h3>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                      이제 무료 답변 한도는 해제되었습니다. 실제 고객 응대에
-                      필요한 설정부터 연결하면 바로 운영 흐름을 만들 수 있어요.
-                    </p>
-                  </div>
-                  <span className="w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
-                    유료 기능 활성화
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                  {[
-                    {
-                      title: "1. 플랫폼 연동 준비",
-                      description:
-                        "쿠팡, 스마트스토어, 배달앱 문의와 리뷰를 연결할 준비를 합니다.",
-                      actionLabel: "플랫폼 연동 열기",
-                      onAction: () =>
-                        goToTabSection("integrations", "platform-integrations"),
-                    },
-                    {
-                      title: "2. 자동 처리 범위 확인",
-                      description:
-                        "AI가 어디까지 자동 완료하고, 어떤 항목은 승인 대기로 둘지 정합니다.",
-                      actionLabel: "자동 처리 설정 보기",
-                      onAction: () =>
-                        goToTabSection("store", "auto-processing-settings"),
-                    },
-                    {
-                      title: "3. AI CS 처리함 운영",
-                      description:
-                        "승인 대기, 확인 필요, 답변 완료 항목을 실제 업무판처럼 관리합니다.",
-                      actionLabel: "처리함 보기",
-                      onAction: () => goToTabSection("manage", "ai-cs-inbox"),
-                    },
-                  ].map((item) => (
-                    <article
-                      key={item.title}
-                      className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/45"
-                    >
-                      <h4 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">
-                        {item.title}
-                      </h4>
-                      <p className="mt-2 min-h-10 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
-                        {item.description}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={item.onAction}
-                        className={buttonClass(
-                          "secondary",
-                          "sm",
-                          "mt-3 w-full rounded-lg",
-                        )}
-                      >
-                        {item.actionLabel}
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={freeTrialPrimaryAction.onAction}
-                disabled={threeMinuteDemoLoading}
-                className={buttonClass("success", "md", "rounded-lg")}
-              >
-                {freeTrialPrimaryAction.label}
-              </button>
-              {isPaidPlan ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    goToTabSection("integrations", "platform-integrations")
-                  }
-                  className={buttonClass("secondary", "md", "rounded-lg")}
-                >
-                  플랫폼 연동 설정
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={
-                    authUser
-                      ? () => void handleRequestPaidAdoption()
-                      : () => void handleKakaoLogin()
-                  }
-                  disabled={
-                    authUser ? paidAdoptionRequestLoading : authActionLoading
-                  }
-                  className={buttonClass("secondary", "md", "rounded-lg")}
-                >
-                  {authUser
-                    ? paidAdoptionRequestLoading
-                      ? "상담 요청 저장 중..."
-                      : "도입 상담 요청"
-                    : "로그인 후 상담 요청"}
-                </button>
-              )}
-            </div>
-
-            {freeTrialAiReplyNearlyUsed ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold">
-                      {freeTrialNearlyUsedTitle}
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                      {freeTrialNearlyUsedDescription}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={
-                      authUser
-                        ? () => void handleRequestPaidAdoption()
-                        : () => void handleKakaoLogin()
-                    }
-                    disabled={
-                      authUser ? paidAdoptionRequestLoading : authActionLoading
-                    }
-                    className={buttonClass("warning", "sm", "w-fit rounded-lg")}
-                  >
-                    {authUser ? "도입 상담 요청" : "로그인 후 상담 요청"}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {threeMinuteDemoMessage || threeMinuteDemoError ? (
-              <p
-                className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-                  threeMinuteDemoError
-                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-                    : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
-                }`}
-                role="status"
-              >
-                {threeMinuteDemoError || threeMinuteDemoMessage}
-              </p>
-            ) : null}
-
-            <div className="mt-4 rounded-xl border border-white/70 bg-white/70 px-4 py-3 text-xs leading-5 text-zinc-600 shadow-sm dark:border-white/10 dark:bg-zinc-950/50 dark:text-zinc-300">
-              <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                현재 상태:{" "}
-                {billingStatusLoading ? "확인 중" : billingPlanLabel}
-              </span>
-              <span className="ml-2">
-                {isPaidPlan
-                  ? "답변 생성 제한이 해제되어 실제 운영 흐름을 계속 사용할 수 있습니다."
-                  : "무료 체험 중에는 실제 AI 답변 생성 30건까지 사용할 수 있습니다."}
-              </span>
-              {billingStatusError ? (
-                <span className="mt-1 block text-amber-700 dark:text-amber-300">
-                  플랜 상태를 불러오지 못해 무료 체험 기준으로 표시 중입니다.
-                </span>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
 
         <PaidAdoptionAdminPanel
           isVisible={
@@ -7414,56 +6543,16 @@ export default function Home() {
                 가게 정보
               </h2>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                처음에는 가게명, 업종, 대표 상품만 저장해도 AI 답변을 테스트할 수
-                있어요. 나머지는 실제 문의를 보며 천천히 보강하면 됩니다.
+                실제 고객에게 안내해도 되는 가게명, 업종, 대표 상품부터 저장해
+                주세요. 부족한 정보는 AI가 확인 필요로 분리하고, 사장님이 알려준
+                답을 가게 지식으로 다시 사용합니다.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsExamplePickerOpen((current) => !current)}
-              className={buttonClass("secondary")}
-              aria-expanded={isExamplePickerOpen}
-            >
-              예시로 채우기
-            </button>
           </div>
 
           {hasStore ? (
             <p className="-mt-4 mb-6 text-sm font-medium text-blue-700 dark:text-blue-300">
               현재 등록된 가게 정보를 수정할 수 있습니다
-            </p>
-          ) : null}
-
-          {isExamplePickerOpen ? (
-            <section className="mb-6 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
-              <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
-                체험할 업종을 선택해 주세요
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-blue-800/90 dark:text-blue-200/80">
-                선택한 예시 정보는 폼에만 입력됩니다. 확인하거나 수정한 뒤
-                저장할 수 있습니다.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {exampleStorePresets.map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => handleUseExampleStore(preset)}
-                    className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-900 transition hover:border-blue-400 hover:bg-blue-100 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-100 dark:hover:bg-blue-950/60"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {storeExampleMessage ? (
-            <p
-              className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200"
-              role="status"
-            >
-              {storeExampleMessage}
             </p>
           ) : null}
 
@@ -7718,8 +6807,8 @@ export default function Home() {
                   </p>
                   {!isPaidPlan ? (
                     <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                      무료 체험 중에는 설정을 미리 저장할 수 있지만, 실제 자동
-                      완료 처리는 유료 플랜 전환 후 적용됩니다.
+                      도입 전에는 설정을 미리 저장할 수 있지만, 실제 자동 완료
+                      처리는 유료 플랜 전환 후 적용됩니다.
                     </p>
                   ) : null}
                 </div>
@@ -8498,7 +7587,7 @@ export default function Home() {
                     }
                     className={buttonClass("secondary", "md", "rounded-lg")}
                   >
-                    샘플 데이터로 체험
+                    플랫폼 연동 설정
                   </button>
                 </div>
               </div>
@@ -8524,7 +7613,7 @@ export default function Home() {
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
               지금은 쿠팡 실제 문의 연동을 가장 먼저 연결하고, 스마트스토어와
-              배달앱은 샘플 체험과 연동 희망 등록으로 준비합니다.
+              배달앱은 도입 상담과 연동 희망 등록을 통해 순차적으로 연결합니다.
             </p>
           </div>
 
@@ -8536,7 +7625,7 @@ export default function Home() {
               {[
                 "쿠팡 실제 문의 연동",
                 "스마트스토어 연동 준비",
-                "배달앱 샘플 리뷰 체험",
+                "배달앱 연동 상담",
               ].map((item, index) => (
                 <div
                   key={item}
@@ -8597,8 +7686,6 @@ export default function Home() {
                 coupangCredential?.status === "connected";
               const isSmartstoreConnected =
                 smartstoreCredential?.status === "connected";
-              const deliveryMockReviewPlatform =
-                isDeliveryMockReviewPlatform(platform.id) ? platform.id : null;
 
               return (
                 <article
@@ -8725,69 +7812,6 @@ export default function Home() {
                           : "연동 희망 등록"}
                     </button>
                   </div>
-
-                  {deliveryMockReviewPlatform ? (
-                    <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                      <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">
-                              샘플 리뷰로 처리함 체험
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-blue-900 dark:text-blue-100">
-                              실제 플랫폼 데이터가 아닌 데모용 샘플입니다.
-                            </p>
-                          </div>
-                        <button
-                          type="button"
-                          disabled={mockReviewsLoadingPlatform !== null}
-                          onClick={() =>
-                            void handleLoadPlatformMockReviews(
-                              deliveryMockReviewPlatform,
-                              platform.name,
-                            )
-                          }
-                          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
-                        >
-                          {mockReviewsLoadingPlatform ===
-                          deliveryMockReviewPlatform
-                            ? "샘플 리뷰 불러오는 중..."
-                            : "샘플 리뷰 불러오기"}
-                        </button>
-                        </div>
-
-                        {mockReviewsMessages[
-                          deliveryMockReviewPlatform
-                        ] ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
-                            role="status"
-                          >
-                            {
-                              mockReviewsMessages[
-                                deliveryMockReviewPlatform
-                              ]
-                            }
-                          </p>
-                        ) : null}
-
-                        {mockReviewsErrors[
-                          deliveryMockReviewPlatform
-                        ] ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                            role="alert"
-                          >
-                            {
-                              mockReviewsErrors[
-                                deliveryMockReviewPlatform
-                              ]
-                            }
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
 
                   {platform.id === "smartstore" ? (
                     <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
@@ -9076,84 +8100,6 @@ export default function Home() {
                         ) : null}
                       </div>
 
-                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <h4 className="text-sm font-semibold text-blue-950 dark:text-blue-100">
-                              샘플 데이터로 처리함 체험
-                            </h4>
-                            <p className="mt-1 text-xs leading-5 text-blue-900 dark:text-blue-100">
-                              실제 스마트스토어 데이터가 아닌 데모용 샘플입니다.
-                            </p>
-                          </div>
-                          <div className="grid gap-2 sm:min-w-64 sm:grid-cols-2">
-                            <button
-                              type="button"
-                              disabled={smartstoreMockInquiriesLoading}
-                              onClick={() =>
-                                void handleLoadSmartstoreMockInquiries()
-                              }
-                              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
-                            >
-                              {smartstoreMockInquiriesLoading
-                                ? "불러오는 중..."
-                                : "샘플 문의"}
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={mockReviewsLoadingPlatform !== null}
-                              onClick={() =>
-                                void handleLoadPlatformMockReviews(
-                                  "smartstore",
-                                  platform.name,
-                                )
-                              }
-                              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-300 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-zinc-950 dark:text-blue-300 dark:hover:bg-blue-950/40"
-                            >
-                              {mockReviewsLoadingPlatform === "smartstore"
-                                ? "불러오는 중..."
-                                : "샘플 리뷰"}
-                            </button>
-                          </div>
-                        </div>
-
-                        {smartstoreMockInquiriesMessage ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
-                            role="status"
-                          >
-                            {smartstoreMockInquiriesMessage}
-                          </p>
-                        ) : null}
-
-                        {smartstoreMockInquiriesError ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                            role="alert"
-                          >
-                            {smartstoreMockInquiriesError}
-                          </p>
-                        ) : null}
-
-                        {mockReviewsMessages.smartstore ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
-                            role="status"
-                          >
-                            {mockReviewsMessages.smartstore}
-                          </p>
-                        ) : null}
-
-                        {mockReviewsErrors.smartstore ? (
-                          <p
-                            className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                            role="alert"
-                          >
-                            {mockReviewsErrors.smartstore}
-                          </p>
-                        ) : null}
-                      </div>
                     </div>
                   ) : null}
 
@@ -9387,8 +8333,7 @@ export default function Home() {
                       </button>
                       <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                         실제 플랫폼 문의 가져오기와 답변 등록은 유료 플랜 또는
-                        도입 상담 후 연결할 핵심 기능입니다. 샘플 데이터 체험은
-                        무료 사용량에 포함하지 않습니다.
+                        도입 상담 후 연결할 핵심 기능입니다.
                       </p>
 
                       {!isPaidPlan ? (
@@ -9422,101 +8367,6 @@ export default function Home() {
                           {coupangInquiryImportError}
                         </p>
                       ) : null}
-                      </div>
-
-                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/25">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                          데모 체험
-                        </p>
-                        <h4 className="mt-1 text-sm font-semibold text-blue-950 dark:text-blue-100">
-                          샘플 데이터로 AI CS 처리함 흐름 확인
-                        </h4>
-                        <p className="mt-2 text-xs leading-5 text-blue-900 dark:text-blue-100">
-                          샘플 데이터는 실제 쿠팡에서 가져온 데이터가 아니며, 실제
-                          API 키가 없어도 처리함 흐름을 체험하기 위한 데모용입니다.
-                        </p>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-900/60 dark:bg-zinc-950/50">
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
-                              샘플 문의
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
-                              쿠팡 상품 문의 3개를 AI 답변 초안과 함께 처리함에
-                              추가합니다.
-                            </p>
-                            <button
-                              type="button"
-                              disabled={coupangMockInquiriesLoading}
-                              onClick={() =>
-                                void handleLoadCoupangMockInquiries()
-                              }
-                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
-                            >
-                              {coupangMockInquiriesLoading
-                                ? "샘플 문의 불러오는 중..."
-                                : "샘플 문의 불러오기"}
-                            </button>
-
-                            {coupangMockInquiriesMessage ? (
-                              <p
-                                className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
-                                role="status"
-                              >
-                                {coupangMockInquiriesMessage}
-                              </p>
-                            ) : null}
-
-                            {coupangMockInquiriesError ? (
-                              <p
-                                className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                                role="alert"
-                              >
-                                {coupangMockInquiriesError}
-                              </p>
-                            ) : null}
-                          </div>
-
-                          <div
-                            className="rounded-xl border border-blue-200 bg-white/80 p-4 dark:border-blue-900/60 dark:bg-zinc-950/50"
-                          >
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
-                              샘플 리뷰
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-200">
-                              쿠팡 리뷰 3개를 AI 답글 초안과 함께 처리함에
-                              추가합니다.
-                            </p>
-                            <button
-                              type="button"
-                              disabled={coupangMockReviewsLoading}
-                              onClick={() => void handleLoadCoupangMockReviews()}
-                              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
-                            >
-                              {coupangMockReviewsLoading
-                                ? "샘플 리뷰 불러오는 중..."
-                                : "샘플 리뷰 불러오기"}
-                            </button>
-
-                            {coupangMockReviewsMessage ? (
-                              <p
-                                className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300"
-                                role="status"
-                              >
-                                {coupangMockReviewsMessage}
-                              </p>
-                            ) : null}
-
-                            {coupangMockReviewsError ? (
-                              <p
-                                className="mt-3 text-sm font-medium text-red-700 dark:text-red-300"
-                                role="alert"
-                              >
-                                {coupangMockReviewsError}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
                       </div>
 
                       <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -9560,43 +8410,16 @@ export default function Home() {
           </section>
         ) : null}
 
-        {activeTab === "answer" && freeTrialAiReplyLimitReached ? (
+        {activeTab === "answer" && paidPlanRequired ? (
           <section className="order-[29] rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                  무료 AI 답변 생성 30건을 모두 사용했습니다
+                  AI 답변 생성은 유료 도입 후 사용할 수 있습니다
                 </p>
                 <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                  가게 정보와 지식 학습은 계속 사용할 수 있습니다. 실제 고객
-                  응대를 계속 맡기려면 도입 상담을 요청해 주세요.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={
-                  authUser
-                    ? () => void handleRequestPaidAdoption()
-                    : () => void handleKakaoLogin()
-                }
-                disabled={authUser ? paidAdoptionRequestLoading : authActionLoading}
-                className={buttonClass("warning", "sm", "w-fit rounded-lg")}
-              >
-                {authUser ? "도입 상담 요청" : "로그인 후 상담 요청"}
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {activeTab === "answer" && freeTrialAiReplyNearlyUsed ? (
-          <section className="order-[29] rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                  {freeTrialNearlyUsedTitle}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                  {freeTrialNearlyUsedDescription}
+                  가게 정보와 지식 학습은 미리 준비할 수 있습니다. 실제 고객
+                  응대를 맡기려면 도입 상담을 요청해 주세요.
                 </p>
               </div>
               <button
@@ -10728,7 +9551,7 @@ export default function Home() {
               description="문의 하나를 입력하면 AI 답변 초안과 처리 상태가 함께 저장됩니다."
               actionLabel="문의 답변 작성하기"
               onAction={() => goToTabSection("answer", "cs-reply")}
-              secondaryActionLabel="샘플 데이터로 체험"
+              secondaryActionLabel="플랫폼 연동 설정"
               onSecondaryAction={() =>
                 goToTabSection("integrations", "platform-integrations")
               }
@@ -10845,7 +9668,7 @@ export default function Home() {
             <EmptyStateCard
               title="지금 보강할 정보가 없습니다"
               description="AI가 모르는 질문을 만나면 이곳에 답변 입력 카드가 생깁니다."
-              actionLabel="문의 답변 테스트"
+              actionLabel="문의 답변 작성하기"
               onAction={() => goToTabSection("answer", "cs-reply")}
               secondaryActionLabel="가게 정보 보강"
               onSecondaryAction={() => goToTabSection("store", "store-info")}
@@ -11020,7 +9843,7 @@ export default function Home() {
               description="리뷰 답글을 만들면 부정 리뷰와 승인 필요 항목을 먼저 보여줍니다."
               actionLabel="리뷰 답글 작성하기"
               onAction={() => goToTabSection("answer", "review-reply")}
-              secondaryActionLabel="샘플 리뷰 체험"
+              secondaryActionLabel="플랫폼 연동 설정"
               onSecondaryAction={() =>
                 goToTabSection("integrations", "platform-integrations")
               }
@@ -11309,7 +10132,7 @@ export default function Home() {
               description="리뷰 하나를 입력하면 AI 답글 초안과 위험도 판단이 저장됩니다."
               actionLabel="리뷰 답글 작성하기"
               onAction={() => goToTabSection("answer", "review-reply")}
-              secondaryActionLabel="샘플 리뷰 체험"
+              secondaryActionLabel="플랫폼 연동 설정"
               onSecondaryAction={() =>
                 goToTabSection("integrations", "platform-integrations")
               }

@@ -29,8 +29,8 @@ export function AiCsWorkflowInboxEmptyState({
         {description}
       </p>
       <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-500 dark:text-zinc-500">
-        먼저 샘플 문의를 넣어보면 AI가 초안 작성, 확인 필요 판단, 승인 완료까지
-        어떻게 처리하는지 바로 볼 수 있습니다.
+        실제 문의와 리뷰가 연결되면 AI가 초안 작성, 확인 필요 판단, 승인 완료
+        상태까지 이곳에 정리합니다.
       </p>
       <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
         <button
