@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+import {
+  buildAiCsAgentRuntimeInstruction,
+  buildAiCsAgentRuntimePlan,
+} from "@/app/lib/aiCsAgentRuntime";
 import { buildReviewAiReason } from "@/app/lib/aiDecisionReason";
 import { buildProductSafetyReviewReply } from "@/app/lib/csIncidentResponse";
 import { applyCsServiceEscalation } from "@/app/lib/csServiceEscalation";
@@ -181,7 +185,14 @@ export async function generateReviewReply(
   handlingType: HandlingType;
   riskLevel: RiskLevel;
 }> {
-  const systemPrompt = buildReviewReplySystemPrompt(store);
+  const agentPlan = buildAiCsAgentRuntimePlan({
+    surface: "review_reply",
+    text: review,
+  });
+  const systemPrompt = [
+    buildReviewReplySystemPrompt(store),
+    buildAiCsAgentRuntimeInstruction(agentPlan),
+  ].join("\n\n");
   const completion = await openai.responses.create({
     model: "gpt-4.1-mini",
     input: [

@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+import {
+  buildAiCsAgentRuntimeInstruction,
+  buildAiCsAgentRuntimePlan,
+} from "@/app/lib/aiCsAgentRuntime";
 import { buildCsAiReason } from "@/app/lib/aiDecisionReason";
 import { buildCsCaseIntakePrompt } from "@/app/lib/csCaseIntake";
 import {
@@ -109,6 +113,16 @@ export async function generateCsReplyDecision({
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
+  const missingOperationalInfo = findMissingOperationalInfo(
+    customerMessage,
+    store,
+  );
+  const agentPlan = buildAiCsAgentRuntimePlan({
+    surface: "cs_reply",
+    text: customerMessage,
+    hasMissingInfo: Boolean(missingOperationalInfo),
+  });
+
   const completion = await openai.responses.create({
     model: "gpt-4o-mini",
     input: [
@@ -116,6 +130,7 @@ export async function generateCsReplyDecision({
         role: "system",
         content: [
           buildCsReplySystemPrompt(store),
+          buildAiCsAgentRuntimeInstruction(agentPlan),
           buildCsCaseIntakePrompt(customerMessage),
           correctionContext?.trim() || "",
         ]
@@ -159,10 +174,6 @@ export async function generateCsReplyDecision({
 
   const hasHealthSafetyIssue = hasHealthSafetySignal(customerMessage);
   const hasProductSafetyIssue = hasProductSafetySignal(customerMessage);
-  const missingOperationalInfo = findMissingOperationalInfo(
-    customerMessage,
-    store,
-  );
   const initialDecision: CsReplyDecision = {
     reply: hasProductSafetyIssue
       ? buildProductSafetyReply(store)
