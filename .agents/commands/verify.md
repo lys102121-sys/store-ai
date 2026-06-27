@@ -1,6 +1,6 @@
 # Verification Commands
 
-기본 검증:
+Base verification:
 
 ```bash
 npm run test:harness
@@ -10,7 +10,7 @@ npm run lint
 npm run build
 ```
 
-관련 작업별 추가 검증:
+Task-specific verification:
 
 ```bash
 npm run test:learning
@@ -20,11 +20,11 @@ npm run test:store-knowledge-quality
 npm run test:store-knowledge-usage
 ```
 
-규칙:
+Rules:
 
-- CS 답변, 안전 가드, 플랫폼 문의 처리와 관련된 작업은 항상 `test:cs-guard`를 포함한다.
-- 학습, missing info, 수정 답변 학습, 가게 지식 작업은 `test:learning`, `test:store-knowledge-quality`, `test:store-knowledge-usage`를 함께 고려한다.
-- 유료 체험, 결제, 도입 상담, 플랜 게이트 작업은 `test:monetization`을 포함한다.
-- AI CS 처리함 UI/상태 작업은 `test:workflow-safety`를 포함한다.
-- `next build`가 Google Fonts 네트워크 제한으로 실패하면 네트워크 허용 상태로 재실행해 실제 빌드를 확인한다.
-
+- CS reply, safety, platform inquiry, reply generation, or learning changes must include `npm run test:cs-guard`.
+- Missing info, correction learning, store knowledge quality, and knowledge usage changes should include `npm run test:learning`, `npm run test:store-knowledge-quality`, and `npm run test:store-knowledge-usage` when relevant.
+- Paid adoption, billing, conversion, entitlement, or trial-removal changes must include `npm run test:monetization`.
+- AI CS workflow inbox UI/state changes must include `npm run test:workflow-safety`.
+- Harness or agent-rule changes must include `npm run test:harness`.
+- If `next build` fails only because Google Fonts cannot be fetched, rerun the same build with network access and report that reason.

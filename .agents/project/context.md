@@ -2,25 +2,43 @@
 
 ## Mission
 
-이 서비스의 궁극적인 목표는 사장님이 자는 중에도 믿고 맡길 수 있는 AI CS 직원을 만드는 것이다.
+Build a revenue-generating AI CS employee for store owners.
 
-AI는 단순 답변 생성기가 아니라 고객 문의와 리뷰를 처리 항목으로 보고, 답변 가능 여부와 위험도를 판단하고, 필요한 경우 멈추고 사장님에게 묻고, 사장님이 알려준 지식을 다음 문의에 다시 사용해야 한다.
+The product is not a simple reply generator. It should receive customer inquiries and reviews, decide whether AI can answer safely, ask the owner only when needed, learn from the owner's correction or missing information, and keep working through the AI CS workflow inbox.
 
-## Product Principles
+## Product Direction
 
-- 돈이 벌리는 서비스가 되어야 한다. 무료 체험은 유료 전환 가능성을 검증하기 위한 흐름이어야 한다.
-- 처음 쓰는 사장님은 길을 잃으면 안 된다. 시작 화면은 3분 안에 가치를 느끼게 해야 한다.
-- AI는 모르는 내용을 추측하지 않는다. 가격, 재고, 수량, 출고, 환불, 건강/안전 이슈는 명시 정보가 없으면 멈춘다.
-- 사장님이 수정하거나 알려준 답은 가게 지식으로 남고, 비슷한 문의에 다시 반영되어야 한다.
-- 플랫폼 연동은 쿠팡과 스마트스토어를 우선 실제 흐름으로 연결하고, 배민/요기요/쿠팡이츠는 샘플과 수요 검증에서 실제 연동으로 확장한다.
-- UI는 기능을 과시하기보다 사장님이 지금 해야 할 일을 빠르게 이해하게 만드는 쪽이 우선이다.
+- Paid-first product: public-facing flows should lead to paid adoption, platform integration, and real workload reduction.
+- Do not present the product as a free-trial or sample-demo toy. Internal mock routes may remain for regression tests, but the main UX should emphasize actual setup and paid operations.
+- Store owners should understand the next action immediately: connect platform, register store knowledge, review pending/high-risk items, or approve safe items.
+- AI must never invent operational facts. Price, inventory, quantity, business hours, shipping availability, pickup, reservation, refund, health, safety, legal, and claim answers require explicit store knowledge or policy.
+- Owner corrections and missing-info answers become reusable store knowledge and should update related pending CS messages when safe.
+- Platform work should prioritize revenue paths: Coupang and Smartstore actual inquiry flows first, then Baemin/Yogiyo/Coupang Eats production integrations.
 
-## Harness Principles From The Reference Photos
+## MoAI-ADK Harness Model
 
-- Context map: 프로젝트 구조, 현재 목표, 이미 구현된 기능, 검증 명령을 저장소 안에 명시한다.
-- Self-verification loop: 코드를 바꾼 뒤 테스트, 타입, 린트, 빌드로 스스로 확인한다.
-- Session persistence: 다음 작업과 다다음 작업을 문서/응답에 남겨 다음 세션이 이어받게 한다.
-- Checklist-first work: 작업 전에 이미 구현됐는지 검색하고, 중복 구현을 피한다.
-- Scaffold-first work: 반복되는 개발 루프는 문서와 스크립트로 고정한다.
-- Command memory: 자주 쓰는 검증 명령은 package script와 agent command 문서로 남긴다.
+We adapt the reference MoAI-ADK idea into this repository as a development harness.
 
+- Manager Agent: classify each request by goal, risk, domain, and whether it already exists. Decide which implementation path to use without asking the user to choose an agent.
+- Expert Agent: apply domain rules for CS safety, store knowledge, platform integration, monetization, UI simplicity, billing, and workflow state.
+- Builder Agent: implement the smallest durable change, reuse existing modules, add or update regression checks, then verify.
+
+The user does not need to select these roles. Codex should internally route work through them before editing.
+
+## Seven Required Components
+
+1. Context map: keep mission, current status, known implemented features, remaining gaps, and verification commands in `.agents/project`.
+2. Self-verification loop: inspect existing implementation, make scoped changes, run required checks, review the diff, and only then commit/push when requested.
+3. Session persistence: after meaningful work, update status when it changes, commit/push together, and report the next task plus the task after that.
+4. Failure checklist: before changing CS logic, check no guessing, high-risk escalation, owner knowledge boundaries, platform status safety, and paid-gate behavior.
+5. Language independence: keep CS safety and knowledge rules industry-neutral and platform-neutral. Korean examples are fine, but rules must work for food, commerce, service, and local store categories.
+6. Garbage collection: remove stale demo/free-trial copy, duplicate UI sections, unused state, dead helpers, and conflicting flows as part of each cleanup pass.
+7. Scaffold-first work: create shared utilities, scripts, and regression tests before duplicating feature-specific logic.
+
+## Verification Commitments
+
+- Always include `npm run test:cs-guard` for CS safety, reply generation, platform inquiry, or learning changes.
+- Use `npm run test:monetization` for paid adoption, billing, trial removal, or conversion-flow changes.
+- Use `npm run test:workflow-safety` for AI CS workflow inbox state and card behavior.
+- Use `npm run test:harness` after changing `.agents`, harness scripts, or agent operating rules.
+- Run TypeScript, lint, and build before committing substantial changes.

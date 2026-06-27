@@ -9,6 +9,7 @@ const requiredFiles = [
   ".agents/harness.json",
   ".agents/project/context.md",
   ".agents/project/status.md",
+  ".agents/project/moai-adk.md",
   ".agents/commands/preflight.md",
   ".agents/commands/verify.md",
   ".agents/commands/commit-push.md",
@@ -24,6 +25,12 @@ function assert(condition, message) {
   }
 }
 
+function assertMatches(source, patterns, label) {
+  for (const pattern of patterns) {
+    assert(pattern.test(source), `${label} is missing pattern ${pattern}`);
+  }
+}
+
 for (const file of requiredFiles) {
   assert(fs.existsSync(path.join(projectRoot, file)), `Missing ${file}`);
 }
@@ -33,6 +40,7 @@ const packageJson = JSON.parse(readProjectFile("package.json"));
 const agentRules = readProjectFile("AGENTS.md");
 const context = readProjectFile(".agents/project/context.md");
 const status = readProjectFile(".agents/project/status.md");
+const moaiAdk = readProjectFile(".agents/project/moai-adk.md");
 const preflight = readProjectFile(".agents/commands/preflight.md");
 const verify = readProjectFile(".agents/commands/verify.md");
 const commitPush = readProjectFile(".agents/commands/commit-push.md");
@@ -44,48 +52,129 @@ for (const scriptName of harness.requiredPackageScripts) {
   );
 }
 
-const requiredAgentRulePatterns = [
-  /Next\.js|Next/,
-  /\.agents\/project\/context\.md/,
-  /\.agents\/project\/status\.md/,
-  /중복/,
-  /커밋.*푸시|푸시.*커밋/s,
-  /test:cs-guard/,
-];
+assertMatches(
+  agentRules,
+  [
+    /Next\.js/,
+    /\.agents\/project\/context\.md/,
+    /\.agents\/project\/status\.md/,
+    /\.agents\/project\/moai-adk\.md/,
+    /Manager, Expert, and Builder/,
+    /test:cs-guard/,
+    /paid-adoption/,
+  ],
+  "AGENTS.md",
+);
 
-for (const pattern of requiredAgentRulePatterns) {
-  assert(pattern.test(agentRules), `AGENTS.md is missing pattern ${pattern}`);
+assertMatches(
+  context,
+  [
+    /AI CS employee/,
+    /Paid-first product/,
+    /Manager Agent/,
+    /Expert Agent/,
+    /Builder Agent/,
+    /Context map/,
+    /Self-verification loop/,
+    /Session persistence/,
+    /Failure checklist/,
+    /Language independence/,
+    /Garbage collection/,
+    /Scaffold-first work/,
+  ],
+  "context.md",
+);
+
+assertMatches(
+  status,
+  [
+    /Implemented/,
+    /Remaining Gaps/,
+    /Current Priorities/,
+    /Paid-first public journey/,
+    /Coupang/,
+    /Smartstore/,
+    /missing-info learning/i,
+    /payment\/subscription/,
+  ],
+  "status.md",
+);
+
+assertMatches(
+  moaiAdk,
+  [
+    /Manager Agent/,
+    /Expert Agent/,
+    /Builder Agent/,
+    /Context Map/,
+    /Self-Verification Loop/,
+    /Session Persistence/,
+    /Failure Checklist/,
+    /Language Independence/,
+    /Garbage Collection/,
+    /Scaffold First/,
+    /Default Routing Table/,
+  ],
+  "moai-adk.md",
+);
+
+const requiredHarnessRoles = ["Manager Agent", "Expert Agent", "Builder Agent"];
+for (const role of requiredHarnessRoles) {
+  assert(harness.agentRoles?.includes(role), `harness.json is missing ${role}`);
 }
 
-const requiredContextPatterns = [
-  /AI CS 직원/,
-  /돈이 벌리는 서비스/,
-  /추측하지 않는다/,
-  /Self-verification loop/,
-  /Context map/,
+const requiredHarnessPrinciples = [
+  "Context map",
+  "Self-verification loop",
+  "Session persistence",
+  "Failure checklist",
+  "Language independence",
+  "Garbage collection",
+  "Scaffold-first work",
 ];
 
-for (const pattern of requiredContextPatterns) {
-  assert(pattern.test(context), `context.md is missing pattern ${pattern}`);
+for (const principle of requiredHarnessPrinciples) {
+  assert(
+    harness.moaiAdkPrinciples?.includes(principle),
+    `harness.json is missing ${principle}`,
+  );
 }
 
-const requiredStatusPatterns = [
-  /이미 진행됨/,
-  /일부 진행됨/,
-  /다음 후보/,
-  /쿠팡/,
-  /스마트스토어/,
-  /missing info/,
-  /사장님 수정 답변 학습/,
-];
+assertMatches(
+  preflight,
+  [
+    /Read `AGENTS\.md`/,
+    /moai-adk\.md/,
+    /Search existing implementation/,
+    /Manager/,
+    /Expert/,
+    /Builder/,
+    /garbage-collected/,
+  ],
+  "preflight checklist",
+);
 
-for (const pattern of requiredStatusPatterns) {
-  assert(pattern.test(status), `status.md is missing pattern ${pattern}`);
-}
+assertMatches(
+  verify,
+  [
+    /npm run test:harness/,
+    /npm run test:cs-guard/,
+    /npm run test:monetization/,
+    /npm run test:workflow-safety/,
+    /npm run build/,
+  ],
+  "verify command list",
+);
 
-assert(/관련 키워드로 코드 검색/.test(preflight), "preflight checklist is incomplete");
-assert(/npm run test:cs-guard/.test(verify), "verify command list is incomplete");
-assert(/git push/.test(commitPush), "commit/push policy is incomplete");
+assertMatches(
+  commitPush,
+  [
+    /Commit And Push Policy/,
+    /Push immediately/,
+    /next task plus the task after that/,
+    /Do not revert user changes/,
+  ],
+  "commit/push policy",
+);
 
 console.log("Agent harness check passed.");
-

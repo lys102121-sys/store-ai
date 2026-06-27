@@ -11,6 +11,20 @@
     "verify": ".agents/commands/verify.md",
     "commitPush": ".agents/commands/commit-push.md"
   },
+  "agentRoles": [
+    "Manager Agent",
+    "Expert Agent",
+    "Builder Agent"
+  ],
+  "moaiAdkPrinciples": [
+    "Context map",
+    "Self-verification loop",
+    "Session persistence",
+    "Failure checklist",
+    "Language independence",
+    "Garbage collection",
+    "Scaffold-first work"
+  ],
   "requiredPackageScripts": [
     "test:harness",
     "test:cs-guard",
@@ -26,4 +40,3 @@
     "reportNextAndNextNextWork": true
   }
 }
-
